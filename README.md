@@ -162,7 +162,7 @@ Muốn tự kiểm tra từng tính năng mới: [docs/choi-thu.md](docs/choi-th
 | **Vượt ải** | 10 ải có cốt truyện. Chọn ải và độ khó **Dễ / Thường / Khó**; mỗi ải chấm **1–3 sao** (qua ải · mất tối đa 1 mạng · không mất mạng). Tiến độ được lưu. |
 | **Vô tận** | Sống sót càng lâu càng tốt. Càng về sau càng nhiều loại địch; boss đổi loại mỗi 60 giây. |
 | **Hỏa ngục** | *Mở khóa sau khi phá đảo.* Mưa đạn, ít máu, không rơi khiên, boss mỗi 45 giây. |
-| **Chơi mới** | Nút **CHƠI MỚI** ở màn Chọn ải (chọn 2 lần): xóa sạch ải, sao, chu kỳ, Sổ tay, kỷ lục, huy hiệu như mới cài game. Cài đặt giữ nguyên; file cũ tự sao lưu thành `save_backup_<ngày giờ>.json`. |
+| **Chơi mới** | Nút **CHƠI MỚI** ở màn Chọn ải (chọn 2 lần): xóa sạch ải, sao, chu kỳ, Sổ tay, kỷ lục, Bảng điểm, huy hiệu như mới cài game. Cài đặt giữ nguyên; file cũ tự sao lưu thành `save_backup_<ngày giờ>.json`. |
 | **Vòng lặp tín hiệu** | *Sau khi phá đảo.* Bắt đầu **chu kỳ mới** ở màn Chọn ải: chơi lại từ ải 1, địch +25% máu và bắn nhanh hơn mỗi chu kỳ, có thêm lời thoại. Sổ tay, kỷ lục, Hỏa ngục được giữ. |
 
 **Kẻ địch:** lính thường, kamikaze, Ký Sinh (bầy lượn sóng), Lính Khiên (chặn đạn bắn thẳng), Kẻ Đẻ Trứng,
