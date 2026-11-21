@@ -156,14 +156,22 @@ class GameAudioTest(unittest.TestCase):
         actions = [b.action for b in scene.buttons]
         scene.menu.select(actions.index("music"))
         scene.handle_event(key(pygame.K_RIGHT))
-        self.assertAlmostEqual(g.settings.music_volume, 0.8)
-        self.assertAlmostEqual(g.audio.music_volume, 0.8)
-        self.assertEqual(json.loads(g.settings.path.read_text(encoding="utf-8"))["music_volume"], 0.8)
+        self.assertAlmostEqual(g.settings.music_volume, 0.75)
+        self.assertAlmostEqual(g.audio.music_volume, 0.75)
+        self.assertEqual(json.loads(g.settings.path.read_text(encoding="utf-8"))["music_volume"], 0.75)
         g.settings.sfx_volume = 1.0
         scene.menu.select(actions.index("sfx"))             # chọn (chụm tay) quá 100% thì về 0
         scene.handle_event(key(pygame.K_RETURN))
         self.assertEqual(g.settings.sfx_volume, 0.0)
-        self.assertIn("0%", scene.buttons[actions.index("sfx")].text)
+        # Kéo thanh trượt bằng chuột: bấm giữa thanh -> 50%, kéo tới cuối -> 100%, thả thì lưu
+        sfx = scene.buttons[actions.index("sfx")]
+        track = scene._track(sfx)
+        scene.handle_event(pygame.event.Event(pygame.MOUSEBUTTONDOWN, button=1, pos=track.center))
+        self.assertAlmostEqual(g.settings.sfx_volume, 0.5)
+        scene.handle_event(pygame.event.Event(pygame.MOUSEMOTION, pos=(track.right + 40, track.y), buttons=(1, 0, 0)))
+        self.assertAlmostEqual(g.settings.sfx_volume, 1.0)
+        scene.handle_event(pygame.event.Event(pygame.MOUSEBUTTONUP, button=1, pos=(0, 0)))
+        self.assertEqual(json.loads(g.settings.path.read_text(encoding="utf-8"))["sfx_volume"], 1.0)
 
 
 if __name__ == "__main__":

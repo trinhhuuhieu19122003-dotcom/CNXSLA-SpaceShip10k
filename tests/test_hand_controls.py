@@ -204,6 +204,26 @@ class HandScenesTest(unittest.TestCase):
             self.game.settings.hand_menu = True
             self.game.settings.auto_fire = True
 
+    def test_pinch_and_slide_hand_drags_volume(self):
+        opts = self.go(OptionsScene(self.game))
+        music = next(b for b in opts.buttons if b.action == "music")
+        track = opts._track(music)
+        self.tracker.show(Gesture.OPEN, x=track.centerx / config.WIDTH, y=track.centery / config.HEIGHT)
+        self.steps(10)
+        self.assertEqual(opts.buttons[opts.menu.selected].action, "music")
+        self.pinch(track.x + track.width * 0.2, track.centery)
+        self.steps(15)
+        low = self.game.settings.music_volume
+        self.pinch(track.x + track.width * 0.9, track.centery)
+        self.steps(40)
+        high = self.game.settings.music_volume
+        self.assertLess(low, 0.5)
+        self.assertGreater(high, 0.7)
+        self.assertEqual(opts.buttons[opts.menu.selected].action, "music")   # kéo không làm nhảy mục
+        self.tracker.show(Gesture.OPEN, x=track.centerx / config.WIDTH, y=track.centery / config.HEIGHT)
+        self.steps(2)
+        self.assertIsNone(opts._hand_drag)
+
     def test_pinch_in_options_activates_once_until_release(self):
         opts = self.go(OptionsScene(self.game))
         x, y = next(b for b in opts.buttons if b.action == "auto_fire").rect.center
