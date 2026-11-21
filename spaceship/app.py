@@ -21,11 +21,14 @@ from spaceship.core.settings import Settings
 from spaceship.core.storage import SaveData
 from spaceship.entities.effects import Starfield
 from spaceship.input.controls import ControlHub
+from spaceship.input.gestures import Gesture
 from spaceship.input.hand_tracker import PREVIEW_SIZE, HandTracker, TrackerState
+from spaceship.ui.widgets import MUTED, fit_text
 
 log = logging.getLogger(__name__)
 
 MOUSE_EVENTS = (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEMOTION)
+SCENE_FADE_SECONDS = 0.25
 
 
 class Game:
@@ -55,6 +58,11 @@ class Game:
         self.running = False
         self.scene: Optional[Scene] = None
         self._pending: Optional[Scene] = None
+        self.menu_pinch_consumed = False
+        self._presented: Optional[Tuple[pygame.Surface, int]] = None
+        self._fade_from: Optional[pygame.Surface] = None
+        self._fade_started: Optional[float] = None
+        self._fade_overlay: Optional[pygame.Surface] = None
 
     # --- Cửa sổ & toạ độ ---------------------------------------------------------------
     def _create_window(self) -> pygame.Surface:
@@ -104,6 +112,11 @@ class Game:
     def _apply_pending_scene(self) -> None:
         if self._pending is None:
             return
+        if self._presented is not None:
+            source, darkness = self._presented
+            self._fade_from = source.copy()
+            self._darken(self._fade_from, darkness)
+        self._fade_started = time.perf_counter()
         self.scene, self._pending = self._pending, None
         self.audio.play_music(self.scene.music)
         self.scene.on_enter()
@@ -139,20 +152,49 @@ class Game:
 
     def step(self) -> None:
         """Một bước logic cố định (dùng cả cho test headless)."""
-        self.scene.update(self.controls.poll())
+        # Lần chụm đã dùng cho menu không kích hoạt kỹ năng khi trở lại trận.
+        controls = self.controls.poll(allow_pinch_skill=not self.menu_pinch_consumed)
+        if controls.gesture not in (Gesture.NONE, Gesture.PINCH):
+            self.menu_pinch_consumed = False
+        self.scene.update(controls)
         self._apply_pending_scene()
 
     def render(self) -> None:
         self.scene.draw(self.screen)
+        source, darkness = self._transition_frame()
         scale, ox, oy = self._viewport()
-        dx, dy = self.scene.screen_offset()
+        dx, dy = self.scene.screen_offset() if source is self.screen else (0, 0)
         size = (int(config.WIDTH * scale), int(config.HEIGHT * scale))
         self.window.fill((0, 0, 0))
-        frame = self.screen if size == self.screen.get_size() else pygame.transform.smoothscale(self.screen, size)
+        frame = source if size == source.get_size() else pygame.transform.smoothscale(source, size)
         self.window.blit(frame, (ox + int(dx * scale), oy + int(dy * scale)))
-        if self.scene.shows_camera:
+        if self.scene.shows_camera and source is self.screen:
             self._draw_camera_overlay()
+        self._darken(self.window, darkness)
+        self._presented = source, darkness
         pygame.display.flip()
+
+    def _darken(self, surface: pygame.Surface, darkness: int) -> None:
+        if not darkness:
+            return
+        if self._fade_overlay is None or self._fade_overlay.get_size() != surface.get_size():
+            self._fade_overlay = pygame.Surface(surface.get_size()).convert()
+            self._fade_overlay.fill((0, 0, 0))
+        self._fade_overlay.set_alpha(darkness)
+        surface.blit(self._fade_overlay, (0, 0))
+
+    def _transition_frame(self) -> Tuple[pygame.Surface, int]:
+        if self._fade_started is None:
+            return self.screen, 0
+        progress = (time.perf_counter() - self._fade_started) / SCENE_FADE_SECONDS
+        if progress >= 1:
+            self._fade_from, self._fade_started = None, None
+            return self.screen, 0
+        if self._fade_from is None:
+            return self.screen, round(255 * (1 - progress))
+        if progress < 0.5:
+            return self._fade_from, round(510 * progress)
+        return self.screen, round(510 * (1 - progress))
 
     def _draw_camera_overlay(self) -> None:
         if self.tracker is None or not self.show_camera:
@@ -168,7 +210,7 @@ class Game:
             label = f"Không có camera: {self.tracker.message} · dùng bàn phím"
         else:
             label = self.tracker.message
-        text = self.assets.text(label, 12, config.GRAY, bold=False)
+        text = fit_text(self.assets, label, 12, MUTED, max(1, ww - 20), role="label")
         self.window.blit(text, (ww - text.get_width() - 10, 10 + PREVIEW_SIZE[1] + 4))
 
     def run(self, first_scene: Optional[Scene] = None) -> None:

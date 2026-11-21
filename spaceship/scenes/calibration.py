@@ -6,19 +6,19 @@ không phải giơ tay cao ngang mặt như bản cũ.
 """
 from __future__ import annotations
 
-import math
 from collections import deque
 from typing import Callable
 
 import pygame
 
 from spaceship import config
-from spaceship.config import GRAY, HEIGHT, NEON_CYAN, NEON_GREEN, WHITE, WIDTH, YELLOW
+from spaceship.config import HEIGHT, WIDTH
 from spaceship.core.scene import Scene
 from spaceship.input.hand_tracker import TrackerState
-from spaceship.ui.widgets import blit_center
+from spaceship.ui.widgets import ACCENT, MUTED, SECONDARY, TEXT, blit_center, draw_panel, draw_progress_ring, fit_text
 
 PREVIEW = (400, 300)
+PANEL = pygame.Rect(50, 20, WIDTH - 100, HEIGHT - 40)
 STARTUP_TIMEOUT_TICKS = 8 * config.TICK_RATE     # camera mở quá lâu -> bỏ qua
 DONE_TICKS = int(0.8 * config.TICK_RATE)
 WINDOW = int(0.5 * config.TICK_RATE)             # xét độ "đứng yên" trong 0.5 giây gần nhất
@@ -93,39 +93,32 @@ class CalibrationScene(Scene):
         a = self.game.assets
         surface.fill((0, 0, 0))
         self.game.starfield.draw(surface)
-        blit_center(surface, a.text("HIỆU CHỈNH TAY", 36, YELLOW), 30)
-        lines = ("Tì khuỷu tay lên bàn, để bàn tay ở tư thế THOẢI MÁI nhất",
+        draw_panel(surface, PANEL, header_height=57)
+        blit_center(surface, a.text("HIỆU CHỈNH TAY", 36, TEXT, role="display"), 25)
+        lines = ("Tì khuỷu tay lên bàn, để bàn tay ở tư thế thoải mái nhất",
                  "trước camera, rồi giữ yên khoảng 2 giây.",
                  "Chỗ đó sẽ là giữa màn hình - chỉ cần nhích tay một gang là lái hết màn.")
         for i, line in enumerate(lines):
-            blit_center(surface, a.text(line, 16, WHITE, bold=False), 82 + i * 24)
+            blit_center(surface, a.text(line, 16, SECONDARY, role="body"), 82 + i * 24)
 
         box = pygame.Rect(WIDTH // 2 - PREVIEW[0] // 2, 165, *PREVIEW)
+        draw_panel(surface, box.inflate(10, 10))
         image = self.game.camera_surface(PREVIEW)
         if image is not None:
             surface.blit(image, box)
         else:
-            pygame.draw.rect(surface, (15, 20, 28), box)
-            blit_center(surface, a.text(self.game.tracker.message if self.game.tracker else "", 16, GRAY), box.centery - 8)
-        pygame.draw.rect(surface, NEON_CYAN, box, 2)
+            message = self.game.tracker.message if self.game.tracker else "Không có camera"
+            placeholder = fit_text(a, message, 16, MUTED, box.width - 24, role="body")
+            surface.blit(placeholder, placeholder.get_rect(center=box.center))
 
-        self._draw_progress(surface, (WIDTH // 2, box.bottom + 70))
+        draw_progress_ring(surface, (WIDTH // 2, box.bottom + 68), 29, self.progress, stroke=5)
         if self.done_ticks:
-            status, color = "XONG! Đã lưu tư thế nghỉ", NEON_GREEN
+            status, color = "Đã lưu tư thế nghỉ", ACCENT
         elif not self.detected:
-            status, color = "Chưa thấy tay - đưa bàn tay vào khung hình", GRAY
+            status, color = "Chưa thấy tay - đưa bàn tay vào khung hình", MUTED
         elif self.still_ticks:
-            status, color = "Giữ yên...", YELLOW
+            status, color = "Giữ yên...", ACCENT
         else:
-            status, color = "Tay đang di chuyển - giữ yên một chút", WHITE
-        blit_center(surface, a.text(status, 18, color), box.bottom + 120)
-        blit_center(surface, a.text("SPACE / ENTER: bỏ qua, dùng vị trí cũ", 14, GRAY, bold=False), HEIGHT - 34)
-
-    def _draw_progress(self, surface: pygame.Surface, center) -> None:
-        r = 30
-        pygame.draw.circle(surface, (40, 45, 55), center, r, 6)
-        if self.progress > 0:
-            rect = pygame.Rect(center[0] - r, center[1] - r, r * 2, r * 2)
-            start = math.pi / 2
-            pygame.draw.arc(surface, NEON_GREEN if self.done_ticks else YELLOW, rect,
-                            start - self.progress * 2 * math.pi, start, 6)
+            status, color = "Tay đang di chuyển - giữ yên một chút", TEXT
+        blit_center(surface, a.text(status, 18, color, role="body"), box.bottom + 116)
+        blit_center(surface, a.text("SPACE / ENTER: bỏ qua, dùng vị trí cũ", 14, MUTED, role="label"), PANEL.bottom - 35)

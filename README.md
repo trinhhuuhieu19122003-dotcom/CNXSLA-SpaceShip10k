@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/Python-3.10–3.13-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python">
   <img src="https://img.shields.io/badge/pygame-2.5+-2b9348?style=flat-square" alt="pygame">
   <img src="https://img.shields.io/badge/MediaPipe-Hands-4285F4?style=flat-square&logo=google&logoColor=white" alt="MediaPipe">
-  <img src="https://img.shields.io/badge/test-46_passed-success?style=flat-square" alt="Test">
+  <img src="https://img.shields.io/badge/test-58_passed-success?style=flat-square" alt="Test">
 </p>
 
 <p align="center">
@@ -54,7 +54,7 @@
 | **Chiến dịch có cốt truyện** | 10 ải chia 3 hồi, hội thoại có chân dung nhân vật, thoại ngay trong trận, đoạn kết riêng. |
 | **Đồ họa phát sáng** | Đạn neon, vụ nổ có sóng xung kích, địch nháy khi trúng đạn, nền cuộn theo từng hồi. |
 | **Có chiều sâu** | 4 súng, mỗi súng một dạng tối thượng ở cấp 6 và một kỹ năng Nộ riêng; 3 mức độ khó; chấm 1–3 sao mỗi ải. |
-| **Mã nguồn sạch, có test** | Chia module rõ ràng, dữ liệu ải tách khỏi logic, 46 test tự động, có bot tự chơi hết chiến dịch. |
+| **Mã nguồn sạch, có test** | Chia module rõ ràng, dữ liệu ải tách khỏi logic, 58 test tự động, có bot tự chơi hết chiến dịch. |
 
 ## Cốt truyện
 
@@ -198,9 +198,10 @@ hết 10 ải tới đoạn kết** cùng hai chế độ Vô tận và Hỏa ng
 - [x] Điều khiển tay đỡ mỏi (hiệu chỉnh, độ nhạy, chụm ngón, nắm tay, tự tạm dừng)
 - [x] Hiệu ứng phát sáng, HUD mới
 - [x] Vũ khí mới, kỹ năng Nộ, 10 ải, cốt truyện, chọn ải, độ khó
-- [ ] Giao diện mới: font riêng, menu điều khiển được bằng tay, đồng bộ phong cách các màn hình
+- [x] Giao diện mới: font riêng (Chakra Petch, Exo 2), menu điều khiển được bằng tay, đồng bộ phong cách các màn hình
+- [ ] Màn Hướng dẫn chia thẻ + Sổ tay chiến đấu
+- [ ] Âm thanh: tiếng riêng cho từng sự kiện, nhạc theo từng hồi, chỉnh âm lượng
 - [ ] Cân bằng độ khó theo phản hồi chơi thử thực tế
-- [ ] Nhạc nền riêng cho từng hồi
 
 ## Nguồn gốc & ghi công
 
@@ -220,4 +221,4 @@ cùng trợ lý lập trình AI Claude (Anthropic). Hình minh họa mới (kẻ
 ## Giấy phép
 
 Dự án phục vụ mục đích học tập, phi thương mại. Vui lòng không sử dụng cho mục đích thương mại khi chưa có sự đồng ý
-của tác giả. Tài nguyên bên thứ ba (font chữ...) tuân theo giấy phép riêng đi kèm trong thư mục tương ứng.
+của tác giả. Font chữ Chakra Petch và Exo 2 dùng giấy phép SIL Open Font License (xem `assets/fonts/`).

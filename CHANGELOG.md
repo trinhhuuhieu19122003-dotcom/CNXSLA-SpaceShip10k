@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.1.0-dev] – Giao diện mới
+- Đóng gói font **Chakra Petch** (tiêu đề, nút, nhãn) và **Exo 2** (chữ mô tả, lời thoại), giấy phép SIL OFL;
+  `Assets.font(role=...)` theo vai trò, thiếu file thì lùi về font hệ thống.
+- **Menu chính mới**: logo + phụ đề "Tín hiệu cuối cùng", danh sách mục căn trái, ảnh tàu và Tàu Mẹ làm nền,
+  một màu chủ đạo cyan; Hỏa ngục hiện ổ khóa khi chưa phá đảo.
+- **Điều khiển menu không cần chuột** (`ui/menu_list.py`): phím mũi tên/Enter, di tay để chọn + chụm tay để vào
+  (có vòng tiến trình); áp dụng cho Menu, Chọn ải, Cài đặt, Tạm dừng, Kết quả. Lần chụm dùng cho menu không
+  kích hoạt kỹ năng Nộ khi quay lại trận.
+- Khung dùng chung kiểu sci-fi (góc ngoặc sáng, dải tiêu đề) cho mọi màn phụ, HUD, hội thoại.
+- Chuyển cảnh mờ đen 0,25 giây (chỉ ở lớp vẽ, logic đổi scene ngay).
+- 12 test mới (`tests/test_ui.py`, điều hướng menu bằng phím/tay). Thực hiện bởi Codex, Claude rà soát.
+
 ## [2.1.0-dev] – Vũ khí, 10 ải, cốt truyện (giai đoạn 3–5)
 ### Vũ khí
 - Thêm súng **Tia Sét** (nhảy dây chuyền, xuyên khiên Lính Khiên); rơi từ ải 4 (xác tàu của phi đội).

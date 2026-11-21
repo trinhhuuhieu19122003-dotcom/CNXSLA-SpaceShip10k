@@ -16,9 +16,9 @@ from typing import Callable, List, Optional
 import pygame
 
 from spaceship.campaign import story
-from spaceship.config import GRAY, HEIGHT, TICK_RATE, WHITE, WIDTH, YELLOW
+from spaceship.config import HEIGHT, TICK_RATE, WHITE, WIDTH
 from spaceship.core.scene import Scene
-from spaceship.ui.hud import wrap_text
+from spaceship.ui.widgets import ACCENT, DANGER, MUTED, TEXT, blit_center, dim, draw_panel, fit_text, wrap_text
 
 
 @dataclass(frozen=True)
@@ -50,7 +50,7 @@ ENDING_SCRIPT = tuple(make_script(story.ENDING))
 
 CHARS_PER_SECOND = 28
 FADE_STEP = 5
-GLITCH_CHARS = "!@#$%^&*()_+-=[]{}|;':,./<>?░▒▓█"
+GLITCH_CHARS = "!@#$%^&*()_+-=[]{}|;':,./<>?"
 RADAR_CENTER = (WIDTH // 2, HEIGHT // 2 - 110)
 RADAR_RADIUS = 140
 BOX = pygame.Rect(40, HEIGHT - 210, WIDTH - 80, 160)
@@ -177,17 +177,14 @@ class CutsceneScene(Scene):
         a = self.game.assets
         self._draw_backdrop(surface)
         if self.title:
-            label = a.text(self.title, 30, YELLOW)
-            surface.blit(label, (WIDTH // 2 - label.get_width() // 2, 40))
+            label = fit_text(a, self.title, 32, TEXT, WIDTH - 64, role="display")
+            blit_center(surface, label, 38)
         if self.subtitle:
-            label = a.text(self.subtitle, 16, GRAY)
-            surface.blit(label, (WIDTH // 2 - label.get_width() // 2, 18))
+            blit_center(surface, a.text(self.subtitle, 15, MUTED, role="label"), 17)
         self._draw_dialog(surface)
-        surface.blit(a.text("CLICK: TUA CÂU · SPACE/ESC: BỎ QUA", 13, GRAY), (10, HEIGHT - 22))
+        surface.blit(a.text("CLICK: TUA CÂU · SPACE / ESC: BỎ QUA", 13, MUTED, role="label"), (BOX.x, HEIGHT - 30))
         if self.fade_alpha > 0:
-            veil = pygame.Surface((WIDTH, HEIGHT))
-            veil.set_alpha(self.fade_alpha)
-            surface.blit(veil, (0, 0))
+            dim(surface, self.fade_alpha)
 
     def _draw_backdrop(self, surface: pygame.Surface) -> None:
         if self.backdrop == "radar":
@@ -208,9 +205,7 @@ class CutsceneScene(Scene):
         y = int(self.ticks * 0.4) % image.get_height()      # ảnh nền hồi: cuộn chậm, tối đi
         surface.blit(image, (0, y - image.get_height()))
         surface.blit(image, (0, y))
-        veil = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
-        veil.fill((0, 0, 0, 90))
-        surface.blit(veil, (0, 0))
+        dim(surface, 90)
 
     def _draw_radar(self, surface: pygame.Surface) -> None:
         cx, cy = RADAR_CENTER
@@ -238,16 +233,9 @@ class CutsceneScene(Scene):
             pygame.draw.circle(surface, (255, 0, 0), (int(x), int(y)), 4)
 
     def _draw_dialog(self, surface: pygame.Surface) -> None:
-        panel = pygame.Surface(BOX.size, pygame.SRCALPHA)
-        panel.fill((8, 16, 20, 225))
-        surface.blit(panel, BOX)
-        for i in range(0, BOX.height, 4):
-            pygame.draw.line(surface, (0, 40, 40), (BOX.x, BOX.y + i), (BOX.right, BOX.y + i), 1)
         line = self.line
-        color = story.SPEAKER_COLORS.get(line.speaker, WHITE) if line else (0, 255, 255)
-        pygame.draw.rect(surface, color, BOX, 2)
-        pygame.draw.line(surface, WHITE, BOX.topleft, (BOX.x + 20, BOX.y), 4)
-        pygame.draw.line(surface, WHITE, BOX.topleft, (BOX.x, BOX.y + 20), 4)
+        color = story.SPEAKER_COLORS.get(line.speaker, TEXT) if line else ACCENT
+        draw_panel(surface, BOX, color, header_height=44)
         if line is None:
             return
         a, rng = self.game.assets, self.game.rng
@@ -260,7 +248,7 @@ class CutsceneScene(Scene):
             surface.blit(portrait, (px, py))
             pygame.draw.rect(surface, color, (BOX.x + 14, py, PORTRAIT, PORTRAIT), 1)
             tx = BOX.x + PORTRAIT + 32
-        surface.blit(a.text(line.speaker, 22, color), (tx, BOX.y + 14))
+        surface.blit(a.text(line.speaker.upper(), 22, color, role="ui"), (tx, BOX.y + 7))
         width = BOX.right - tx - 20
         rows = wrap_text(a, self.typewriter.visible, 19, width)
         for i, row in enumerate(rows[:4]):
@@ -268,7 +256,7 @@ class CutsceneScene(Scene):
             if self.glitch > 0:
                 row = "".join(rng.choice(GLITCH_CHARS) if c != " " and rng.random() < 0.2 else c for c in row)
                 rx, ry = rng.randint(-3, 3), rng.randint(-2, 2)
-                surface.blit(a.text(row, 19, (255, 0, 0), bold=False), (tx + rx, y + ry))
-                surface.blit(a.text(row, 19, (0, 255, 255), bold=False), (tx - rx, y - ry))
+                surface.blit(fit_text(a, row, 19, DANGER, width, role="body"), (tx + rx, y + ry))
+                surface.blit(fit_text(a, row, 19, ACCENT, width, role="body"), (tx - rx, y - ry))
             else:
-                surface.blit(a.text(row, 19, WHITE, bold=False), (tx, y))
+                surface.blit(a.text(row, 19, TEXT, role="body"), (tx, y))

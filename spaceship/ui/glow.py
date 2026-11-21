@@ -25,6 +25,32 @@ def _blur(surface: pygame.Surface, factor: int) -> pygame.Surface:
     return pygame.transform.smoothscale(small, (w, h))
 
 
+def glyph_halo(text: pygame.Surface) -> pygame.Surface:
+    """Quầng sáng theo nét chữ, để dán bên dưới mặt chữ bằng hàm add."""
+    padding = 18
+    texture = pygame.Surface((text.get_width() + 2 * padding, text.get_height() + 2 * padding))
+    texture.fill((0, 0, 0))
+    texture.blit(text, (padding, padding))
+    halo = _blur(texture, 10)
+    halo.fill((135, 135, 135), special_flags=pygame.BLEND_RGB_MULT)
+    tight = _blur(texture, 4)
+    tight.fill((144, 144, 144), special_flags=pygame.BLEND_RGB_MULT)
+    halo.blit(tight, (0, 0), special_flags=pygame.BLEND_RGB_ADD)
+    return halo
+
+
+def soft_halo(color: Color, radius: int) -> pygame.Surface:
+    """Quầng sáng giảm dần từ tâm, dùng cho động cơ trong menu."""
+    key = ("soft_halo", color, radius)
+    if key not in _cache:
+        texture = pygame.Surface((2 * radius + 1, 2 * radius + 1))
+        for r in range(radius, 0, -1):
+            strength = (1 - r / radius) ** 2
+            pygame.draw.circle(texture, scale(color, strength), (radius, radius), r)
+        _cache[key] = texture
+    return _cache[key]
+
+
 def orb(color: Color, radius: int, core: float = 0.45, halo: float = 1.0) -> pygame.Surface:
     """Quả cầu sáng: quầng màu mờ bên ngoài, thân màu, lõi trắng."""
     radius = max(1, int(radius))

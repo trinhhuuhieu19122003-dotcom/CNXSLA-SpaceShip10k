@@ -82,7 +82,7 @@ class ControlHub:
         return self.tracker.reading
 
     # --- Mỗi tick -----------------------------------------------------------------------
-    def poll(self, keys=None) -> ControlState:
+    def poll(self, keys=None, *, allow_pinch_skill: bool = True) -> ControlState:
         keys = keys if keys is not None else pygame.key.get_pressed()
         move_x = float(_any(keys, KEYS_RIGHT)) - float(_any(keys, KEYS_LEFT))
         move_y = float(_any(keys, KEYS_DOWN)) - float(_any(keys, KEYS_UP))
@@ -119,7 +119,7 @@ class ControlHub:
 
         hold_ticks = config.PINCH_HOLD_SECONDS * config.TICK_RATE
         state.skill_progress = min(1.0, self._pinch_ticks / hold_ticks)
-        if state.skill_progress >= 1.0:
+        if allow_pinch_skill and state.skill_progress >= 1.0:
             state.nuke = True
         state.hand_absent = self.hand_absent
         state.hand_lost = self.hand_mode and self.hand_absent >= config.HAND_PAUSE_SECONDS

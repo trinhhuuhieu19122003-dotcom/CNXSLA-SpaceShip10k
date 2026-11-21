@@ -9,20 +9,30 @@ from __future__ import annotations
 import logging
 from pathlib import Path
 from typing import Dict, Optional, Tuple
+from unicodedata import normalize
 
 import pygame
 
-from spaceship.config import FONT_NAMES, IMAGES_DIR
+from spaceship.config import ASSETS_DIR, FONT_NAMES, IMAGES_DIR
 
 log = logging.getLogger(__name__)
+FONTS_DIR = ASSETS_DIR / "fonts"
+FONT_FILES = {
+    "display": "ChakraPetch-Bold.ttf",
+    "ui": "ChakraPetch-SemiBold.ttf",
+    "label": "ChakraPetch-Medium.ttf",
+    "body": "Exo2.ttf",
+}
 
 
 class Assets:
-    def __init__(self, images_dir: Path = IMAGES_DIR) -> None:
+    def __init__(self, images_dir: Path = IMAGES_DIR, *, fonts_dir: Path = FONTS_DIR) -> None:
         self.images_dir = images_dir
+        self.fonts_dir = fonts_dir
         self._raw: Dict[str, Optional[pygame.Surface]] = {}
         self._scaled: Dict[Tuple[str, int], Optional[pygame.Surface]] = {}
-        self._fonts: Dict[Tuple[int, bool, bool], pygame.font.Font] = {}
+        self._fonts: Dict[Tuple[int, str, bool], pygame.font.Font] = {}
+        self._missing_fonts: set[Path] = set()
 
     # --- Ảnh -------------------------------------------------------------------
     def _load_raw(self, name: str) -> Optional[pygame.Surface]:
@@ -70,11 +80,25 @@ class Assets:
         return self._scaled[key]
 
     # --- Font ------------------------------------------------------------------
-    def font(self, size: int, bold: bool = True, italic: bool = False) -> pygame.font.Font:
-        key = (size, bold, italic)
+    def font(self, size: int, bold: bool = True, italic: bool = False, *,
+             role: Optional[str] = None) -> pygame.font.Font:
+        role = role if role is not None else ("ui" if bold else "body")
+        key = (size, role, italic)
         if key not in self._fonts:
-            self._fonts[key] = pygame.font.SysFont(FONT_NAMES, size, bold=bold, italic=italic)
+            path = self.fonts_dir / FONT_FILES[role]
+            if path not in self._missing_fonts:
+                try:
+                    font = pygame.font.Font(str(path), size)
+                except (OSError, pygame.error) as exc:
+                    self._missing_fonts.add(path)
+                    log.warning("Không nạp được font %s (%s) - dùng font hệ thống", path, exc)
+                else:
+                    font.set_italic(italic)
+                    self._fonts[key] = font
+                    return font
+            self._fonts[key] = pygame.font.SysFont(FONT_NAMES, size, bold=role in ("display", "ui"), italic=italic)
         return self._fonts[key]
 
-    def text(self, text: str, size: int, color, bold: bool = True, italic: bool = False) -> pygame.Surface:
-        return self.font(size, bold, italic).render(text, True, color)
+    def text(self, text: str, size: int, color, bold: bool = True, italic: bool = False, *,
+             role: Optional[str] = None) -> pygame.Surface:
+        return self.font(size, bold, italic, role=role).render(normalize("NFC", text), True, color)

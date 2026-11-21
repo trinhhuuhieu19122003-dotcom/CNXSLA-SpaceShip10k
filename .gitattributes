@@ -1,0 +1,10 @@
+# Giữ xuống dòng kiểu LF cho mã nguồn (tránh diff "sửa cả file" khi sửa trên Windows)
+* text=auto
+*.py text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.png binary
+*.jpg binary
+*.ttf binary
+*.mp3 binary
+*.ogg binary

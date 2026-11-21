@@ -2,6 +2,9 @@
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
+
+import pygame
 
 from tests import helpers  # noqa: F401
 from tests.test_gestures import make_hand
@@ -9,12 +12,15 @@ from spaceship import config
 from spaceship.app import Game
 from spaceship.config import GameMode
 from spaceship.core.settings import Settings
+from spaceship.core.storage import SaveData
 from spaceship.entities.player import Player
 from spaceship.input.controls import ControlHub, ControlState
 from spaceship.input.gestures import Gesture, Point, classify, zone_around
 from spaceship.input.hand_tracker import HandReading
 from spaceship.scenes.calibration import CalibrationScene
+from spaceship.scenes.cutscene import CutsceneScene
 from spaceship.scenes.gameplay import GameplayScene
+from spaceship.scenes.level_select import LevelSelectScene, card_rect
 from spaceship.scenes.menu import MenuScene
 from spaceship.scenes.options import OptionsScene
 from spaceship.scenes.pause import PauseScene
@@ -135,7 +141,9 @@ class FocusMovementTest(unittest.TestCase):
 
 class HandScenesTest(unittest.TestCase):
     def setUp(self):
-        self.game = Game(camera=False, seed=3, settings=settings())
+        prefs = settings()
+        self.game = Game(camera=False, seed=3, settings=prefs,
+                         save=SaveData(path=prefs.path.with_name("save.json")))
         self.tracker = FakeTracker()
         self.game.tracker = self.tracker
         self.game.controls = ControlHub(self.tracker, self.game.settings)
@@ -147,8 +155,121 @@ class HandScenesTest(unittest.TestCase):
 
     def steps(self, n):
         for _ in range(n):
-            self.game.scene.update(self.game.controls.poll(NoKeys()))
-            self.game._apply_pending_scene()
+            self.game.step()
+
+    def key(self, code):
+        self.game.scene.handle_event(pygame.event.Event(pygame.KEYDOWN, key=code))
+        self.game._apply_pending_scene()
+
+    def pinch(self, x, y):
+        self.tracker.show(Gesture.PINCH, x=x / config.WIDTH, y=y / config.HEIGHT)
+
+    def test_arrow_keys_and_enter_choose_endless(self):
+        self.game.calibrated = True
+        self.go(MenuScene(self.game))
+        self.key(pygame.K_DOWN)
+        self.key(pygame.K_DOWN)
+        self.key(pygame.K_UP)
+        self.key(pygame.K_RETURN)
+        self.assertIsInstance(self.game.scene, GameplayScene)
+        self.assertIs(self.game.scene.mode, GameMode.ENDLESS)
+
+    def test_inferno_locked_for_selection_and_shortcut(self):
+        self.game.calibrated = True
+        menu = self.go(MenuScene(self.game))
+        self.key(pygame.K_DOWN)
+        self.key(pygame.K_DOWN)
+        self.key(pygame.K_RETURN)
+        self.assertIs(self.game.scene, menu)
+        self.key(pygame.K_3)
+        self.assertIs(self.game.scene, menu)
+        self.game.save.campaign_cleared = True
+        self.key(pygame.K_SPACE)
+        self.assertIsInstance(self.game.scene, GameplayScene)
+        self.assertIs(self.game.scene.mode, GameMode.INFERNO)
+
+    def test_pinch_in_options_activates_once_until_release(self):
+        opts = self.go(OptionsScene(self.game))
+        x, y = opts.buttons[0].rect.center
+        hold = int(config.PINCH_HOLD_SECONDS * config.TICK_RATE)
+        self.pinch(x, y)
+        self.steps(hold - 1)
+        self.assertTrue(self.game.settings.auto_fire)
+        self.steps(1)
+        self.assertFalse(self.game.settings.auto_fire)
+        self.steps(hold * 2)
+        self.assertFalse(self.game.settings.auto_fire)
+        self.tracker.show(Gesture.OPEN, x=x / config.WIDTH, y=y / config.HEIGHT)
+        self.steps(1)
+        self.pinch(x, y)
+        self.steps(hold)
+        self.assertTrue(self.game.settings.auto_fire)
+
+    def test_held_pinch_does_not_activate_next_scene(self):
+        self.game.calibrated = True
+        self.game.save.unlocked_level = 10
+        self.go(MenuScene(self.game))
+        hold = int(config.PINCH_HOLD_SECONDS * config.TICK_RATE)
+        self.pinch(160, 320)
+        self.steps(hold)
+        self.assertIsInstance(self.game.scene, LevelSelectScene)
+        self.steps(hold + 2)
+        self.assertIsInstance(self.game.scene, LevelSelectScene)
+        x, y = card_rect(0).center
+        self.tracker.hide()
+        self.steps(1)
+        self.pinch(x, y)
+        self.steps(hold + 2)
+        self.assertIsInstance(self.game.scene, LevelSelectScene)
+        self.tracker.show(Gesture.OPEN, x=x / config.WIDTH, y=y / config.HEIGHT)
+        self.steps(1)
+        self.pinch(x, y)
+        self.steps(hold)
+        self.assertIsInstance(self.game.scene, CutsceneScene)
+
+    def test_level_grid_changes_column_and_row_with_arrows(self):
+        from spaceship.campaign.levels import get_level
+
+        self.game.calibrated = True
+        self.game.save.unlocked_level = 10
+        self.go(LevelSelectScene(self.game))
+        self.key(pygame.K_RIGHT)
+        self.key(pygame.K_DOWN)
+        self.key(pygame.K_SPACE)
+        self.assertIsInstance(self.game.scene, CutsceneScene)
+        self.assertEqual(self.game.scene.title, get_level(7).title)
+
+    def test_returning_open_hand_resumes_even_at_lower_row(self):
+        play = self.go(GameplayScene(self.game, GameMode.ENDLESS))
+        pause = self.go(PauseScene(self.game, play, reason="hand"))
+        self.tracker.show(y=pause.buttons[1].rect.centery / config.HEIGHT)
+        self.steps(int((0.3 + config.RESUME_COUNTDOWN_SECONDS) * config.TICK_RATE) + 2)
+        self.assertIs(self.game.scene, play)
+
+    def test_hand_can_choose_menu_during_auto_resume(self):
+        from spaceship.scenes.pause import HAND_BACK_TICKS
+
+        play = self.go(GameplayScene(self.game, GameMode.ENDLESS))
+        pause = self.go(PauseScene(self.game, play, reason="hand"))
+        self.tracker.show()
+        self.steps(HAND_BACK_TICKS)
+        self.assertTrue(pause.counting)
+        self.pinch(*pause.buttons[1].rect.center)
+        self.steps(int(config.PINCH_HOLD_SECONDS * config.TICK_RATE))
+        self.assertIsInstance(self.game.scene, MenuScene)
+
+    def test_resume_pinch_does_not_spend_rage_or_disable_keyboard_skill(self):
+        play = self.go(GameplayScene(self.game, GameMode.ENDLESS))
+        player = play.world.player
+        player.rage = player.max_rage
+        pause = self.go(PauseScene(self.game, play))
+        self.pinch(*pause.buttons[0].rect.center)
+        self.steps(int((config.PINCH_HOLD_SECONDS + config.RESUME_COUNTDOWN_SECONDS) * config.TICK_RATE) + 2)
+        self.assertIs(self.game.scene, play)
+        self.assertEqual(player.rage, player.max_rage)
+        with patch("pygame.key.get_pressed", return_value=NoKeys({pygame.K_k: True})):
+            self.steps(1)
+        self.assertEqual(player.rage, 0)
 
     def test_menu_starts_with_calibration_then_saves_center(self):
         menu = self.go(MenuScene(self.game))

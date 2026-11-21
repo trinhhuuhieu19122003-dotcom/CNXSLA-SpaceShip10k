@@ -1,82 +1,129 @@
-"""Nút bấm và panel phong cách sci-fi.
-
-``Button`` tự nhớ vị trí của nó nên scene chỉ cần hỏi ``button.clicked(pos)``,
-không phải tự tính lại hình chữ nhật ở hai nơi như bản cũ.
-"""
+"""Font chữ, panel và biểu tượng dùng chung giữa các màn hình."""
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
-from typing import Optional, Tuple
+from functools import lru_cache
+from unicodedata import normalize
 
 import pygame
 
-from spaceship.config import GRAY, NEON_CYAN, WHITE, WIDTH
+from spaceship.config import WIDTH
 
-Color = Tuple[int, int, int]
+ACCENT = (0, 220, 255)
+DANGER = (247, 104, 111)
+TEXT = (231, 239, 246)
+SECONDARY = (186, 202, 215)
+MUTED = (150, 168, 185)
+LOCKED = (115, 126, 142)
+FRAME = (40, 61, 76)
+CORNER = (89, 141, 162)
+PANEL_FILL = (10, 17, 27, 235)
+PANEL_HEADER = (17, 32, 45, 243)
+SELECTED_FILL = (9, 40, 53, 245)
 
 
 @dataclass
 class Button:
     text: str
     rect: pygame.Rect
-    color: Color
     action: str
-    font_size: int = 24
-    arrow: Optional[str] = None          # "up" | "down" | None
+    font_size: int = 22
 
-    def hovered(self, pos) -> bool:
-        return pos is not None and self.rect.collidepoint(pos)
-
-    def draw(self, surface: pygame.Surface, assets, mouse_pos) -> None:
-        draw_button(surface, assets, self.text, self.rect, self.color, self.hovered(mouse_pos), self.arrow, self.font_size)
-
-
-def _octagon(rect: pygame.Rect, cut: int):
-    x, y, w, h = rect
-    return [(x + cut, y), (x + w - cut, y), (x + w, y + cut), (x + w, y + h - cut),
-            (x + w - cut, y + h), (x + cut, y + h), (x, y + h - cut), (x, y + cut)]
+    def draw(self, surface: pygame.Surface, assets, selected: bool = False) -> None:
+        color = ACCENT if selected else TEXT
+        draw_panel(surface, self.rect, ACCENT if selected else CORNER,
+                   SELECTED_FILL if selected else PANEL_FILL)
+        label = fit_text(assets, self.text, self.font_size, color, self.rect.width - 24, role="ui")
+        surface.blit(label, label.get_rect(center=self.rect.center))
 
 
-def draw_button(surface, assets, text: str, rect: pygame.Rect, color: Color, hover: bool,
-                arrow: Optional[str] = None, font_size: int = 24) -> None:
-    box = rect.inflate(20, 10) if hover else rect
-    points = _octagon(box, 15 if rect.height > 40 else 10)
-    if hover:
-        for i in range(3, 0, -1):
-            glow = tuple(max(0, c - i * 50) for c in color)
-            pygame.draw.polygon(surface, glow, [(px, py + i * 2) for px, py in points])
-    pygame.draw.polygon(surface, (25, 30, 40) if hover else (10, 15, 20), points)
-    pygame.draw.polygon(surface, color, points, 2)
-    if hover:
-        pygame.draw.rect(surface, color, (box.x - 8, box.centery - 6, 4, 12))
-        pygame.draw.rect(surface, color, (box.right + 4, box.centery - 6, 4, 12))
-
-    fg = WHITE if hover else color
-    label = assets.text(text, font_size, fg)
-    tx = box.centerx - label.get_width() // 2 - (15 if arrow else 0)
-    surface.blit(label, (tx, box.centery - label.get_height() // 2))
-    if arrow:
-        ax, ay = box.right - 25, box.centery
-        if arrow == "down":
-            pygame.draw.polygon(surface, fg, [(ax - 6, ay - 3), (ax + 6, ay - 3), (ax, ay + 4)])
-        else:
-            pygame.draw.polygon(surface, fg, [(ax - 6, ay + 3), (ax + 6, ay + 3), (ax, ay - 4)])
+@lru_cache(maxsize=64)
+def _panel(size, corner, fill, header_height):
+    panel = pygame.Surface(size, pygame.SRCALPHA)
+    panel.fill(fill)
+    w, h = size
+    if header_height:
+        pygame.draw.rect(panel, PANEL_HEADER, (0, 0, w, header_height))
+        pygame.draw.line(panel, FRAME, (1, header_height), (w - 2, header_height))
+    pygame.draw.rect(panel, FRAME, panel.get_rect(), 1)
+    length = min(12, w // 4, h // 4)
+    for x, dx in ((1, 1), (w - 2, -1)):
+        for y, dy in ((1, 1), (h - 2, -1)):
+            pygame.draw.lines(panel, corner, False, ((x + dx * length, y), (x, y), (x, y + dy * length)), 2)
+    return panel
 
 
-def draw_panel(surface: pygame.Surface, rect: pygame.Rect, border: Color = NEON_CYAN, fill=(12, 17, 25)) -> None:
-    pygame.draw.rect(surface, fill, rect, border_radius=8)
-    pygame.draw.rect(surface, border, rect, 2, border_radius=8)
+def draw_panel(surface, rect: pygame.Rect, corner=CORNER, fill=PANEL_FILL, *, header_height: int = 0) -> None:
+    surface.blit(_panel(rect.size, corner, fill, header_height), rect)
 
 
 def blit_center(surface: pygame.Surface, image: pygame.Surface, y: int, x: int = WIDTH // 2) -> None:
     surface.blit(image, (x - image.get_width() // 2, y))
 
 
+def fit_text(assets, text: str, size: int, color, width: int, *, role: str) -> pygame.Surface:
+    image = assets.text(text, size, color, role=role)
+    while image.get_width() > width and size > 1:
+        size = max(1, min(size - 1, size * width // image.get_width()))
+        image = assets.text(text, size, color, role=role)
+    return image
+
+
+def wrap_text(assets, text: str, size: int, width: int, *, role: str = "body") -> list[str]:
+    """Ngắt dòng theo bề rộng của chính font dùng để vẽ."""
+    font = assets.font(size, role=role)
+    rows, current = [], ""
+    for word in normalize("NFC", text).split():
+        trial = f"{current} {word}".strip()
+        if current and font.size(trial)[0] > width:
+            rows.append(current)
+            current = word
+        else:
+            current = trial
+    if current:
+        rows.append(current)
+    return rows
+
+
+def draw_star(surface, center, radius: int, filled: bool, *, color=ACCENT) -> None:
+    points = []
+    for i in range(10):
+        r = radius if i % 2 == 0 else radius * 0.45
+        angle = -math.pi / 2 + i * math.tau / 10
+        points.append((center[0] + math.cos(angle) * r, center[1] + math.sin(angle) * r))
+    pygame.draw.polygon(surface, color if filled else CORNER, points, 0 if filled else 1)
+
+
+def draw_lock(surface, center, color=LOCKED) -> None:
+    x, y = center
+    pygame.draw.arc(surface, color, (x - 4, y - 8, 9, 10), 0, math.pi, 1)
+    pygame.draw.line(surface, color, (x - 4, y - 3), (x - 4, y - 1))
+    pygame.draw.line(surface, color, (x + 4, y - 3), (x + 4, y - 1))
+    pygame.draw.rect(surface, color, (x - 6, y - 1, 13, 9), 1, border_radius=1)
+    pygame.draw.line(surface, color, (x, y + 2), (x, y + 5))
+
+
+def draw_progress_ring(surface, center, radius: int, progress: float, *, color=ACCENT, stroke: int = 2) -> None:
+    pygame.draw.circle(surface, FRAME, center, radius, stroke)
+    if progress >= 1:
+        pygame.draw.circle(surface, color, center, radius, stroke)
+    elif progress > 0:
+        rect = pygame.Rect(0, 0, radius * 2, radius * 2)
+        rect.center = center
+        pygame.draw.arc(surface, color, rect, math.pi / 2 - progress * math.tau, math.pi / 2, stroke)
+
+
 def draw_back_hint(surface: pygame.Surface, assets, y: int) -> None:
-    blit_center(surface, assets.text("[ CLICK CHUỘT HOẶC ESC ĐỂ VỀ MENU ]", 16, GRAY), y)
+    blit_center(surface, assets.text("CLICK / CHỤM TAY / ENTER / ESC · VỀ MENU", 14, MUTED, role="label"), y)
+
+
+@lru_cache(maxsize=8)
+def _shade(size, alpha):
+    overlay = pygame.Surface(size, pygame.SRCALPHA)
+    overlay.fill((0, 0, 0, alpha))
+    return overlay
 
 
 def dim(surface: pygame.Surface, alpha: int = 150) -> None:
-    overlay = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
-    overlay.fill((0, 0, 0, alpha))
-    surface.blit(overlay, (0, 0))
+    surface.blit(_shade(surface.get_size(), alpha), (0, 0))
