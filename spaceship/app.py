@@ -28,9 +28,16 @@ from spaceship.ui.widgets import MUTED, fit_text
 log = logging.getLogger(__name__)
 
 
-def enable_dpi_awareness() -> None:
-    """Windows đang phóng to giao diện 125%/150% sẽ tự "kéo giãn" cửa sổ game như một tấm ảnh,
-    làm chữ mờ nhòe. Báo cho Windows biết game tự lo việc co giãn để được vẽ nét ở độ phân giải thật."""
+#: Mã ứng dụng cho Windows; trùng với lối tắt do scripts/create_shortcut.ps1 tạo.
+WINDOWS_APP_ID = "IamSoftware.SpaceShip10K"
+
+
+def prepare_windows() -> None:
+    """Chuẩn bị riêng cho Windows, gọi trước khi mở cửa sổ.
+
+    * App ID riêng: không có thì Windows gom cửa sổ vào nhóm "pythonw.exe" và hiện icon Python dưới Taskbar.
+    * DPI awareness: màn hình phóng to 125%/150% sẽ tự "kéo giãn" cửa sổ như một tấm ảnh, làm chữ nhòe.
+    """
     import sys
 
     if sys.platform != "win32":
@@ -38,6 +45,10 @@ def enable_dpi_awareness() -> None:
     try:
         import ctypes
 
+        try:
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(WINDOWS_APP_ID)
+        except (AttributeError, OSError):
+            pass
         try:
             ctypes.windll.shcore.SetProcessDpiAwareness(2)      # Windows 8.1+: theo từng màn hình
         except (AttributeError, OSError):
@@ -54,7 +65,7 @@ class Game:
     def __init__(self, *, camera: bool = True, camera_index: int = config.CAMERA_INDEX,
                  fullscreen: Optional[bool] = None, fps: int = 60, seed: Optional[int] = None,
                  save: Optional[SaveData] = None, settings: Optional[Settings] = None) -> None:
-        enable_dpi_awareness()
+        prepare_windows()
         pygame.init()
         pygame.display.set_caption(config.TITLE)
         try:

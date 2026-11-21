@@ -23,7 +23,7 @@ CONTROL_CARDS = (
 )
 WEAPON_CARDS = {
     "plasma": ("Quét đông", "Đạn nổ lan"),
-    "laser": ("Diệt boss", "Tia xuyên thấu liền mạch"),
+    "laser": ("Diệt boss", "Tia xuyên liên tục"),
     "homing": ("An toàn, tự đuổi", "7 tên lửa xoắn ốc"),
     "lightning": ("Nhảy dây chuyền", "Nhảy 8 mục tiêu"),
 }
@@ -73,22 +73,45 @@ def draw_controls(surface, assets, body: pygame.Rect, seconds: float) -> None:
 
 def draw_weapons(surface, assets, body: pygame.Rect, previews) -> None:
     area = pygame.Rect(body.x, body.y, body.width, body.height - 48)
+    line_color = (40, 61, 76)
     for box, (weapon, (purpose, upgrade)) in zip(_grid(area, 2, 2, 20, 16), WEAPON_CARDS.items()):
         draw_panel(surface, box, ACCENT)
-        preview = pygame.Rect(box.x + 12, box.centery - 55, 150, 110)
+        preview = pygame.Rect(box.x + 14, box.centery - 55, 150, 110)
         draw_panel(surface, preview.inflate(4, 4))
         previews[weapon].draw(surface, assets, preview)
-        x = preview.right + 14
-        width = box.right - 11 - x
-        surface.blit(assets.text(config.WEAPON_NAMES[weapon], 23, ACCENT, role="ui"), (x, box.y + 15))
-        surface.blit(assets.text(purpose, 16, SECONDARY, role="body"), (x, box.y + 47))
-        damage = config.WEAPON_BASE_DAMAGE[weapon]
-        surface.blit(assets.text(f"Sát thương gốc: {damage}", 15, TEXT, role="body"), (x, box.y + 76))
-        surface.blit(assets.text("CẤP 6", 13, MUTED, role="label"), (x, box.y + 107))
-        _paragraph(surface, assets, upgrade, (x, box.y + 128), width, size=15, line_height=18)
-        surface.blit(assets.text("KỸ NĂNG NỘ", 13, MUTED, role="label"), (x, box.y + 167))
-        name = fit_text(assets, config.SKILL_NAMES[weapon], 16, TEXT, width, role="ui")
-        surface.blit(name, (x, box.y + 186))
+        x = preview.right + 16
+        right = box.right - 16
+        width = right - x
+        # Mọi dòng dựng sẵn rồi xếp dọc với khoảng cách đều, cả khối căn giữa theo chiều dọc của thẻ.
+        damage_label = assets.text("SÁT THƯƠNG GỐC", 12, MUTED, role="label")
+        damage_value = assets.text(str(config.WEAPON_BASE_DAMAGE[weapon]), 17, TEXT, role="ui")
+        lines = [
+            (assets.text(config.WEAPON_NAMES[weapon], 23, ACCENT, role="ui"), 0),
+            (fit_text(assets, purpose, 15, SECONDARY, width, role="body"), 1),
+            (None, 9),                                                  # đường kẻ
+            ("damage", 9),
+            (assets.text("DẠNG CẤP 6", 12, MUTED, role="label"), 10),
+            (fit_text(assets, upgrade, 15, TEXT, width, role="body"), 2),
+            (assets.text("KỸ NĂNG NỘ", 12, MUTED, role="label"), 10),
+            (fit_text(assets, config.SKILL_NAMES[weapon].upper(), 16, TEXT, width, role="ui"), 2),
+        ]
+        heights = {None: 1, "damage": max(damage_label.get_height(), damage_value.get_height())}
+        total = sum(gap + heights.get(img, 0) if not isinstance(img, pygame.Surface) else gap + img.get_height()
+                    for img, gap in lines)
+        y = box.centery - total // 2
+        for img, gap in lines:
+            y += gap
+            if img is None:
+                pygame.draw.line(surface, line_color, (x, y), (right, y))
+                y += 1
+            elif img == "damage":
+                h = heights["damage"]
+                surface.blit(damage_label, damage_label.get_rect(midleft=(x, y + h // 2)))
+                surface.blit(damage_value, damage_value.get_rect(midright=(right, y + h // 2)))
+                y += h
+            else:
+                surface.blit(img, (x, y))
+                y += img.get_height()
 
     pickup = "Nhặt cùng loại: lên cấp (tối đa 6) · Khác loại: đổi súng, về cấp 1"
     blit_center(surface, assets.text(pickup, 15, TEXT, role="body"), body.bottom - 42)

@@ -24,7 +24,10 @@
   tự chọn cỡ ~85% chiều cao màn hình.
 - Cài đặt gọn lại: chỉ hiện ghi chú của mục đang chọn.
 - **Chơi bằng icon**: `Tao loi tat.bat` tạo lối tắt SpaceShip 10K (icon riêng) trên Desktop + Start menu, chạy bằng
-  `pythonw` nên không hiện cửa sổ dòng lệnh; log ghi vào `spaceship.log`, lỗi hiện hộp thoại. Cửa sổ game có icon.
+  `pythonw` nên không hiện cửa sổ dòng lệnh; log ghi vào `spaceship.log`, lỗi hiện hộp thoại. Cửa sổ game có icon; App ID riêng (`IamSoftware.SpaceShip10K`, gắn cả vào lối tắt) để
+  Taskbar hiện icon game thay vì icon Python.
+- Hướng dẫn · Vũ khí: 4 thẻ dùng chung bố cục nhãn/giá trị, khối chữ căn giữa, không còn dòng dính nhau;
+  ô thẻ được trỏ căn giữa chữ.
 - `requirements.txt` chỉ dùng ASCII: pip cũ trên Windows đọc theo cp1252 và báo `UnicodeDecodeError`.
 
 ## [2.1.0-dev] – Màn Hướng dẫn mới & Sổ tay chiến đấu

@@ -40,3 +40,11 @@ class LauncherTest(unittest.TestCase):
         root = ASSETS_DIR.parent
         for name in ("Tao loi tat.bat", "scripts/create_shortcut.ps1"):
             (root / name).read_bytes().decode("ascii")      # Windows đọc ANSI: phải thuần ASCII
+
+
+class WindowsAppIdTest(unittest.TestCase):
+    def test_shortcut_uses_same_app_id_as_game(self):
+        from spaceship.app import WINDOWS_APP_ID
+
+        script = (ASSETS_DIR.parent / "scripts" / "create_shortcut.ps1").read_text(encoding="ascii")
+        self.assertIn(f'$appId = "{WINDOWS_APP_ID}"', script)

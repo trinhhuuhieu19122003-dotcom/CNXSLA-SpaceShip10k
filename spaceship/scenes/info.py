@@ -66,7 +66,7 @@ class HowToPlayScene(_InfoScene):
         self._background = game.assets.image("bg_act1", WIDTH)
         self.back = Button("ESC · VỀ MENU", GUIDE_BACK, "back", 14)
 
-        x = GUIDE_BODY.x
+        x = GUIDE_BODY.x - 14            # chữ căn giữa ô (lề 14px) -> chữ thẻ đầu thẳng mép nội dung
         font = game.assets.font(17, role="ui")
         self.tabs = []
         for label in TAB_NAMES:
@@ -153,12 +153,13 @@ class HowToPlayScene(_InfoScene):
         for index, (label, rect) in enumerate(zip(TAB_NAMES, self.tabs)):
             active = self.tab == index
             focused = self.menu.selected == index
-            if focused and not active:
-                pygame.draw.rect(surface, SELECTED_FILL[:3], rect.inflate(0, -7))
             title = assets.text(label, 17, ACCENT if active or focused else MUTED, role="ui")
-            surface.blit(title, title.get_rect(midleft=(rect.x, rect.centery)))
+            spot = title.get_rect(center=rect.center)
+            if focused and not active:
+                pygame.draw.rect(surface, SELECTED_FILL[:3], spot.inflate(16, 8), border_radius=3)
+            surface.blit(title, spot)
             if active:
-                pygame.draw.line(surface, ACCENT, (rect.x, y - 2), (rect.x + title.get_width(), y - 2), 3)
+                pygame.draw.line(surface, ACCENT, (spot.x, y - 2), (spot.right, y - 2), 3)
 
     def _draw_footer(self, surface, assets) -> None:
         y = GUIDE_BACK.centery
