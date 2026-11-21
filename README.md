@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/Python-3.10–3.13-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python">
   <img src="https://img.shields.io/badge/pygame-2.5+-2b9348?style=flat-square" alt="pygame">
   <img src="https://img.shields.io/badge/MediaPipe-Hands-4285F4?style=flat-square&logo=google&logoColor=white" alt="MediaPipe">
-  <img src="https://img.shields.io/badge/test-112_passed-success?style=flat-square" alt="Test">
+  <img src="https://img.shields.io/badge/test-152_passed-success?style=flat-square" alt="Test">
 </p>
 
 <p align="center">
@@ -62,9 +62,10 @@
 | **Chạy mượt trên mọi máy** | Camera và MediaPipe chạy ở luồng riêng; logic game cố định 60 bước/giây, không phụ thuộc tốc độ webcam. |
 | **Chiến dịch có cốt truyện** | 10 ải chia 3 hồi, hội thoại có chân dung nhân vật, thoại ngay trong trận, đoạn kết riêng. |
 | **Âm thanh sống động** | 25 hiệu ứng CC0 + tiếng tổng hợp (còi boss, giọng gõ chữ riêng từng nhân vật); nhạc riêng cho từng hồi, chuyển bài mượt, tự nhỏ lại khi có hội thoại; chỉnh âm lượng nhạc và hiệu ứng riêng. |
-| **Đồ họa phát sáng** | Đạn neon, vụ nổ có sóng xung kích, địch nháy khi trúng đạn, nền cuộn theo từng hồi. |
-| **Có chiều sâu** | 4 súng, mỗi súng một dạng tối thượng ở cấp 6 và một kỹ năng Nộ riêng; 3 mức độ khó; chấm 1–3 sao mỗi ải. |
-| **Mã nguồn sạch, có test** | Chia module rõ ràng, dữ liệu ải tách khỏi logic, 112 test tự động, có bot tự chơi hết chiến dịch. |
+| **Đồ họa phát sáng** | Đạn neon, vụ nổ có sóng xung kích, địch nháy khi trúng đạn, nền cuộn theo từng hồi. Chữ vẽ lại ở độ phân giải màn hình nên toàn màn hình 1080p/2K/4K vẫn sắc nét. |
+| **Cảm giác đánh** | Khựng hình khi trúng đòn, rung theo độ nặng, viền đỏ khi trúng đạn / máu thấp kèm tiếng tim, lính cảm tử báo trước khi lao, hủy đạn khi hạ boss; tắt bớt được trong Cài đặt. |
+| **Có chiều sâu** | 4 súng, mỗi súng một dạng tối thượng ở cấp 6 và một kỹ năng Nộ riêng; 3 mức độ khó; chấm 1–3 sao mỗi ải; chuỗi hạ nhân điểm tới x4, sát đạn; 21 huy hiệu và Bảng điểm 5 ván cao nhất mỗi chế độ. |
+| **Mã nguồn sạch, có test** | Chia module rõ ràng, dữ liệu ải tách khỏi logic, 152 test tự động, có bot tự chơi hết chiến dịch. |
 
 ## Cốt truyện
 
@@ -233,6 +234,8 @@ hết 10 ải tới đoạn kết** cùng hai chế độ Vô tận và Hỏa ng
 - [x] Giao diện mới: font riêng (Chakra Petch, Exo 2), menu điều khiển được bằng tay, đồng bộ phong cách các màn hình
 - [x] Màn Hướng dẫn chia thẻ + Sổ tay chiến đấu
 - [x] Âm thanh: tiếng riêng cho từng sự kiện, nhạc theo từng hồi, chỉnh âm lượng
+- [x] Cảm giác đánh (khựng hình, rung, viền đỏ), chữ sắc nét khi toàn màn hình, chuỗi hạ, sát đạn, Bảng điểm
+- [x] Cân bằng bằng bot né đạn (thời gian bất tử sau khi trúng, điểm sát đạn): số liệu trong `docs/design/`
 - [ ] Cân bằng độ khó theo phản hồi chơi thử thực tế
 
 ## Nguồn gốc & ghi công

@@ -242,7 +242,7 @@ class Audio:
         # Sát đạn: tiếng "xẹt" rất ngắn, cao (đạn sượt qua)
         t = t_axis(0.06)
         zip_ = np.sin(2 * np.pi * (2600 - 9000 * t) * t) * np.exp(-t * 60) * 0.5
-        sounds["graze"] = (self._to_sound(zip_), 0.18, Sfx("", 0, 2, 60))
+        sounds["graze"] = (self._to_sound(zip_), 0.15, Sfx("", 0, 2, 90))
         return sounds
 
     # --- Âm lượng ---------------------------------------------------------------------------
