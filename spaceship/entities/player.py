@@ -53,6 +53,7 @@ class Player:
         self.has_drone = False
         self.drone_cooldown = 0
         self.burn_unlocked = False
+        self.focus = False              # đang né chậm (hiện điểm va chạm)
 
     # --- Trạng thái ------------------------------------------------------------------
     @property
@@ -80,13 +81,20 @@ class Player:
 
     # --- Mỗi tick ----------------------------------------------------------------------
     def move(self, controls) -> None:
+        self.focus = controls.focus
         if controls.target is not None:
             tx, ty = controls.target
-            self.x += (tx - self.x) * config.PLAYER_HAND_FOLLOW
-            self.y += (ty - self.y) * config.PLAYER_HAND_FOLLOW
+            dx = (tx - self.x) * config.PLAYER_HAND_FOLLOW
+            dy = (ty - self.y) * config.PLAYER_HAND_FOLLOW
+            step = math.hypot(dx, dy)
+            if self.focus and step > config.FOCUS_HAND_SPEED:   # né chậm: giới hạn tốc độ để luồn khe đạn
+                dx, dy = dx / step * config.FOCUS_HAND_SPEED, dy / step * config.FOCUS_HAND_SPEED
+            self.x += dx
+            self.y += dy
         else:
-            self.x += controls.move_x * config.PLAYER_KEYBOARD_SPEED
-            self.y += controls.move_y * config.PLAYER_KEYBOARD_SPEED
+            speed = config.FOCUS_KEYBOARD_SPEED if self.focus else config.PLAYER_KEYBOARD_SPEED
+            self.x += controls.move_x * speed
+            self.y += controls.move_y * speed
         self.x = max(20, min(WIDTH - 20, self.x))
         self.y = max(50, min(HEIGHT - 50, self.y))
 
@@ -149,6 +157,16 @@ class Player:
         self._draw_ship(surface, assets)
         if self.has_drone:
             self._draw_drone(surface, assets)
+        if self.focus:
+            self._draw_hitbox(surface)
+
+    def _draw_hitbox(self, surface: pygame.Surface) -> None:
+        """Né chậm: hiện đúng vùng va chạm thật để người chơi biết mình nhỏ cỡ nào."""
+        ring = pygame.Surface((40, 40), pygame.SRCALPHA)
+        pygame.draw.circle(ring, (255, 255, 255, 60), (20, 20), config.PLAYER_HITBOX)
+        pygame.draw.circle(ring, (255, 80, 80, 220), (20, 20), config.PLAYER_HITBOX, 2)
+        surface.blit(ring, (int(self.x) - 20, int(self.y) - 20))
+        pygame.draw.circle(surface, (255, 255, 255), (int(self.x), int(self.y)), 4)
 
     def _draw_shield(self, surface: pygame.Surface) -> None:
         shield = pygame.Surface((110, 110), pygame.SRCALPHA)

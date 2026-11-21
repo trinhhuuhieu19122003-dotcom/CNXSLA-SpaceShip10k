@@ -24,6 +24,7 @@ from spaceship.input.gestures import (
     classify,
     map_to_zone,
     palm_center,
+    zone_around,
 )
 
 log = logging.getLogger(__name__)
@@ -37,6 +38,8 @@ class HandReading:
     x: float = 0.5            # 0..1 theo chiều ngang màn hình game
     y: float = 0.5
     gesture: Gesture = Gesture.NONE
+    raw_x: float = 0.5        # tâm lòng bàn tay trong khung camera (chưa lọc) - dùng để hiệu chỉnh
+    raw_y: float = 0.5
 
 
 class TrackerState:
@@ -67,6 +70,8 @@ class HandTracker:
         self._fy = OneEuroFilter(config.ONE_EURO_MIN_CUTOFF, config.ONE_EURO_BETA)
         self._debouncer = GestureDebouncer(config.GESTURE_STABLE_FRAMES)
         self._last_seen = 0.0
+        #: vùng điều khiển trong khung camera; ControlHub cập nhật khi hiệu chỉnh / đổi độ nhạy
+        self.zone = zone_around(config.HAND_DEFAULT_CENTER, config.HAND_SENSITIVITY["medium"], config.HAND_ZONE_ASPECT)
 
     # --- API cho vòng lặp game (không bao giờ chặn) ----------------------------------
     def start(self) -> "HandTracker":
@@ -130,7 +135,7 @@ class HandTracker:
                 now = time.monotonic()
                 points = backend.process(rgb, int(now * 1000))
                 reading = self._interpret(points, now)
-                preview = self._make_preview(cv2, rgb, points)
+                preview = self._make_preview(cv2, rgb, points, self.zone)
                 with self._lock:
                     self._reading, self._preview = reading, preview
                 frames += 1
@@ -145,12 +150,15 @@ class HandTracker:
     def _interpret(self, points, now: float) -> HandReading:
         if points:
             self._last_seen = now
-            pos = map_to_zone(palm_center(points), config.HAND_ACTIVE_ZONE)
+            palm = palm_center(points)
+            pos = map_to_zone(palm, self.zone)
             return HandReading(
                 detected=True,
                 x=self._fx(pos.x, now),
                 y=self._fy(pos.y, now),
                 gesture=self._debouncer.update(classify(points)),
+                raw_x=palm.x,
+                raw_y=palm.y,
             )
         if now - self._last_seen <= config.HAND_LOST_TIMEOUT:
             return self._reading           # mất tay thoáng qua: giữ vị trí cũ, không giật
@@ -160,10 +168,10 @@ class HandTracker:
         return HandReading()
 
     @staticmethod
-    def _make_preview(cv2, rgb: np.ndarray, points) -> np.ndarray:
+    def _make_preview(cv2, rgb: np.ndarray, points, zone) -> np.ndarray:
         w, h = PREVIEW_SIZE
         small = cv2.resize(rgb, (w, h))
-        x0, y0, x1, y1 = config.HAND_ACTIVE_ZONE
+        x0, y0, x1, y1 = zone
         cv2.rectangle(small, (int(x0 * w), int(y0 * h)), (int(x1 * w), int(y1 * h)), (0, 255, 255), 1)
         if points:
             pts = [(int(p.x * w), int(p.y * h)) for p in points]

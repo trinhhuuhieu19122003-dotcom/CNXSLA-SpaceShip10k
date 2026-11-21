@@ -57,19 +57,18 @@ class HowToPlayScene(_InfoScene):
 
         surface.blit(a.text("[ ĐIỀU KHIỂN ]", 18, NEON_CYAN), (left, top))
         controls = [
-            ("Bàn tay", "Di chuyển lòng bàn tay để lái tàu"),
-            ("1 ngón trỏ", "Bắn"),
-            ("3 ngón tay", "Phóng Nuke (cần đầy thanh Nộ)"),
-            ("Mũi tên/WASD", "Lái tàu bằng bàn phím"),
-            ("Space / J", "Bắn"),
-            ("N / K", "Phóng Nuke"),
-            ("ESC / P", "Tạm dừng"),
-            ("F11 / C", "Toàn màn hình / ẩn-hiện camera"),
+            ("Lòng bàn tay", "Lái tàu, tì khuỷu tay lên bàn"),
+            ("Tự động bắn", "Tàu tự bắn (tắt trong Cài đặt)"),
+            ("Chụm cái + trỏ", "Giữ 0,5 giây: kỹ năng Nộ"),
+            ("Nắm tay", "Né chậm, hiện điểm va chạm"),
+            ("Bỏ tay xuống", "Tự tạm dừng để nghỉ tay"),
+            ("Phím", "WASD · J bắn · K Nộ · Shift né"),
+            ("ESC · F11 · C", "Dừng · toàn màn hình · camera"),
         ]
         for i, (key, desc) in enumerate(controls):
             y = top + 32 + i * 27
             surface.blit(a.text(key, 15, YELLOW), (left, y))
-            surface.blit(a.text(desc, 15, WHITE, bold=False), (left + 125, y))
+            surface.blit(a.text(desc, 14, WHITE, bold=False), (left + 130, y))
 
         mode_y = top + 265
         surface.blit(a.text("[ CHẾ ĐỘ CHƠI ]", 18, NEON_ORANGE), (left, mode_y))

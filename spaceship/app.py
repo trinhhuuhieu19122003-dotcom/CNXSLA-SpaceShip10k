@@ -17,6 +17,7 @@ from spaceship import config
 from spaceship.core.assets import Assets
 from spaceship.core.audio import Audio
 from spaceship.core.scene import Scene
+from spaceship.core.settings import Settings
 from spaceship.core.storage import SaveData
 from spaceship.entities.effects import Starfield
 from spaceship.input.controls import ControlHub
@@ -30,7 +31,7 @@ MOUSE_EVENTS = (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEMOTION
 class Game:
     def __init__(self, *, camera: bool = True, camera_index: int = config.CAMERA_INDEX,
                  fullscreen: bool = False, fps: int = 60, seed: Optional[int] = None,
-                 save: Optional[SaveData] = None) -> None:
+                 save: Optional[SaveData] = None, settings: Optional[Settings] = None) -> None:
         pygame.init()
         pygame.display.set_caption(config.TITLE)
         self.fullscreen = fullscreen
@@ -43,10 +44,12 @@ class Game:
         self.assets = Assets()
         self.audio = Audio()
         self.save = save or SaveData.load()
+        self.settings = settings or Settings.load()
         self.starfield = Starfield(rng=self.rng)
         self.tracker = HandTracker(camera_index).start() if camera else None
-        self.controls = ControlHub(self.tracker)
+        self.controls = ControlHub(self.tracker, self.settings)
         self.show_camera = True
+        self.calibrated = False         # đã hiệu chỉnh tay trong lần mở game này chưa
         self.mouse_pos: Optional[Tuple[int, int]] = None
 
         self.running = False
@@ -74,6 +77,24 @@ class Game:
         if scale <= 0:
             return None
         return int((pos[0] - ox) / scale), int((pos[1] - oy) / scale)
+
+    # --- Camera ------------------------------------------------------------------------
+    @property
+    def hand_available(self) -> bool:
+        """Có webcam đang (hoặc sắp) hoạt động không."""
+        return self.tracker is not None and self.tracker.state in (TrackerState.STARTING, TrackerState.RUNNING)
+
+    def needs_calibration(self) -> bool:
+        return self.hand_available and not self.calibrated
+
+    def camera_surface(self, size: Optional[Tuple[int, int]] = None) -> Optional[pygame.Surface]:
+        if self.tracker is None:
+            return None
+        frame = self.tracker.preview()
+        if frame is None:
+            return None
+        image = pygame.image.frombuffer(frame.tobytes(), PREVIEW_SIZE, "RGB")
+        return pygame.transform.smoothscale(image, size) if size else image
 
     # --- Scene ------------------------------------------------------------------------
     def change_scene(self, scene: Scene) -> None:
@@ -138,9 +159,8 @@ class Game:
             return
         ww = self.window.get_width()
         x = ww - PREVIEW_SIZE[0] - 10
-        frame = self.tracker.preview()
-        if frame is not None:
-            image = pygame.image.frombuffer(frame.tobytes(), PREVIEW_SIZE, "RGB")
+        image = self.camera_surface()
+        if image is not None:
             self.window.blit(image, (x, 10))
             pygame.draw.rect(self.window, config.NEON_CYAN, (x, 10, *PREVIEW_SIZE), 1)
             label = f"{self.tracker.backend_name} · {self.tracker.fps:.0f} fps"

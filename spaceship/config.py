@@ -101,11 +101,22 @@ INFERNO_BOSS_INTERVAL = 45.0
 # --- Điều khiển bằng tay -------------------------------------------------------
 CAMERA_INDEX = 0
 CAMERA_SIZE = (640, 480)
-# Vùng điều khiển trong khung hình camera (x0, y0, x1, y1, tỉ lệ 0..1).
-# Tay di chuyển trong vùng này đã đủ đưa tàu chạm mép màn hình,
-# không cần đưa tay ra sát mép camera (dễ mất dấu tay).
-HAND_ACTIVE_ZONE = (0.15, 0.12, 0.85, 0.80)
-ONE_EURO_MIN_CUTOFF = 1.2          # nhỏ hơn = mượt hơn khi tay đứng yên
+# Vùng điều khiển = một ô NHỎ trong khung camera, đặt quanh "tư thế nghỉ" của tay
+# (đo ở màn Hiệu chỉnh). Chỉ cần nhích tay ~1 gang là tàu đi hết màn hình,
+# khuỷu tay tì lên bàn được -> đỡ mỏi ("gorilla arm").
+HAND_DEFAULT_CENTER = (0.5, 0.62)  # chưa hiệu chỉnh: hơi thấp, ngang ngực
+HAND_SENSITIVITY = {"low": 0.24, "medium": 0.18, "high": 0.13}  # nửa bề ngang vùng (tỉ lệ khung camera)
+HAND_SENSITIVITY_LABELS = {"low": "THẤP", "medium": "VỪA", "high": "CAO"}
+HAND_ZONE_ASPECT = 1.15            # cao/rộng của vùng, bù tỉ lệ camera 4:3 so với màn 800x700
+CALIBRATION_HOLD_SECONDS = 1.5     # giữ yên tay bao lâu để chốt tư thế nghỉ
+CALIBRATION_STILL = 0.03           # dao động tối đa (tỉ lệ khung) vẫn tính là "đứng yên"
+PINCH_RATIO = 0.4                  # chụm: khoảng cách đầu ngón cái-trỏ < 0.4 x cỡ lòng bàn tay
+PINCH_HOLD_SECONDS = 0.5           # giữ chụm bao lâu thì tung kỹ năng Nộ
+HAND_PAUSE_SECONDS = 1.5           # mất tay quá lâu -> tự tạm dừng
+RESUME_COUNTDOWN_SECONDS = 1.8     # đếm 3-2-1 trước khi chơi tiếp
+FOCUS_HAND_SPEED = 3.5             # né chậm: tốc độ tối đa (px/tick) khi lái bằng tay
+FOCUS_KEYBOARD_SPEED = 3.0         # né chậm bằng phím Shift
+ONE_EURO_MIN_CUTOFF = 0.9          # nhỏ hơn = mượt hơn khi tay đứng yên
 ONE_EURO_BETA = 4.0                # lớn hơn = ít trễ hơn khi tay di chuyển nhanh
 GESTURE_STABLE_FRAMES = 3          # cử chỉ phải giữ ổn định N khung mới được nhận
 HAND_LOST_TIMEOUT = 0.35           # giây: quá thời gian này mới coi là mất tay

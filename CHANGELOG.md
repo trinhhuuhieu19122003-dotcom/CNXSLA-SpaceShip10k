@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.1.0-dev] – Điều khiển tay đỡ mỏi (giai đoạn 1)
+- **Hiệu chỉnh tư thế nghỉ**: giữ yên tay ~2 giây, chỗ đó thành giữa màn hình; vùng điều khiển nhỏ quanh đó
+  (tì khuỷu tay, nhích tay một gang là đi hết màn hình). Lưu lại cho lần sau.
+- **Độ nhạy tay** Thấp / Vừa / Cao; **tự động bắn** (mặc định bật) — cả hai trong màn **Cài đặt** mới.
+- Cử chỉ mới: **chụm ngón cái + trỏ** giữ 0,5 giây = kỹ năng Nộ (thay cho giơ 3 ngón dễ nhận nhầm);
+  **nắm tay** = né chậm, hiện đúng điểm va chạm. Phím: Shift = né chậm.
+- **Bỏ tay xuống là tự tạm dừng**; đưa tay lên lại tự đếm 3‑2‑1. Mọi lần chơi tiếp đều có đếm ngược.
+- HUD có chỉ báo cử chỉ + vòng tròn đầy dần khi giữ chụm ngón, cảnh báo khi sắp mất tay.
+
 ## [2.0.0] – 2026-11-21 · Đại tu
 
 ### Kiến trúc

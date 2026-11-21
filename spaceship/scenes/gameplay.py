@@ -29,8 +29,9 @@ class GameplayScene(Scene):
         if mode is GameMode.INFERNO:
             self.world.difficulty = 2.0
         self.director = create_director(mode)
-        self.control_source = "keyboard"
+        self.controls = None            # ControlState gần nhất (để HUD vẽ chỉ báo cử chỉ)
         self.finished = False
+        game.controls.reset_hand_mode()
 
     # --- Sự kiện ------------------------------------------------------------------------
     def handle_event(self, event) -> None:
@@ -39,18 +40,20 @@ class GameplayScene(Scene):
         elif event.type == pygame.WINDOWFOCUSLOST:
             self.pause()
 
-    def pause(self) -> None:
+    def pause(self, reason: str = "manual") -> None:
         from spaceship.scenes.pause import PauseScene
 
         if not self.finished:
-            self.game.change_scene(PauseScene(self.game, self))
+            self.game.change_scene(PauseScene(self.game, self, reason))
 
     # --- Logic --------------------------------------------------------------------------
     def update(self, controls) -> None:
         if self.finished:
             return
         w, p = self.world, self.world.player
-        self.control_source = controls.source
+        self.controls = controls
+        if controls.hand_lost:                        # bỏ tay xuống -> nghỉ tay
+            return self.pause("hand")
         self.game.starfield.update()
 
         if self.director.paused:                      # chữ "STAGE n" đang hiện: chỉ cho lái tàu
@@ -152,7 +155,7 @@ class GameplayScene(Scene):
             number.draw(surface, assets)
         if not self.finished or w.outcome == "victory":
             w.player.draw(surface, assets)
-        draw_hud(surface, assets, w, self.control_source)
+        draw_hud(surface, assets, w, self.controls)
 
         banner = self.director.banner_text
         if banner:

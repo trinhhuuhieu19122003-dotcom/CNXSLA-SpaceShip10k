@@ -76,15 +76,22 @@ Tuỳ chọn dòng lệnh:
 
 ## 5. Điều khiển
 
+Điều khiển bằng tay được thiết kế để **đỡ mỏi**: tì khuỷu tay lên bàn, chỉ cần nhích bàn tay khoảng một gang.
+
 | Hành động | Bằng tay (webcam) | Bàn phím |
 |---|---|---|
-| Di chuyển | Di chuyển **lòng bàn tay** trong khung vàng trên ô camera | Mũi tên / WASD |
-| Bắn | Giơ **1 ngón trỏ** | Space / J |
-| Phóng Nuke (cần đầy thanh Nộ) | Giơ **3 ngón** (trỏ, giữa, áp út) | N / K |
-| Tạm dừng | — | ESC / P |
+| Di chuyển | Di chuyển **lòng bàn tay** (thả lỏng tự nhiên) | Mũi tên / WASD |
+| Bắn | **Tự động** (tắt được trong Cài đặt, khi tắt thì giơ 1 ngón trỏ) | Tự động / Space / J |
+| Kỹ năng Nộ (cần đầy thanh) | **Chụm đầu ngón cái + ngón trỏ**, giữ 0,5 giây | N / K |
+| Né chậm (hiện điểm va chạm) | **Nắm tay** | Shift |
+| Tạm dừng | **Bỏ tay xuống** khoảng 1,5 giây (đưa tay lên lại là tự đếm 3‑2‑1) | ESC / P |
 | Toàn màn hình · ẩn/hiện camera | — | F11 · C |
 
-Bàn phím và tay dùng được **cùng lúc**: đang bấm phím di chuyển thì phím được ưu tiên.
+- **Hiệu chỉnh tay:** lần đầu chơi mỗi khi mở game, màn *Hiệu chỉnh tay* hỏi tư thế nghỉ của bạn
+  (tì khuỷu tay, giữ yên tay ~2 giây). Chỗ đó thành giữa màn hình. Làm lại bất cứ lúc nào trong **Cài đặt**.
+- **Độ nhạy tay** (Thấp / Vừa / Cao) trong **Cài đặt**: Cao = nhích tay ít đã đi xa.
+- Tay nào cũng được, mỏi tay phải thì đổi sang tay trái giữa chừng.
+- Bàn phím và tay dùng được **cùng lúc**: đang bấm phím di chuyển thì phím được ưu tiên.
 
 ## 6. Chế độ chơi
 
@@ -128,7 +135,7 @@ CNXSLA-SpaceShip10k/
 │   ├── systems/             # Luật chơi: va chạm, rơi đồ, AI boss, kịch bản chế độ
 │   ├── scenes/              # Màn hình: menu, cutscene, trận đấu, tạm dừng, kết quả...
 │   └── ui/                  # Nút bấm, panel, HUD
-├── tests/                   # 31 test tự động (chạy không cần màn hình/webcam)
+├── tests/                   # test tự động (chạy không cần màn hình/webcam)
 └── docs/
     ├── ARCHITECTURE.md      # Giải thích kiến trúc + sơ đồ
     └── screenshots/

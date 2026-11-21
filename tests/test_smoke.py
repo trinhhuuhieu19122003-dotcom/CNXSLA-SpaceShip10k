@@ -4,6 +4,7 @@ import unittest
 import pygame
 
 from tests import helpers  # noqa: F401
+from spaceship import config
 from spaceship.app import Game
 from spaceship.config import GameMode
 from spaceship.input.controls import ControlState
@@ -57,8 +58,9 @@ class SmokeTest(unittest.TestCase):
         t = play.world.survival_time
         self.run_ticks(30)
         self.assertEqual(play.world.survival_time, t)          # đang dừng thì thời gian đứng yên
-        g.scene.handle_event(key(pygame.K_ESCAPE))
-        g._apply_pending_scene()
+        g.scene.handle_event(key(pygame.K_ESCAPE))          # chơi tiếp -> đếm 3-2-1 rồi mới vào trận
+        self.assertIsInstance(g.scene, PauseScene)
+        self.run_ticks(int(config.RESUME_COUNTDOWN_SECONDS * config.TICK_RATE) + 1)
         self.assertIs(g.scene, play)
 
     def test_every_mode_runs_with_bosses(self):

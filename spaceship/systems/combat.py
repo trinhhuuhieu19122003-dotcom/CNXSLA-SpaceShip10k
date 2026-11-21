@@ -19,7 +19,7 @@ from spaceship.systems.world import World
 RED = (255, 0, 0)
 BURN_ORANGE = (255, 100, 0)
 SHIELD_SPARK = (100, 255, 255)
-PLAYER_BULLET_RADIUS = 15
+PLAYER_BULLET_RADIUS = config.PLAYER_HITBOX
 PLAYER_BODY_RADIUS = 20
 
 

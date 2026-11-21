@@ -12,7 +12,7 @@ from spaceship.entities.effects import ShootingStar
 from spaceship.ui.widgets import Button, blit_center
 
 TITLE = "SPACESHIP 10K"
-MAIN_W, MAIN_H, SUB_W, SUB_H = 340, 50, 280, 40
+MAIN_W, MAIN_H, SUB_W, SUB_H = 340, 46, 280, 36
 MODE_COLORS = {GameMode.CAMPAIGN: (0, 255, 255), GameMode.ENDLESS: (255, 255, 0), GameMode.INFERNO: (255, 100, 0)}
 
 
@@ -34,11 +34,12 @@ class MenuScene(Scene):
         entries += [
             ("THÀNH TỰU", (255, 0, 255), "achievements", True),
             ("HƯỚNG DẪN CHƠI", (0, 255, 0), "how_to_play", True),
+            ("CÀI ĐẶT", (0, 200, 255), "options", True),
             ("THOÁT GAME", (128, 128, 128), "quit", True),
         ]
-        self.buttons, y = [], 250
+        self.buttons, y = [], 238
         for text, color, action, main in entries:
-            w, h, size, gap = (MAIN_W, MAIN_H, 24, 15) if main else (SUB_W, SUB_H, 18, 10)
+            w, h, size, gap = (MAIN_W, MAIN_H, 22, 12) if main else (SUB_W, SUB_H, 17, 8)
             arrow = ("up" if self.show_modes else "down") if action == "toggle" else None
             self.buttons.append(Button(text, pygame.Rect(WIDTH // 2 - w // 2, y, w, h), color, action, size, arrow))
             y += h + gap
@@ -68,6 +69,10 @@ class MenuScene(Scene):
             self.game.change_scene(AchievementsScene(self.game))
         elif action == "how_to_play":
             self.game.change_scene(HowToPlayScene(self.game))
+        elif action == "options":
+            from spaceship.scenes.options import OptionsScene
+
+            self.game.change_scene(OptionsScene(self.game))
         elif action == "quit":
             self.game.quit()
         elif action.startswith("mode:"):
@@ -77,10 +82,17 @@ class MenuScene(Scene):
         from spaceship.scenes.cutscene import CutsceneScene, INTRO_SCRIPT
         from spaceship.scenes.gameplay import GameplayScene
 
+        from spaceship.scenes.calibration import CalibrationScene
+
+        game = self.game
         if mode is GameMode.CAMPAIGN:
-            self.game.change_scene(CutsceneScene(self.game, INTRO_SCRIPT, lambda: GameplayScene(self.game, mode)))
+            def first():
+                return CutsceneScene(game, INTRO_SCRIPT, lambda: GameplayScene(game, mode))
         else:
-            self.game.change_scene(GameplayScene(self.game, mode))
+            def first():
+                return GameplayScene(game, mode)
+        # Lần đầu chơi trong phiên có camera: hiệu chỉnh tư thế nghỉ của tay trước
+        game.change_scene(CalibrationScene(game, first) if game.needs_calibration() else first())
 
     # --- Logic & vẽ ---------------------------------------------------------------------
     def update(self, controls) -> None:
@@ -106,7 +118,7 @@ class MenuScene(Scene):
         self._draw_title(surface)
 
         assets = self.game.assets
-        blit_center(surface, assets.text(f"KỶ LỤC CAO NHẤT: {self.game.save.highscore}", 20, YELLOW), 205)
+        blit_center(surface, assets.text(f"KỶ LỤC CAO NHẤT: {self.game.save.highscore}", 20, YELLOW), 198)
         mouse = self.game.mouse_pos
         for button in self.buttons:
             button.draw(surface, assets, mouse)

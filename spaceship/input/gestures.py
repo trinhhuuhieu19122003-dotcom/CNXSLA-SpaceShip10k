@@ -4,7 +4,7 @@ Khác bản cũ:
 - Xét ngón "duỗi" theo KHOẢNG CÁCH tới cổ tay thay vì so tọa độ y, nên vẫn
   đúng khi nghiêng/xoay bàn tay.
 - Lấy vị trí theo TÂM BÀN TAY (trung bình cổ tay + 4 gốc ngón), ổn định hơn cổ tay.
-- Chỉ dùng một VÙNG ĐIỀU KHIỂN ở giữa khung hình, không phải đưa tay ra sát mép.
+- Chỉ dùng một VÙNG ĐIỀU KHIỂN nhỏ quanh tư thế nghỉ của tay (xem ``zone_around``).
 - Cử chỉ phải giữ ổn định vài khung mới được nhận (chống nhấp nháy).
 """
 from __future__ import annotations
@@ -12,6 +12,8 @@ from __future__ import annotations
 import math
 from enum import Enum
 from typing import NamedTuple, Sequence, Tuple
+
+from spaceship.config import PINCH_RATIO
 
 
 class Point(NamedTuple):
@@ -38,13 +40,17 @@ HAND_CONNECTIONS: Tuple[Tuple[int, int], ...] = (
 EXTENDED_RATIO = 1.1  # đầu ngón phải xa cổ tay hơn khớp giữa ít nhất 10%
 
 
+THUMB_TIP, INDEX_TIP, MIDDLE_MCP = 4, 8, 9
+
+
 class Gesture(Enum):
     NONE = "none"      # không thấy tay
-    OPEN = "open"      # xòe 4 ngón: chỉ di chuyển
-    POINT = "point"    # chỉ ngón trỏ: bắn
-    THREE = "three"    # trỏ + giữa + áp út: phóng Nuke
-    FIST = "fist"      # nắm tay
-    OTHER = "other"
+    OPEN = "open"      # xòe tay: lái tàu
+    PINCH = "pinch"    # chụm đầu ngón cái + trỏ: kỹ năng Nộ
+    FIST = "fist"      # nắm tay: né chậm
+    POINT = "point"    # chỉ ngón trỏ: bắn (khi tắt tự động bắn)
+    THREE = "three"    # trỏ + giữa + áp út (giữ để tương thích, không còn dùng)
+    OTHER = "other"    # tư thế khác: vẫn lái bình thường
 
 
 def _dist(a: Point, b: Point) -> float:
@@ -57,19 +63,30 @@ def finger_extended(landmarks: Sequence[Point], finger: str, ratio: float = EXTE
     return _dist(wrist, landmarks[tip]) > _dist(wrist, landmarks[pip]) * ratio
 
 
+def palm_size(landmarks: Sequence[Point]) -> float:
+    """Cỡ bàn tay (cổ tay -> gốc ngón giữa): dùng làm thước đo, không phụ thuộc tay gần/xa camera."""
+    return max(1e-6, _dist(landmarks[WRIST], landmarks[MIDDLE_MCP]))
+
+
+def is_pinch(landmarks: Sequence[Point], ratio: float = PINCH_RATIO) -> bool:
+    return _dist(landmarks[THUMB_TIP], landmarks[INDEX_TIP]) < ratio * palm_size(landmarks)
+
+
 def classify(landmarks: Sequence[Point]) -> Gesture:
     if len(landmarks) < 21:
         return Gesture.NONE
     up = {name: finger_extended(landmarks, name) for name in FINGERS}
     pattern = (up["index"], up["middle"], up["ring"], up["pinky"])
+    if not any(pattern):                  # xét nắm tay TRƯỚC: khi nắm, ngón cái cũng nằm sát ngón trỏ
+        return Gesture.FIST
+    if is_pinch(landmarks):
+        return Gesture.PINCH
     if pattern == (True, False, False, False):
         return Gesture.POINT
     if pattern == (True, True, True, False):
         return Gesture.THREE
     if all(pattern):
         return Gesture.OPEN
-    if not any(pattern):
-        return Gesture.FIST
     return Gesture.OTHER
 
 
@@ -85,6 +102,15 @@ def map_to_zone(point: Point, zone: Tuple[float, float, float, float]) -> Point:
     nx = (point.x - x0) / (x1 - x0)
     ny = (point.y - y0) / (y1 - y0)
     return Point(min(1.0, max(0.0, nx)), min(1.0, max(0.0, ny)))
+
+
+def zone_around(center: Tuple[float, float], half_width: float, aspect: float) -> Tuple[float, float, float, float]:
+    """Vùng điều khiển (x0, y0, x1, y1) quanh tư thế nghỉ, tự dịch vào trong nếu chạm mép khung."""
+    hw = min(0.5, half_width)
+    hh = min(0.5, half_width * aspect)
+    cx = min(1 - hw, max(hw, center[0]))
+    cy = min(1 - hh, max(hh, center[1]))
+    return (cx - hw, cy - hh, cx + hw, cy + hh)
 
 
 class GestureDebouncer:
