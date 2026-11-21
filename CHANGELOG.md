@@ -16,7 +16,8 @@
 - **Drone** tự ngắm địch gần nhất trong tầm 420, bắn kim sáng cam ~4 phát/giây, 4 sát thương/phát (bản cũ: 1 phát/giây,
   2 sát thương, bắn thẳng) - khoảng 16 sát thương/giây; không hồi Nộ.
 - **Drone thứ 2 = DRONE HỘ VỆ**: bay vòng quanh tàu, tự bắn hạ viên đạn địch gần nhất trong tầm 150 (~2 viên/giây)
-  bằng tia điện xanh. Hình riêng `assets/images/drone_guard.png` (Codex vẽ); chưa có thì vẽ khối lục giác thay thế. Ảnh so sánh: `docs/screenshots/dan-truoc-sau.png`.
+  bằng tia điện xanh. Hình riêng `assets/images/drone_guard.png` (Codex vẽ: thân lục giác, 6 tấm chắn, lõi cyan),
+  tự xoay chậm khi bay, lõi chớp sáng lúc bắn. Ảnh so sánh: `docs/screenshots/dan-truoc-sau.png`.
 
 ## [2.1.0-dev] – Nhịp sóng: thả địch có nhịp, hết "ồ ạt"
 - Lính trong đội hình **bay vào lần lượt** (Galaga), nhanh rồi chậm dần; **không bắn khi đang bay vào** và chờ

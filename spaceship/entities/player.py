@@ -262,8 +262,11 @@ class Player:
         ready = self.guard_cooldown <= 0
         glow.add(surface, glow.orb(GUARD_COLOR if ready else glow.scale(GUARD_COLOR, 0.5), 10, core=0.0), (gx, gy))
         sprite = assets.image("drone_guard", GUARD_WIDTH)
-        if sprite is not None:
-            surface.blit(sprite, sprite.get_rect(center=(int(gx), int(gy))))
+        if sprite is not None:                                  # tự xoay chậm khi bay vòng quanh tàu
+            spun = pygame.transform.rotozoom(sprite, -math.degrees(self.guard_angle) * 0.5, 1)
+            surface.blit(spun, spun.get_rect(center=(int(gx), int(gy))))
+            if not ready:                                       # vừa bắn: lõi chớp sáng
+                glow.add(surface, glow.orb(GUARD_COLOR, 6, core=0.8), (gx, gy))
             return
         pts = [(gx + math.cos(a) * 13, gy + math.sin(a) * 13) for a in (math.radians(30 + 60 * i) for i in range(6))]
         pygame.draw.polygon(surface, (30, 38, 50), pts)
