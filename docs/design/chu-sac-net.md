@@ -44,8 +44,9 @@ Cuối mỗi hình, chữ còn chờ cũng được vẽ thường vào tấm 80
 
 ## Giới hạn
 
-* Chữ vẽ lên một tấm phụ rồi mới dán vào màn hình (ô HUD góc ở chế độ khung hẹp) vẫn đi theo đường cũ. Ở màn
-  rộng, HUD nằm ở 2 bảng bên nên vẫn nét.
+* Chữ vẽ lên một tấm phụ rồi mới dán vào màn hình thì phải được "chuyển" sang tấm chính, nếu không sẽ đi theo
+  đường cũ. Ô HUD góc (khung hẹp, vd. màn 4:3) đã làm việc này: lớp ô góc cũng là `CrispSurface`, trước khi dán
+  thì `take()` lấy chữ ra, dán xong thì `put()` chuyển sang tấm chính, nhân thêm độ mờ của ô (ô mờ khi tàu bay sát).
 * Chữ bị phóng/xoay bằng `pygame.transform` không còn là `TextSurface` nên vẽ như cũ.
 * `pygame.draw.*` vẽ **đè lên** chữ thì không chặn được. Trong game hiện tại không có chỗ nào như vậy.
 

@@ -13,6 +13,7 @@ from spaceship.input.gestures import Gesture
 from spaceship.entities.items import draw_item_icon
 from spaceship.systems.world import World
 from spaceship.ui import glow
+from spaceship.ui.crisp import CrispSurface
 from spaceship.ui.widgets import ACCENT, FRAME, MUTED, TEXT, draw_panel, draw_progress_ring, fit_text, wrap_text
 
 GESTURE_LABELS = {
@@ -79,11 +80,14 @@ def _status_line(world: World, director) -> str:
 _LAYER: list = []
 
 
-def _corner_layer() -> pygame.Surface:
+def _corner_layer(screen) -> pygame.Surface:
+    """Lớp trong suốt cho 2 ô góc. Là ``CrispSurface``: khi tấm chính đang ghi chữ (toàn màn hình), chữ trong ô
+    góc cũng được chuyển sang để vẽ lại sắc nét."""
     if not _LAYER:
-        _LAYER.append(pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA))
+        _LAYER.append(CrispSurface((WIDTH, HEIGHT), pygame.SRCALPHA, 32).setup())
     layer = _LAYER[0]
     layer.fill((0, 0, 0, 0))
+    layer.enabled = getattr(screen, "enabled", False)
     return layer
 
 
@@ -99,7 +103,7 @@ def draw_hud(surface: pygame.Surface, assets, world: World, controls=None, direc
     surface.blit(_top_strip(WIDTH), (0, 0))
     line = fit_text(assets, _status_line(world, director), 18, TEXT, WIDTH - 40, role="ui")
     surface.blit(line, (14, 7))
-    screen, surface = surface, _corner_layer()           # 2 ô góc vẽ lên lớp riêng để làm mờ khi tàu bay sát
+    screen, surface = surface, _corner_layer(surface)    # 2 ô góc vẽ lên lớp riêng để làm mờ khi tàu bay sát
 
     # --- Góc dưới trái: mạng + cử chỉ tay, máu, Nộ ---------------------------------------------
     full = p.rage_full
@@ -149,9 +153,14 @@ def draw_hud(surface: pygame.Surface, assets, world: World, controls=None, direc
     ship = pygame.Rect(0, 0, 90, 80)
     ship.center = (int(p.x), int(p.y))
     for rect in (block, wbox):
+        alpha = 70 if rect.inflate(16, 16).colliderect(ship) else 255
+        texts = surface.take(rect, screen)               # chữ trong ô: chuyển sang tấm chính (nếu đang ghi)
         piece = surface.subsurface(rect).copy()
-        piece.set_alpha(70 if rect.inflate(16, 16).colliderect(ship) else 255)
+        piece.set_alpha(alpha)
         screen.blit(piece, rect)
+        if texts:
+            screen.put(texts, alpha)
+    surface.enabled = False
     draw_boss_bar(screen, assets, world, y=56)
 
 

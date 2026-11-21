@@ -125,3 +125,38 @@ class GameCrispRenderTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class HudCornerCrispTest(unittest.TestCase):
+    def test_corner_hud_text_is_redrawn_when_scaled_and_drawn_normally_at_1x(self):
+        from spaceship.app import Game
+        from spaceship.config import GameMode
+        from spaceship.scenes.gameplay import GameplayScene
+
+        game = Game(camera=False, seed=4)
+        play = GameplayScene(game, GameMode.CAMPAIGN, 1)
+        game.change_scene(play)
+        game._apply_pending_scene()
+        game._fade_started = None
+        seen = []
+        original = CrispSurface.draw_crisp
+
+        def spy(surf, *args, **kwargs):
+            seen.extend(r[0].spec[0] for r in surf.records)
+            return original(surf, *args, **kwargs)
+
+        CrispSurface.draw_crisp = spy
+        try:
+            game.window = pygame.display.set_mode((1024, 768))     # 4:3: khung hẹp, HUD ở 4 góc, phóng 1,1 lần
+            game.render()
+            self.assertIn("HP", seen)                             # chữ trong ô góc được vẽ lại sắc nét
+            self.assertIn("NỘ", seen)
+            seen.clear()
+            game.window = pygame.display.set_mode((config.WIDTH, config.HEIGHT))
+            game.render()
+            self.assertEqual(seen, [])
+        finally:
+            CrispSurface.draw_crisp = original
+        frame = pygame.Surface((config.WIDTH, config.HEIGHT))
+        play.draw(frame)                                          # vẽ thẳng (không ghi) vẫn đủ chữ
+        self.assertGreater(pygame.transform.average_color(frame, (20, config.HEIGHT - 70, 30, 20))[0], 5)

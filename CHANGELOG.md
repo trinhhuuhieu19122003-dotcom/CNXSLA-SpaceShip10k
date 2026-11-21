@@ -4,7 +4,8 @@
 - **Chữ sắc nét khi toàn màn hình** (`ui/crisp.py`): `Assets.text` trả về `TextSurface` nhớ chữ/cỡ/màu; tấm vẽ
   800x700 và tấm 2 bảng bên là `CrispSurface`. Khi phóng > 1,05 lần, chữ được ghi lại rồi vẽ lại bằng font cỡ lớn
   ngay trên ảnh đã phóng (chọn cỡ có bề rộng khớp nhất). Vật vẽ đè lên chữ thì chữ được vẽ thường trước, giữ đúng
-  thứ tự (bảng Tạm dừng, Kết quả phủ lên trận). Hình ảnh vẫn phóng như cũ.
+  thứ tự (bảng Tạm dừng, Kết quả phủ lên trận). Hình ảnh vẫn phóng như cũ. Ô HUD góc (khung hẹp, vd. màn 4:3)
+  chuyển chữ sang tấm chính (`take`/`put`) nên cũng nét.
 - **Hết giật hình ở menu toàn màn hình**: nền mờ 2 bên làm tối trên ảnh 40x35 trước khi phóng (trước đây làm tối
   3 triệu điểm ảnh, ~27 ms, mỗi 4 hình). Menu 1080p ~19 ms → ~10 ms mỗi hình.
 - **Kamikaze báo trước**: khựng 0,5 giây "khóa mục tiêu" (thân rung, vòng đỏ co lại, vạch ngắm, tiếng bíp), rồi lao;
@@ -26,7 +27,7 @@
 - **Tiếng mới** (tổng hợp bằng numpy): `lock_on`, `heartbeat` (khớp nhịp viền đỏ khi máu thấp), `bullet_cancel`,
   `graze`.
 - 27 test mới (`tests/test_crisp.py`, thêm vào `tests/test_game_feel.py`, `tests/test_storage.py`,
-  `tests/test_achievements.py`), tổng 152. Chạy thử ngẫu nhiên dài
+  `tests/test_achievements.py`), tổng 153. Chạy thử ngẫu nhiên dài
   (10 ải + Vô tận + Hỏa ngục, 1 phút mỗi chế độ, 6 cỡ cửa sổ) không lỗi.
 
 ## [2.1.0-dev] – Cảm giác đánh

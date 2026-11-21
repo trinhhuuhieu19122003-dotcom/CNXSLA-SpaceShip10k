@@ -74,6 +74,26 @@ class CrispSurface(pygame.Surface):
                 keep.append(record)
         self.records = keep
 
+    # --- Chuyển chữ từ tấm phụ sang tấm chính ---------------------------------------------------
+    def take(self, rect: pygame.Rect, target) -> List[tuple]:
+        """Tấm phụ (vd. ô HUD góc) sắp được dán lên ``target``. Nếu ``target`` đang ghi chữ: lấy các chữ trong
+        ``rect`` ra để chuyển sang (gọi ``put`` SAU khi dán); nếu không: vẽ thường chúng vào tấm phụ luôn."""
+        inside = [r for r in getattr(self, "records", []) if rect.contains(r[1])]
+        if not inside:
+            return []
+        self.records = [r for r in self.records if r not in inside]
+        if getattr(target, "enabled", False):
+            return inside
+        for record in inside:
+            self._draw_record(record)
+        return []
+
+    def put(self, records: List[tuple], alpha: int = 255, offset: Tuple[int, int] = (0, 0)) -> None:
+        """Nhận chữ từ tấm phụ, nhân thêm độ trong suốt của tấm phụ khi dán."""
+        for image, rect, a in records:
+            base = 255 if a is None else a
+            self.records.append((image, rect.move(offset), round(base * alpha / 255)))
+
     # --- Ghi đè các lệnh vẽ ----------------------------------------------------------------
     def blit(self, source, dest, area=None, special_flags=0):
         if getattr(self, "enabled", False):
