@@ -16,7 +16,7 @@ from spaceship.entities.enemies import EnemyBase
 from spaceship.systems import loot
 from spaceship.systems.world import World
 
-HIT_SPARK = {"plasma": (120, 200, 255), "laser": (255, 120, 100), "homing": (220, 140, 255), "drone_laser": (255, 170, 60)}
+HIT_SPARK = {"plasma": (120, 200, 255), "laser": (255, 120, 100), "homing": (220, 140, 255), "drone_bolt": (255, 170, 60)}
 BLOCK_SPARK = (120, 220, 255)
 BURN_ORANGE = (255, 100, 0)
 SHIELD_SPARK = (100, 255, 255)
@@ -111,13 +111,7 @@ def _splash(world: World, x: float, y: float, damage: float, skip_id: int) -> No
 def resolve_player_bullets(world: World) -> None:
     player = world.player
     for bullet in list(world.bullets):
-        if bullet.kind == "drone_laser":
-            for enemy in world.enemies:
-                if enemy.id not in bullet.hit_ids and bullet.hits(enemy):
-                    bullet.hit_ids.add(enemy.id)
-                    damage_enemy(world, enemy, config.DRONE_DAMAGE, gain_rage=False)
-                    world.sparks(enemy.x, enemy.y + enemy.ry * 0.6, HIT_SPARK["drone_laser"], 3)
-        elif bullet.is_piercing_laser:
+        if bullet.is_piercing_laser:
             dmg = config.PIERCING_LASER_DAMAGE + player.bonus_damage * config.PIERCING_LASER_BONUS_SHARE
             for enemy in world.enemies:
                 if enemy.id not in bullet.hit_ids and bullet.hits(enemy):

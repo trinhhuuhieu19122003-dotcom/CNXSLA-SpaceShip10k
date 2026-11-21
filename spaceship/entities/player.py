@@ -135,11 +135,20 @@ class Player:
             bullets.extend(Bullet(x, y, "homing", angle=a, level=lvl) for a in HOMING_ANGLES[lvl])
         return True
 
-    def fire_drone(self, bullets: List[Bullet]) -> None:
-        if self.drones and self.drone_cooldown <= 0:
-            for ox, _ in DRONE_OFFSETS[: self.drones]:
-                bullets.append(Bullet(self.x + ox, self.y + 5, "drone_laser"))
-            self.drone_cooldown = config.DRONE_COOLDOWN_TICKS
+    def fire_drone(self, bullets: List[Bullet], enemies=()) -> None:
+        """Mỗi drone tự ngắm địch gần nó nhất trong tầm (không có thì bắn thẳng lên)."""
+        if not self.drones or self.drone_cooldown > 0:
+            return
+        targets = [e for e in enemies if e.y > 0 and not e.is_obstacle]
+        for ox, oy in DRONE_OFFSETS[: self.drones]:
+            x, y = self.x + ox, self.y + oy - 16
+            near = [e for e in targets if math.hypot(e.x - x, e.y - y) < config.DRONE_RANGE]
+            angle = 90.0
+            if near:
+                t = min(near, key=lambda e: math.hypot(e.x - x, e.y - y))
+                angle = math.degrees(math.atan2(-(t.y - y), t.x - x))
+            bullets.append(Bullet(x, y, "drone_bolt", angle=angle, damage=config.DRONE_DAMAGE))
+        self.drone_cooldown = config.DRONE_COOLDOWN_TICKS
 
     def apply_weapon_pickup(self, weapon: str) -> None:
         """Nhặt vũ khí cùng loại → lên cấp (tối đa 6, sau đó cộng sát thương);
@@ -240,5 +249,5 @@ class Player:
                 pygame.draw.polygon(surface, NEON_CYAN, [(dx, dy - 10), (dx - 10, dy + 10), (dx + 10, dy + 10)])
                 continue
             surface.blit(sprite, sprite.get_rect(center=(int(dx), int(dy))))
-            if self.drone_cooldown <= 10:                          # sắp bắn: đầu drone sáng lên
-                glow.add(surface, glow.orb(NEON_ORANGE, 4, core=0.6), (dx, dy - 16))
+            if self.drone_cooldown >= config.DRONE_COOLDOWN_TICKS - 3:     # vừa bắn: chớp sáng đầu nòng
+                glow.add(surface, glow.orb(NEON_ORANGE, 6, core=0.7), (dx, dy - 16))

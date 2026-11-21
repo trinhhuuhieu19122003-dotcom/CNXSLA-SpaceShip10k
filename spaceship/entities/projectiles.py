@@ -18,13 +18,16 @@ from spaceship.config import (
 )
 from spaceship.ui import glow
 
-BULLET_SPEED = {"plasma": 25, "laser": 18, "homing": 12, "drone_laser": 35}
+BULLET_SPEED = {"plasma": 25, "laser": 18, "homing": 12, "drone_bolt": 22}
 PIERCING_LASER_SPEED = 40
 HOMING_TURN_SPEED = 16
 
 
+DRONE_BOLT_COLOR = (255, 170, 70)
+
+
 class Bullet:
-    """Đạn của người chơi. ``kind``: plasma | laser | homing | drone_laser."""
+    """Đạn của người chơi. ``kind``: plasma | laser | homing | drone_bolt."""
 
     def __init__(self, x, y, kind: str, angle: Optional[float] = 90, level: int = 1,
                  damage: Optional[float] = None) -> None:
@@ -46,7 +49,7 @@ class Bullet:
 
     @property
     def pierces(self) -> bool:
-        return self.is_piercing_laser or self.kind == "drone_laser"
+        return self.is_piercing_laser
 
     @property
     def on_screen(self) -> bool:
@@ -82,8 +85,6 @@ class Bullet:
         self.y -= self.vy
 
     def hits(self, enemy) -> bool:
-        if self.kind == "drone_laser":
-            return abs(self.x - enemy.x) < enemy.rx + 6 and self.y - 120 < enemy.y + enemy.ry and self.y > enemy.y - enemy.ry
         if self.is_piercing_laser:
             return abs(self.x - enemy.x) < enemy.rx + 12 and enemy.y < self.y + enemy.ry
         return enemy.contains(self.x, self.y, 5)
@@ -94,11 +95,12 @@ class Bullet:
 
     def _draw_plasma(self, surface: pygame.Surface) -> None:
         big = self.level == 6
-        r = 9 if big else 6
+        r = 10 if big else (8 if self.level >= 3 else 7)
         for i, (tx, ty) in enumerate(self.trail):                 # vệt mờ dần phía sau
             k = (i + 1) / (len(self.trail) + 1)
-            glow.add(surface, glow.orb(glow.scale(PLASMA_COLOR, 0.6 * k), max(2, int(r * k)), core=0.0), (tx, ty))
-        glow.add(surface, glow.orb(PLASMA_COLOR, r, core=0.5), (self.x, self.y))
+            glow.add(surface, glow.orb(glow.scale(PLASMA_COLOR, 0.75 * k), max(2, int(r * 0.8 * k)), core=0.0), (tx, ty))
+        glow.add(surface, glow.orb(glow.scale(PLASMA_COLOR, 0.5), r + 5, core=0.0, halo=1.2), (self.x, self.y))
+        glow.add(surface, glow.orb(PLASMA_COLOR, r, core=0.6), (self.x, self.y))
         if big:                                                   # cấp 6: tia điện lách tách quanh quả cầu
             for _ in range(2):
                 end = (self.x + random.randint(-18, 18), self.y + random.randint(-18, 18))
@@ -107,8 +109,10 @@ class Bullet:
     def _draw_laser(self, surface: pygame.Surface) -> None:
         if self.level == 6:
             return          # tia cấp 6 do Player vẽ liền một dải từ mũi tàu (xem Player._draw_beam)
-        tex = glow.streak(LASER_COLOR, 34, 7 if self.level >= 3 else 5)
-        glow.add(surface, tex, (self.x, self.y))
+        width = 9 if self.level >= 3 else 7
+        glow.add(surface, glow.streak(LASER_COLOR, 44, width), (self.x, self.y))
+        glow.add(surface, glow.streak((255, 230, 225), 32, 2), (self.x, self.y))       # lõi trắng nóng
+        glow.add(surface, glow.orb(glow.scale(LASER_COLOR, 0.8), 4, core=0.7), (self.x, self.y - 20))
 
     def _draw_homing(self, surface: pygame.Surface) -> None:
         big = self.level == 6
@@ -121,13 +125,18 @@ class Bullet:
         left = (self.x + math.cos(ang + 2.4) * w, self.y + math.sin(ang + 2.4) * w)
         right = (self.x + math.cos(ang - 2.4) * w, self.y + math.sin(ang - 2.4) * w)
         tail = (self.x - math.cos(ang) * 4, self.y - math.sin(ang) * 4)
-        glow.add(surface, glow.orb((255, 140, 60), 4, core=0.6), tail)   # lửa đuôi
+        flame = 5 + (self.timer % 3)                              # lửa đuôi phập phồng
+        glow.add(surface, glow.orb((255, 140, 60), flame, core=0.6, halo=1.2), tail)
         pygame.draw.polygon(surface, (60, 20, 90), [nose, left, right])
         pygame.draw.polygon(surface, HOMING_COLOR, [nose, left, right], 2)
-        glow.add(surface, glow.orb(HOMING_COLOR, 2, core=1.0, halo=0.8), nose)
+        glow.add(surface, glow.orb(HOMING_COLOR, 3, core=1.0, halo=1.0), nose)
 
-    def _draw_drone_laser(self, surface: pygame.Surface) -> None:
-        glow.add(surface, glow.streak(NEON_ORANGE, 110, 5), (self.x, self.y - 60))
+    def _draw_drone_bolt(self, surface: pygame.Surface) -> None:
+        """Đạn drone: mũi kim sáng màu cam, hướng theo đường bay."""
+        ang = math.atan2(-self.vy, self.dx)
+        tail = (self.x - math.cos(ang) * 14, self.y - math.sin(ang) * 14)
+        glow.add(surface, glow.orb(glow.scale(DRONE_BOLT_COLOR, 0.55), 4, core=0.0), tail)
+        glow.add(surface, glow.orb(DRONE_BOLT_COLOR, 5, core=0.65), (self.x, self.y))
 
 
 class EnemyBullet:

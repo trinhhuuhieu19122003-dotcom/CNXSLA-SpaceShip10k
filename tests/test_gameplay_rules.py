@@ -85,17 +85,23 @@ class ProjectileTest(unittest.TestCase):
         combat.cleanup(w)
         self.assertEqual(w.enemy_bullets, [])
 
-    def test_drone_laser_hits_each_enemy_once(self):
+    def test_drone_aims_at_nearest_enemy_and_hits(self):
         w = world()
         e = Enemy(10.0, rng=w.rng)
-        e.x, e.y = 400, 300
+        e.x, e.y = w.player.x + 250, w.player.y - 200                 # lệch hẳn sang phải
         w.enemies.append(e)
-        beam = Bullet(400, 330, "drone_laser")
-        w.bullets.append(beam)
+        w.player.drones = 1
+        w.player.fire_drone(w.bullets, w.enemies)
+        bolt = w.bullets[-1]
+        self.assertEqual(bolt.kind, "drone_bolt")
+        self.assertGreater(bolt.dx, 0)                                  # bay về phía địch, không thẳng lên
         hp = e.hp
-        for _ in range(5):
+        for _ in range(40):
+            for b in w.bullets:
+                b.update()
             combat.resolve_player_bullets(w)
         self.assertEqual(hp - e.hp, config.DRONE_DAMAGE)
+        self.assertEqual(w.player.rage, 0)                              # drone không hồi Nộ
 
     def test_bullet_on_screen_bounds(self):
         self.assertFalse(Bullet(400, -200, "plasma").on_screen)

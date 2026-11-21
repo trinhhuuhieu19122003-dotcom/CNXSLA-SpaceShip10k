@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import math
+import random
 from typing import List, Optional
 
 import pygame
@@ -25,7 +26,7 @@ LIGHTNING_COLOR = (255, 230, 60)
 
 
 # --- Hiệu ứng tia sét ------------------------------------------------------------------------
-def _jagged(start, end, rng, segments: int = 7, spread: float = 14.0) -> List[tuple]:
+def _jagged(start, end, rng, segments: int = 9, spread: float = 17.0) -> List[tuple]:
     pts = [start]
     for i in range(1, segments):
         t = i / segments
@@ -36,12 +37,36 @@ def _jagged(start, end, rng, segments: int = 7, spread: float = 14.0) -> List[tu
     return pts
 
 
-class LightningArc:
-    """Một tia sét gấp khúc tồn tại vài tick (nằm trong world.particles)."""
+LIGHTNING_EDGE = (170, 210, 255)        # viền/nhánh xanh điện quanh lõi vàng-trắng
 
-    def __init__(self, points, color=LIGHTNING_COLOR, life: int = 7, width: int = 3) -> None:
-        self.points, self.color, self.width = points, color, width
+
+class LightningArc:
+    """Một tia sét gấp khúc tồn tại vài tick (nằm trong world.particles).
+
+    Vẽ kiểu "điện": quầng sáng mờ cộng sáng (additive) + thân vàng + lõi trắng, có 1-2 nhánh rẽ xanh điện,
+    rung nhẹ mỗi 2 tick (nhấp nháy) và chớp sáng ở điểm đánh trúng. Phần ngẫu nhiên chỉ để vẽ nên dùng
+    ``random`` riêng, không đụng RNG của trận đấu."""
+
+    PAD = 18
+
+    def __init__(self, points, color=LIGHTNING_COLOR, life: int = 10, width: int = 3, impact: bool = True) -> None:
+        self.points, self.color, self.width, self.impact = list(points), color, width, impact
         self.life = self.max_life = life
+        self.forks = self._make_forks()
+
+    def _make_forks(self) -> list:
+        forks = []
+        if len(self.points) < 4:
+            return forks
+        for _ in range(random.randint(1, 2)):
+            i = random.randint(1, len(self.points) - 2)
+            (x0, y0), (x1, y1) = self.points[i - 1], self.points[i]
+            base = math.atan2(y1 - y0, x1 - x0) + random.choice((-1, 1)) * random.uniform(0.5, 1.1)
+            length = random.uniform(26, 56)
+            mid = (x1 + math.cos(base) * length * 0.5 + random.uniform(-5, 5),
+                   y1 + math.sin(base) * length * 0.5 + random.uniform(-5, 5))
+            forks.append([self.points[i], mid, (x1 + math.cos(base) * length, y1 + math.sin(base) * length)])
+        return forks
 
     @property
     def alive(self) -> bool:
@@ -49,12 +74,36 @@ class LightningArc:
 
     def update(self) -> None:
         self.life -= 1
+        if self.life % 2 == 0 and len(self.points) > 2:          # rung nhẹ: tia sống động, không đứng yên
+            self.points[1:-1] = [(x + random.uniform(-3, 3), y + random.uniform(-3, 3)) for x, y in self.points[1:-1]]
 
     def draw(self, surface: pygame.Surface) -> None:
         k = self.life / self.max_life
-        pygame.draw.lines(surface, glow.scale(self.color, 0.4 * k), False, self.points, self.width * 3)
-        pygame.draw.lines(surface, glow.scale(self.color, k), False, self.points, self.width)
-        pygame.draw.lines(surface, glow.scale((255, 255, 255), k), False, self.points, 1)
+        lines = [self.points] + self.forks
+        xs = [x for line in lines for x, _ in line]
+        ys = [y for line in lines for _, y in line]
+        left, top = int(min(xs)) - self.PAD, int(min(ys)) - self.PAD
+        size = (int(max(xs)) - left + self.PAD, int(max(ys)) - top + self.PAD)
+        if size[0] <= 0 or size[1] <= 0 or size[0] * size[1] > 400_000:
+            return
+        shift = [[(x - left, y - top) for x, y in line] for line in lines]
+        halo = pygame.Surface(size)
+        w = self.width
+        pygame.draw.lines(halo, glow.scale(self.color, 0.75 * k), False, shift[0], w * 5)
+        for fork in shift[1:]:
+            pygame.draw.lines(halo, glow.scale(LIGHTNING_EDGE, 0.6 * k), False, fork, w * 3)
+        halo = glow.blur(halo, 4)
+        core = pygame.Surface(size)
+        pygame.draw.lines(core, glow.scale(self.color, k), False, shift[0], w + 1)
+        pygame.draw.lines(core, glow.scale((255, 255, 255), k), False, shift[0], max(1, w - 1))
+        for fork in shift[1:]:
+            pygame.draw.lines(core, glow.scale(LIGHTNING_EDGE, k), False, fork, 3)
+            pygame.draw.lines(core, glow.scale((255, 255, 255), 0.85 * k), False, fork, 1)
+        surface.blit(halo, (left, top), special_flags=pygame.BLEND_RGB_ADD)
+        surface.blit(core, (left, top), special_flags=pygame.BLEND_RGB_ADD)
+        if self.impact:
+            glow.add(surface, glow.orb(glow.scale(self.color, k), max(4, int(12 * k)), core=0.6), self.points[-1])
+        glow.add(surface, glow.orb(glow.scale(LIGHTNING_EDGE, 0.8 * k), 5, core=0.6), self.points[0])
 
 
 def strike_chain(world: World, origin, damage: float, jumps: int, reach: float) -> int:
@@ -70,7 +119,7 @@ def strike_chain(world: World, origin, damage: float, jumps: int, reach: float) 
         if not candidates:
             break
         target = min(candidates, key=lambda e: math.hypot(e.x - pos[0], e.y - pos[1]))
-        world.particles.append(LightningArc(_jagged(pos, (target.x, target.y), rng)))
+        world.particles.append(LightningArc(_jagged(pos, (target.x, target.y), rng), width=4))
         world.sparks(target.x, target.y, LIGHTNING_COLOR, 3)
         combat.damage_enemy(world, target, damage, crit=True)      # sét xuyên khiên của Lính Khiên
         hit_ids.add(target.id)
@@ -92,7 +141,7 @@ def _fire_lightning(world: World) -> bool:
     jumps = 8 if lvl == 6 else 1 + lvl
     if strike_chain(world, nose, damage, jumps, config.LIGHTNING_RANGE) == 0:   # không có mục tiêu: tia xẹt lên
         end = (p.x + world.rng.uniform(-40, 40), p.y - 160)
-        world.particles.append(LightningArc(_jagged(nose, end, world.rng, 5, 10), life=4, width=2))
+        world.particles.append(LightningArc(_jagged(nose, end, world.rng, 5, 10), life=6, width=2, impact=False))
     return True
 
 

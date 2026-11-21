@@ -75,8 +75,9 @@ LIGHTNING_RANGE = 480              # tia sét tìm mục tiêu trong bán kính 
 LIGHTNING_CHAIN_RANGE = 150        # khoảng nhảy từ địch này sang địch khác
 LIGHTNING_CHAIN_DECAY = 0.85       # mỗi lần nhảy sát thương còn 85%
 LIGHTNING_DAMAGE_PER_LEVEL = 3     # sét không bắn nhiều tia hơn khi lên cấp, nên tăng sát thương
-DRONE_DAMAGE = 2
-DRONE_COOLDOWN_TICKS = 60
+DRONE_DAMAGE = 4                 # drone tự ngắm địch gần nhất, ~4 phát/giây (bản đầu: 2 sát thương/giây)
+DRONE_COOLDOWN_TICKS = 15
+DRONE_RANGE = 420
 
 # --- Kỹ năng Nộ (mỗi súng một kiểu, thay cho Nuke dùng chung) -------------------------
 SKILL_LASER_TICKS = 180            # Đại Pháo: tia khổng lồ 3 giây

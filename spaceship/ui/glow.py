@@ -25,6 +25,9 @@ def _blur(surface: pygame.Surface, factor: int) -> pygame.Surface:
     return pygame.transform.smoothscale(small, (w, h))
 
 
+blur = _blur        # dùng ngoài module (vd. quầng tia sét)
+
+
 def glyph_halo(text: pygame.Surface) -> pygame.Surface:
     """Quầng sáng theo nét chữ, để dán bên dưới mặt chữ bằng hàm add."""
     padding = 18

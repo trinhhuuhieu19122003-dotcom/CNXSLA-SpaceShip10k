@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.0-dev] – Đạn đẹp hơn, drone có ích
+- **Tia Sét** vẽ lại: quầng sáng cộng sáng, thân vàng lõi trắng, 1-2 nhánh rẽ xanh điện, rung nhấp nháy, chớp sáng ở
+  điểm trúng; tồn tại lâu hơn (10 tick) nên nhìn thấy liên tục. Bão Sét và màn Hướng dẫn dùng chung kiểu mới.
+- Plasma to và sáng hơn (quầng ngoài + vệt dài hơn); Laser có lõi trắng nóng; Homing có lửa đuôi phập phồng.
+- **Drone** tự ngắm địch gần nhất trong tầm 420, bắn kim sáng cam ~4 phát/giây, 4 sát thương/phát (bản cũ: 1 phát/giây,
+  2 sát thương, bắn thẳng) - khoảng 16 sát thương/giây mỗi drone; không hồi Nộ. Ảnh so sánh: `docs/screenshots/dan-truoc-sau.png`.
+
 ## [2.1.0-dev] – Nhịp sóng: thả địch có nhịp, hết "ồ ạt"
 - Lính trong đội hình **bay vào lần lượt** (Galaga), nhanh rồi chậm dần; **không bắn khi đang bay vào** và chờ
   0,75 giây sau khi tới chỗ. Đội hình nhiều hàng được nén vào trong màn hình.
