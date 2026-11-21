@@ -65,7 +65,7 @@ tình huống. Lúc bất tử tàu chỉ ẩn 1/4 thời gian
 
 ## 5. Cài đặt "Rung & nháy màn hình"
 
-`ĐẦY ĐỦ` (×1) · `NHẸ` (×0,4) · `TẮT` (×0), áp cho rung và chớp sáng. Viền đỏ là **thông tin** nên vẫn giữ;
+`ĐẦY ĐỦ` (×1) · `NHẸ` (×0,4) · `TẮT` (×0), áp cho rung và chớp sáng; `TẮT` tắt luôn khựng hình. Viền đỏ là **thông tin** nên vẫn giữ;
 chỉ nhịp đập là đứng yên khi `TẮT`. Hướng dẫn trợ năng của nhiều game đều khuyên có tùy chọn này.
 
 ## 6. Lính cảm tử báo trước khi lao (telegraph)

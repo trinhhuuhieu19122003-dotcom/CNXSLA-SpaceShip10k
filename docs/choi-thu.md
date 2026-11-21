@@ -21,7 +21,7 @@ mô tả thì chụp màn hình gửi lại.
 4. Hạ một boss.
    Khựng lâu hơn, rung mạnh, đạn địch trên màn biến thành chấm vàng, điểm tăng.
 5. **Cài đặt → Rung & nháy màn hình: TẮT** → chơi lại.
-   Không còn rung và chớp sáng, nhưng viền đỏ khi trúng đạn vẫn còn.
+   Không còn rung, khựng hình và chớp sáng, nhưng viền đỏ khi trúng đạn vẫn còn.
 
 ## 3. Lính cảm tử (từ ải 2)
 1. Bắn một lính đến khi nó gần chết (nó sáng lên).

@@ -30,7 +30,7 @@
 - **Tiếng mới** (tổng hợp bằng numpy): `lock_on`, `heartbeat` (khớp nhịp viền đỏ khi máu thấp), `bullet_cancel`,
   `graze`.
 - 27 test mới (`tests/test_crisp.py`, thêm vào `tests/test_game_feel.py`, `tests/test_storage.py`,
-  `tests/test_achievements.py`), tổng 155. Chạy thử ngẫu nhiên dài 8 lần (10 ải + Vô tận + Hỏa ngục, 1 phút mỗi
+  `tests/test_achievements.py`), tổng 156. Chạy thử ngẫu nhiên dài 8 lần (10 ải + Vô tận + Hỏa ngục, 1 phút mỗi
   chế độ, đổi qua 9 cỡ cửa sổ từ 800x700 tới 4K) không lỗi; vòng lặp thật `Game.run` giữ 60 FPS ở 1080p.
 
 ## [2.1.0-dev] – Cảm giác đánh
@@ -42,7 +42,7 @@
   chỉ ẩn 1/4 thời gian (trước là 1/2) nên vẫn thấy rõ để né; vòng vàng chỉ còn sau khi hồi sinh.
 - **Viền đỏ** (`ui/feel.py`): loé khi trúng đạn, đập theo nhịp tim khi máu ≤ 30%. Vẽ trước HUD.
 - **Chớp sáng mờ dần** (tối đa alpha 150) thay cho trắng xóa cả màn.
-- Cài đặt mới **RUNG & NHÁY MÀN HÌNH: ĐẦY ĐỦ / NHẸ / TẮT** (`settings.screen_fx`).
+- Cài đặt mới **RUNG & NHÁY MÀN HÌNH: ĐẦY ĐỦ / NHẸ / TẮT** (`settings.screen_fx`); TẮT tắt cả khựng hình.
 - 12 test mới (`tests/test_game_feel.py`), tổng 124.
 
 ## [2.1.0-dev] – Đánh bóng giao diện

@@ -329,3 +329,19 @@ class SidebarFeelTest(unittest.TestCase):
         w.player.drones, w.player.burn_unlocked, w.player.shield_timer = 2, True, 200
         surface = pygame.Surface((280, 700))
         sidebar.draw_status_panel(surface, Assets(), pygame.Rect(0, 0, 280, 700), w)
+
+
+class FxOffDisablesHitstopTest(unittest.TestCase):
+    def test_off_setting_skips_freeze(self):
+        game = Game(camera=False, seed=6)
+        game.settings.screen_fx = "off"
+        play = GameplayScene(game, GameMode.ENDLESS)
+        game.change_scene(play)
+        game._apply_pending_scene()
+        w = play.world
+        w.freeze(10)
+        before = w.survival_time
+        play.update(ControlState())
+        self.assertEqual(w.hitstop, 0)
+        self.assertGreater(w.survival_time, before)
+        game.settings.screen_fx = "full"

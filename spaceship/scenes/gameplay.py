@@ -145,6 +145,8 @@ class GameplayScene(Scene):
             self.fog.update()
         w.tick_messages()
         self._tick_encounter_notice()
+        if w.hitstop > 0 and self.fx_scale == 0:     # "Rung & nháy: TẮT" tắt luôn khựng hình
+            w.hitstop = 0
         if w.hitstop > 0:          # khựng hình: địch, đạn, tàu đứng yên vài tick; chữ thông báo vẫn chạy
             w.hitstop -= 1
             w.tick_feel()
