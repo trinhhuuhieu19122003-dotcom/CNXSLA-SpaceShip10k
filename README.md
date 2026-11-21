@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/Python-3.10–3.13-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python">
   <img src="https://img.shields.io/badge/pygame-2.5+-2b9348?style=flat-square" alt="pygame">
   <img src="https://img.shields.io/badge/MediaPipe-Hands-4285F4?style=flat-square&logo=google&logoColor=white" alt="MediaPipe">
-  <img src="https://img.shields.io/badge/test-81_passed-success?style=flat-square" alt="Test">
+  <img src="https://img.shields.io/badge/test-84_passed-success?style=flat-square" alt="Test">
 </p>
 
 <p align="center">
@@ -57,7 +57,7 @@
 | **Âm thanh sống động** | 25 hiệu ứng CC0 + tiếng tổng hợp (còi boss, giọng gõ chữ riêng từng nhân vật); nhạc riêng cho từng hồi, chuyển bài mượt, tự nhỏ lại khi có hội thoại; chỉnh âm lượng nhạc và hiệu ứng riêng. |
 | **Đồ họa phát sáng** | Đạn neon, vụ nổ có sóng xung kích, địch nháy khi trúng đạn, nền cuộn theo từng hồi. |
 | **Có chiều sâu** | 4 súng, mỗi súng một dạng tối thượng ở cấp 6 và một kỹ năng Nộ riêng; 3 mức độ khó; chấm 1–3 sao mỗi ải. |
-| **Mã nguồn sạch, có test** | Chia module rõ ràng, dữ liệu ải tách khỏi logic, 81 test tự động, có bot tự chơi hết chiến dịch. |
+| **Mã nguồn sạch, có test** | Chia module rõ ràng, dữ liệu ải tách khỏi logic, 84 test tự động, có bot tự chơi hết chiến dịch. |
 
 ## Cốt truyện
 
@@ -92,9 +92,14 @@ python -m spaceship
 |---|---|
 | `--no-camera` | Tắt webcam, chỉ chơi bằng bàn phím |
 | `--camera N` | Chọn webcam số N khi máy có nhiều camera |
-| `--fullscreen` | Mở toàn màn hình |
+| `--fullscreen` | Mở toàn màn hình (không có tham số này thì theo Cài đặt trong game) |
 | `--seed N` | Cố định ngẫu nhiên (để tái hiện lỗi) |
 | `--debug` | In log chi tiết |
+
+**Windows: chơi bằng icon trên Desktop.** Sau khi tạo `.venv`, bấm đúp file **`Tao loi tat.bat`** trong thư mục
+game (chỉ cần một lần). Script tự cài thư viện nếu thiếu rồi tạo lối tắt **SpaceShip 10K** trên Desktop và trong
+Start menu. Từ đó chỉ cần bấm đúp icon: game mở thẳng, không hiện cửa sổ dòng lệnh. Log được ghi vào
+`%APPDATA%\SpaceShip10k\spaceship.log`; nếu game gặp lỗi sẽ hiện hộp thoại chỉ tới file này.
 
 <details>
 <summary><b>Ghi chú về MediaPipe</b></summary>

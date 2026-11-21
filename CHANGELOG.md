@@ -23,6 +23,8 @@
 - Windows: bật DPI awareness để màn hình phóng to 125%/150% không kéo giãn cửa sổ làm nhòe chữ; cửa sổ thường
   tự chọn cỡ ~85% chiều cao màn hình.
 - Cài đặt gọn lại: chỉ hiện ghi chú của mục đang chọn.
+- **Chơi bằng icon**: `Tao loi tat.bat` tạo lối tắt SpaceShip 10K (icon riêng) trên Desktop + Start menu, chạy bằng
+  `pythonw` nên không hiện cửa sổ dòng lệnh; log ghi vào `spaceship.log`, lỗi hiện hộp thoại. Cửa sổ game có icon.
 - `requirements.txt` chỉ dùng ASCII: pip cũ trên Windows đọc theo cp1252 và báo `UnicodeDecodeError`.
 
 ## [2.1.0-dev] – Màn Hướng dẫn mới & Sổ tay chiến đấu

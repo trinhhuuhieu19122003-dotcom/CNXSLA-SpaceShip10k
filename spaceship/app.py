@@ -57,6 +57,10 @@ class Game:
         enable_dpi_awareness()
         pygame.init()
         pygame.display.set_caption(config.TITLE)
+        try:
+            pygame.display.set_icon(pygame.image.load(str(config.ASSETS_DIR / "icon.png")))
+        except (pygame.error, FileNotFoundError):
+            pass
         self.save = save or SaveData.load()
         self.settings = settings or Settings.load()
         # None = theo lựa chọn đã lưu trong Cài đặt; True/False = ép (tham số --fullscreen, test)
