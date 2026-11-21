@@ -101,6 +101,10 @@ Chuỗi hiện ở mấy chỗ:
 * Bảng trái ở màn rộng, kèm thanh thời gian còn lại.
 * Màn Kết quả ghi chuỗi dài nhất.
 
+Đo bằng bot bắn và lái ngẫu nhiên (3 phút × 3 ván): chuỗi dài nhất chỉ 2–10, điểm gần như không đổi so với khi tắt
+nhân điểm. Tức là chuỗi **không tự đến**: phải chủ động săn địch liên tục mới lên x3, x4, nên điểm cao thật sự phản
+ánh kỹ năng.
+
 ## 9. Sát đạn (graze)
 
 Đạn địch bay sượt qua trong 26 px quanh tâm tàu mà không trúng (vùng trúng chỉ 15 px) thì được +1 điểm (nhân
