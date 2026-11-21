@@ -14,7 +14,7 @@ HAND_DEADBAND = 8
 class MenuList:
     def __init__(self, game, rects, activate) -> None:
         self.game = game
-        self.activate = activate
+        self._on_activate = activate
         self.progress = 0.0
         self._pinching = False
         self._hand_position = None
@@ -33,10 +33,14 @@ class MenuList:
     def for_buttons(cls, game, buttons, activate) -> MenuList:
         return cls(game, (b.rect for b in buttons), lambda i: activate(buttons[i].action))
 
+    def activate(self, index: int) -> None:
+        self.game.audio.play("ui_select")
+        self._on_activate(index)
+
     def select(self, index: int) -> None:
         if index != self.selected:
             self.selected = index
-            self.game.audio.play("beep")
+            self.game.audio.play("ui_move")
 
     def _nearest_column(self, row, x):
         return min(row, key=lambda i: abs(self.rects[i].centerx - x))

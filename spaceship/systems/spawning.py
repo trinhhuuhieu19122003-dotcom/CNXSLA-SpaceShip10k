@@ -170,11 +170,12 @@ class LevelDirector(Director):
             self.boss = Boss(world.hp_mult, kind=self.level.boss)
             world.enemies.append(self.boss)
             world.announce(f"CẢNH BÁO · {BOSS_SPECS[self.level.boss].title}", 2.5)
-            world.play("radar")
+            world.play("boss_siren")
             self._say(world, ("boss", 0))
         else:
             self.clear_timer = CLEAR_NO_BOSS_TICKS
             world.announce("QUA ẢI!", 1.5)
+            world.play("wave_clear")
             self._say(world, ("clear", 0))
 
     def _hazards(self, world: World) -> None:
@@ -245,6 +246,7 @@ class SurvivalDirector(Director):
             mult = 1.5 if self.mode is GameMode.INFERNO else 1.0
             world.enemies.append(Boss(world.difficulty * mult * 0.6, kind=kind))
             world.announce(f"CẢNH BÁO · {BOSS_SPECS[kind].title}", 2.0)
+            world.play("boss_siren")
 
     def _extras(self, world: World) -> None:
         """Từ phút thứ 1 có thêm Ký Sinh, phút thứ 2 có Lính Khiên / tàu nhiễm."""

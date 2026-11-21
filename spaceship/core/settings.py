@@ -27,6 +27,16 @@ class Settings:
     sensitivity: str = "medium"
     hand_center: Optional[Tuple[float, float]] = None   # None = chưa hiệu chỉnh
     difficulty: str = "normal"                           # easy | normal | hard
+    music_volume: float = 0.7                            # 0..1
+    sfx_volume: float = 0.8                              # 0..1
+
+    @staticmethod
+    def step_volume(value: float, step: float, wrap: bool = False) -> float:
+        """Tăng/giảm 10%. ``wrap``: quá 100% thì vòng về 0 (khi chỉ có một nút "chọn", vd. chụm tay)."""
+        new = round(value + step, 1)
+        if wrap and new > 1.0:
+            return 0.0
+        return min(1.0, max(0.0, new))
 
     def cycle_difficulty(self) -> None:
         order = config.DIFFICULTIES
@@ -58,6 +68,9 @@ class Settings:
                     data.sensitivity = raw["sensitivity"]
                 if raw.get("difficulty") in config.DIFFICULTIES:
                     data.difficulty = raw["difficulty"]
+                for key in ("music_volume", "sfx_volume"):
+                    if isinstance(raw.get(key), (int, float)):
+                        setattr(data, key, max(0.0, min(1.0, float(raw[key]))))
                 center = raw.get("hand_center")
                 if isinstance(center, list) and len(center) == 2:
                     data.hand_center = (float(center[0]), float(center[1]))

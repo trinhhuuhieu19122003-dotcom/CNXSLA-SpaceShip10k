@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/Python-3.10–3.13-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python">
   <img src="https://img.shields.io/badge/pygame-2.5+-2b9348?style=flat-square" alt="pygame">
   <img src="https://img.shields.io/badge/MediaPipe-Hands-4285F4?style=flat-square&logo=google&logoColor=white" alt="MediaPipe">
-  <img src="https://img.shields.io/badge/test-67_passed-success?style=flat-square" alt="Test">
+  <img src="https://img.shields.io/badge/test-77_passed-success?style=flat-square" alt="Test">
 </p>
 
 <p align="center">
@@ -54,9 +54,10 @@
 | **Không cần webcam** | Bàn phím luôn hoạt động song song; máy không có camera vẫn chơi trọn vẹn. |
 | **Chạy mượt trên mọi máy** | Camera và MediaPipe chạy ở luồng riêng; logic game cố định 60 bước/giây, không phụ thuộc tốc độ webcam. |
 | **Chiến dịch có cốt truyện** | 10 ải chia 3 hồi, hội thoại có chân dung nhân vật, thoại ngay trong trận, đoạn kết riêng. |
+| **Âm thanh sống động** | 25 hiệu ứng CC0 + tiếng tổng hợp (còi boss, giọng gõ chữ riêng từng nhân vật); nhạc riêng cho từng hồi, chuyển bài mượt, tự nhỏ lại khi có hội thoại; chỉnh âm lượng nhạc và hiệu ứng riêng. |
 | **Đồ họa phát sáng** | Đạn neon, vụ nổ có sóng xung kích, địch nháy khi trúng đạn, nền cuộn theo từng hồi. |
 | **Có chiều sâu** | 4 súng, mỗi súng một dạng tối thượng ở cấp 6 và một kỹ năng Nộ riêng; 3 mức độ khó; chấm 1–3 sao mỗi ải. |
-| **Mã nguồn sạch, có test** | Chia module rõ ràng, dữ liệu ải tách khỏi logic, 67 test tự động, có bot tự chơi hết chiến dịch. |
+| **Mã nguồn sạch, có test** | Chia module rõ ràng, dữ liệu ải tách khỏi logic, 77 test tự động, có bot tự chơi hết chiến dịch. |
 
 ## Cốt truyện
 
@@ -202,7 +203,7 @@ hết 10 ải tới đoạn kết** cùng hai chế độ Vô tận và Hỏa ng
 - [x] Vũ khí mới, kỹ năng Nộ, 10 ải, cốt truyện, chọn ải, độ khó
 - [x] Giao diện mới: font riêng (Chakra Petch, Exo 2), menu điều khiển được bằng tay, đồng bộ phong cách các màn hình
 - [x] Màn Hướng dẫn chia thẻ + Sổ tay chiến đấu
-- [ ] Âm thanh: tiếng riêng cho từng sự kiện, nhạc theo từng hồi, chỉnh âm lượng
+- [x] Âm thanh: tiếng riêng cho từng sự kiện, nhạc theo từng hồi, chỉnh âm lượng
 - [ ] Cân bằng độ khó theo phản hồi chơi thử thực tế
 
 ## Nguồn gốc & ghi công
@@ -218,7 +219,7 @@ hết 10 ải tới đoạn kết** cùng hai chế độ Vô tận và Hỏa ng
 
 **Bản nâng cấp 2.x (nhánh này):** phát triển bởi [trinhhuuhieu19122003-dotcom](https://github.com/trinhhuuhieu19122003-dotcom)
 cùng trợ lý lập trình AI Claude (Anthropic). Hình minh họa mới (kẻ địch, boss, chân dung nhân vật, ảnh nền, ảnh kết)
-được tạo bằng công cụ tạo ảnh AI thông qua Codex.
+được tạo bằng công cụ tạo ảnh AI thông qua Codex. Âm thanh và nhạc mới đều là CC0, chi tiết nguồn ở [CREDITS.md](CREDITS.md).
 
 ## Giấy phép
 

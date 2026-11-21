@@ -126,7 +126,7 @@ class MenuScene(Scene):
             self.game.change_scene(LevelSelectScene(self.game))
         elif mode is GameMode.INFERNO and not self.game.save.campaign_cleared:
             self.lock_feedback = LOCK_FEEDBACK_TICKS
-            self.game.audio.play("beep")
+            self.game.audio.play("ui_back")
         else:
             start_survival(self.game, mode)
 

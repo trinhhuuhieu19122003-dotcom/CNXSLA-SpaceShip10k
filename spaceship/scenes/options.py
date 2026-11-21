@@ -1,4 +1,4 @@
-"""Màn Cài đặt: tự động bắn, độ nhạy tay, hiệu chỉnh lại tay."""
+"""Màn Cài đặt: tự động bắn, độ nhạy tay, âm lượng nhạc/hiệu ứng, hiệu chỉnh lại tay."""
 from __future__ import annotations
 
 import pygame
@@ -10,12 +10,18 @@ from spaceship.ui.menu_list import MenuList
 from spaceship.ui.widgets import MUTED, SECONDARY, TEXT, Button, blit_center, draw_panel, fit_text
 
 PANEL = pygame.Rect(60, 60, WIDTH - 120, 580)
-BTN_W, BTN_H = 420, 50
+BTN_W, BTN_H = 420, 44
+BTN_TOP, BTN_STEP = 162, 76
+VOLUME_STEP = 0.1
+VOLUME_NOTE = "Phím trái/phải: chỉnh 10% · Enter / chụm tay: +10% (quá 100% về 0)."
 NOTES = (
     "Tàu tự bắn liên tục, tay chỉ cần lái. Tắt: giơ 1 ngón trỏ / giữ Space để bắn.",
     "Cao = nhích tay ít đã đi xa (đỡ mỏi). Thấp = chính xác hơn, phải vung rộng hơn.",
+    VOLUME_NOTE,
+    VOLUME_NOTE,
     "Đặt lại tư thế nghỉ của tay (chỗ ứng với giữa màn hình).",
 )
+VOLUMES = {"music": "music_volume", "sfx": "sfx_volume"}
 
 
 class OptionsScene(Scene):
@@ -25,12 +31,10 @@ class OptionsScene(Scene):
     def __init__(self, game) -> None:
         super().__init__(game)
         x = WIDTH // 2 - BTN_W // 2
-        self.buttons = [
-            Button("", pygame.Rect(x, 170, BTN_W, BTN_H), "auto_fire"),
-            Button("", pygame.Rect(x, 285, BTN_W, BTN_H), "sensitivity"),
-            Button("HIỆU CHỈNH LẠI TAY", pygame.Rect(x, 400, BTN_W, BTN_H), "calibrate"),
-            Button("VỀ MENU", pygame.Rect(x, 515, BTN_W, BTN_H), "menu"),
-        ]
+        rows = (("", "auto_fire"), ("", "sensitivity"), ("", "music"), ("", "sfx"),
+                ("HIỆU CHỈNH LẠI TAY", "calibrate"), ("VỀ MENU", "menu"))
+        self.buttons = [Button(text, pygame.Rect(x, BTN_TOP + i * BTN_STEP, BTN_W, BTN_H), action)
+                        for i, (text, action) in enumerate(rows)]
         self.menu = MenuList.for_buttons(game, self.buttons, self._do)
         self._refresh()
 
@@ -38,10 +42,26 @@ class OptionsScene(Scene):
         s = self.game.settings
         self.buttons[0].text = f"TỰ ĐỘNG BẮN: {'BẬT' if s.auto_fire else 'TẮT'}"
         self.buttons[1].text = f"ĐỘ NHẠY TAY: {config.HAND_SENSITIVITY_LABELS[s.sensitivity]}"
+        self.buttons[2].text = f"NHẠC NỀN: {round(s.music_volume * 100)}%"
+        self.buttons[3].text = f"HIỆU ỨNG: {round(s.sfx_volume * 100)}%"
+
+    def _change_volume(self, action: str, step: float, wrap: bool) -> None:
+        s = self.game.settings
+        key = VOLUMES[action]
+        setattr(s, key, s.step_volume(getattr(s, key), step, wrap))
+        self.game.audio.set_volumes(s.music_volume, s.sfx_volume)
+        if action == "sfx":
+            self.game.audio.play("pickup")           # nghe thử ngay mức vừa chỉnh
+        s.save()
+        self._refresh()
 
     def handle_event(self, event) -> None:
+        action = self.buttons[self.menu.selected].action
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            self.game.audio.play("ui_back")
             self._do("menu")
+        elif event.type == pygame.KEYDOWN and event.key in (pygame.K_LEFT, pygame.K_RIGHT) and action in VOLUMES:
+            self._change_volume(action, VOLUME_STEP if event.key == pygame.K_RIGHT else -VOLUME_STEP, wrap=False)
         else:
             self.menu.handle_event(event)
 
@@ -54,6 +74,9 @@ class OptionsScene(Scene):
             s.auto_fire = not s.auto_fire
         elif action == "sensitivity":
             s.cycle_sensitivity()
+        elif action in VOLUMES:
+            self._change_volume(action, VOLUME_STEP, wrap=True)
+            return
         elif action == "calibrate":
             self.game.change_scene(CalibrationScene(self.game, lambda: OptionsScene(self.game)))
             return
@@ -78,7 +101,7 @@ class OptionsScene(Scene):
             button.draw(surface, a, i == self.menu.selected)
             if i < len(NOTES):
                 note = fit_text(a, NOTES[i], 15, SECONDARY, PANEL.width - 48, role="body")
-                blit_center(surface, note, button.rect.bottom + 10)
+                blit_center(surface, note, button.rect.bottom + 7)
         self.menu.draw_progress(surface)
         if not self.game.hand_available:
             note = "(Không có camera - các mục về tay sẽ có tác dụng khi bật camera)"

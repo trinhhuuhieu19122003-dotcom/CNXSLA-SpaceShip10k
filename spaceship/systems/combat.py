@@ -28,6 +28,7 @@ PLAYER_BODY_RADIUS = 20
 def damage_enemy(world: World, enemy: EnemyBase, amount: float, *, crit: bool = False, gain_rage: bool = True) -> None:
     player = world.player
     enemy.hit_flash = 4                           # nháy trắng vài tick: cảm giác "trúng"
+    world.play("hit")
     if player.burn_unlocked:
         enemy.burning = True
     if enemy.is_boss and amount >= 3:             # sát thương lắt nhắt (tia liên tục) không hiện số cho đỡ rối
@@ -53,12 +54,13 @@ def damage_player(world: World, amount: float) -> None:
     player.hp -= amount
     world.shake(10)
     if player.hp > 0:
+        world.play("player_hurt")
         return
     world.lives_lost += 1
     if player.lives > 1:
         player.lives -= 1
         player.respawn()
-        world.play("explosion")
+        world.play("explode_big")
         world.explode(player.x, player.y, 1.5)
     else:
         player.lives = 0
@@ -69,15 +71,17 @@ def kill_enemy(world: World, enemy: EnemyBase) -> None:
     """Điểm, hiệu ứng, rơi đồ cho MỌI cái chết của địch."""
     if enemy in world.enemies:
         world.enemies.remove(enemy)
-    world.play("explosion")
     world.score += enemy.score
     if enemy.is_boss:
+        world.play("explode_boss")
         for dx, dy, size in ((0, 0, 3.0), (-50, -20, 1.6), (55, 15, 1.6), (-20, 40, 1.2), (30, -40, 1.2)):
             world.explode(enemy.x + dx, enemy.y + dy, size)
         world.boss_kills += 1
         world.shake(20)
         world.defeated_bosses.append(enemy)
         return
+    big = enemy.is_meteor or enemy.is_obstacle or enemy.radius >= 28   # Lính Khiên, Kẻ Đẻ Trứng, Pháo tháp...
+    world.play("explode_big" if big else "explode_small")
     world.explode(enemy.x, enemy.y, 1.5 if enemy.is_meteor else (0.6 if enemy.radius < 14 else 1.0))
     if hasattr(enemy, "offspring"):                # Kẻ Đẻ Trứng vỡ ra Ký Sinh
         world.enemies.extend(enemy.offspring(world.rng))
@@ -127,6 +131,7 @@ def resolve_player_bullets(world: World) -> None:
                 world.bullets.remove(bullet)
                 if enemy.front_shield and enemy.blocks(bullet):      # Lính Khiên chặn đạn bắn thẳng
                     world.sparks(bullet.x, bullet.y, BLOCK_SPARK, 3)
+                    world.play("shield_block")
                     break
                 skill_shot = bullet.damage is not None           # tên lửa của kỹ năng Nộ: không hồi Nộ
                 if skill_shot:
@@ -154,6 +159,7 @@ def resolve_enemy_bullets(world: World) -> None:
         if player.shield_active:
             world.enemy_bullets.remove(bullet)
             world.sparks(bullet.x, bullet.y, NEON_CYAN, 4)
+            world.play("shield_block")
         elif player.invincible_timer <= 0:
             world.enemy_bullets.remove(bullet)
             damage_player(world, config.ENEMY_BULLET_DAMAGE.get(bullet.kind, config.ENEMY_BULLET_DAMAGE_DEFAULT))
@@ -175,7 +181,7 @@ def resolve_body_collisions(world: World) -> None:
             heavy = enemy.is_boss or enemy.is_meteor
             if not enemy.is_boss and not enemy.is_obstacle:   # đâm vào nhau: địch nổ nhưng không được điểm
                 world.enemies.remove(enemy)
-                world.play("explosion")
+                world.play("explode_small")
                 world.explode(enemy.x, enemy.y, 1.0)
             damage_player(world, config.HEAVY_COLLISION_DAMAGE if heavy else config.COLLISION_DAMAGE)
             if enemy.is_obstacle or enemy.is_boss:
@@ -205,18 +211,24 @@ def collect_items(world: World) -> None:
         world.items.remove(item)
         kind = item.kind
         if kind == "upgrade_drone":
+            world.play("level_up")
             player.drones = min(2, player.drones + 1)
             world.announce("NHẬN ĐƯỢC DRONE" if player.drones == 1 else "DRONE THỨ HAI", 2.0)
         elif kind == "upgrade_burn":
             player.burn_unlocked = True
+            world.play("level_up")
             world.announce("ĐẠN THIÊU ĐỐT", 2.0)
         elif kind == "heal":
+            world.play("pickup")
             player.hp = min(player.max_hp, player.hp + config.HEAL_AMOUNT[world.mode])
         elif kind == "shield":
+            world.play("pickup")
             player.shield_timer = config.SHIELD_TICKS[world.mode]
         else:
             weapon = kind.replace("upgrade_", "")
             switched = weapon not in ("universal", player.weapon)
+            # Đổi súng khi đang cấp cao = mất cấp: tiếng "hụt" cho đúng cảm giác cay cú
+            world.play(("wrong_weapon" if player.level > 1 else "pickup") if switched else "level_up")
             player.apply_weapon_pickup(weapon)
             if switched:
                 world.announce(config.WEAPON_NAMES.get(weapon, weapon.upper()), 1.0)

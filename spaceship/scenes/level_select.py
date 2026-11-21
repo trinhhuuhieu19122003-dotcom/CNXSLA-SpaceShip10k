@@ -57,7 +57,7 @@ class LevelSelectScene(Scene):
         if self.unlocked(number):
             start_level(self.game, number)
         else:
-            self.game.audio.play("beep")
+            self.game.audio.play("ui_back")
 
     def _activate(self, index: int) -> None:
         if index < LEVEL_COUNT:
@@ -72,6 +72,7 @@ class LevelSelectScene(Scene):
     def handle_event(self, event) -> None:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
+                self.game.audio.play("ui_back")
                 self._back()
                 return
             if pygame.K_0 <= event.key <= pygame.K_9:

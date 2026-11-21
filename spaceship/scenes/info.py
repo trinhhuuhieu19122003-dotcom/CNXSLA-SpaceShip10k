@@ -33,6 +33,7 @@ class _InfoScene(Scene):
     def _back(self, _index=0) -> None:
         from spaceship.scenes.menu import MenuScene
 
+        self.game.audio.play("ui_back")
         self.game.change_scene(MenuScene(self.game))
 
     def handle_event(self, event) -> None:

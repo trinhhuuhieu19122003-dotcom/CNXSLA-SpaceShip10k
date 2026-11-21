@@ -232,7 +232,7 @@ def trigger_skill(world: World) -> Optional[Skill]:
     skill = SKILLS[p.weapon](world)
     world.skills.append(skill)
     world.announce(config.SKILL_NAMES[p.weapon], 1.2)
-    world.play("explosion")
+    world.play(f"skill_{p.weapon}")
     world.shake(10)
     return skill
 

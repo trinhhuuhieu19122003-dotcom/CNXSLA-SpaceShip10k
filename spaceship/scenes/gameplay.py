@@ -68,7 +68,6 @@ class GameplayScene(Scene):
     def __init__(self, game, mode: GameMode, level_number: Optional[int] = None, loadout: Optional[dict] = None) -> None:
         super().__init__(game)
         self.mode = mode
-        self.music = None if mode is GameMode.INFERNO else "game"
         self.level_number = level_number or 1
         self.level = get_level(self.level_number) if mode is GameMode.CAMPAIGN else None
         self.world = World(mode=mode, rng=game.rng, preset=game.settings.difficulty, level=self.level)
@@ -86,6 +85,12 @@ class GameplayScene(Scene):
         self.finished = False
         self._encounters: deque[BestiaryEntry] = deque()
         self._encounter_ticks = 0
+        # Âm thanh: nhạc theo hồi, đổi sang nhạc boss; tiếng báo Nộ đầy / boss đổi pha / bộ đàm
+        self.music = self._base_music()
+        self._boss_track: Optional[str] = None
+        self._boss_phases: dict[int, int] = {}
+        self._rage_was_full = self.world.player.rage_full
+        self._radio_line = None
         game.controls.reset_hand_mode()
 
     def _apply_loadout(self, loadout: dict) -> None:
@@ -135,6 +140,8 @@ class GameplayScene(Scene):
             p.move(controls)
             p.tick_timers()
             self._discover_enemies()
+            self._update_audio()
+            self._flush_sounds()
             return
 
         w.survival_time += TICK
@@ -145,7 +152,7 @@ class GameplayScene(Scene):
         p.move(controls)
         p.tick_timers()
         if controls.fire and weapons.fire_player(w):
-            w.play("laser")
+            w.play(f"fire_{p.weapon}")
         p.fire_drone(w.bullets)
         if controls.nuke and p.rage_full:
             weapons.trigger_skill(w)
@@ -174,6 +181,7 @@ class GameplayScene(Scene):
             w.screen_shake -= 1
         if w.flash > 0:
             w.flash -= 1
+        self._update_audio()
         self._flush_sounds()
         if w.outcome:
             self._finish()
@@ -210,6 +218,43 @@ class GameplayScene(Scene):
                 y = max(y, below_preview[1])
         return min(y, HEIGHT - ENCOUNTER_HEIGHT - 14)
 
+    # --- Âm thanh -------------------------------------------------------------------------
+    def _base_music(self) -> str:
+        if self.level is not None:
+            return f"act{self.level.act}"
+        return "act3" if self.mode is GameMode.INFERNO else "game"
+
+    def _boss_music(self, bosses) -> str:
+        if self.mode is GameMode.INFERNO or any(b.kind == "mothership" for b in bosses):
+            return "final_boss"
+        return "game"                              # nhạc gốc thời đại học cho trận boss
+
+    def _update_audio(self) -> None:
+        w, audio = self.world, self.game.audio
+        bosses = w.bosses
+        if bosses:
+            self._boss_track = self._boss_music(bosses)
+        elif self.level is None:
+            self._boss_track = None                # Vô tận/Hỏa ngục: hạ boss xong về nhạc nền
+        track = self._boss_track or self._base_music()
+        if track != self.music:
+            self.music = track
+            audio.play_music(track)
+        for boss in bosses:
+            before = self._boss_phases.setdefault(boss.id, boss.phase)
+            if boss.phase != before:
+                self._boss_phases[boss.id] = boss.phase
+                w.play("boss_phase")
+        if w.player.rage_full and not self._rage_was_full:
+            w.play("rage_full")
+        self._rage_was_full = w.player.rage_full
+        line = w.radio[0] if w.radio else None
+        if line is not None:
+            audio.duck()
+            if line is not self._radio_line:
+                audio.voice(line.speaker, "radio")
+        self._radio_line = line
+
     def _flush_sounds(self) -> None:
         for sound in self.world.sounds:
             self.game.audio.play(sound)
@@ -245,7 +290,8 @@ class GameplayScene(Scene):
 
         if victory and self.level_number == LEVEL_COUNT:          # phá đảo -> đoạn kết
             game.change_scene(CutsceneScene(game, ENDING_SCRIPT, lambda: result_scene(ending=True),
-                                            backdrop="ending", title="KẾT THÚC"))
+                                            backdrop="ending", title="KẾT THÚC",
+                                            music="ending"))
         else:
             game.change_scene(result_scene())
 

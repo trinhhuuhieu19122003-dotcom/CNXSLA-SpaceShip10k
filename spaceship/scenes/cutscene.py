@@ -84,11 +84,11 @@ class Typewriter:
 
 
 class CutsceneScene(Scene):
-    music = "menu"
-
     def __init__(self, game, script, next_scene: Callable[[], Scene], backdrop: str = "radar",
-                 title: str = "", subtitle: str = "") -> None:
+                 title: str = "", subtitle: str = "", music: str = "briefing") -> None:
         super().__init__(game)
+        self.music = music
+        self._typed = 0                 # đếm ký tự đã gõ: cứ 2 ký tự phát 1 tiếng cho đỡ dày
         self.script: List[Line] = list(script) if script and isinstance(script[0], Line) else make_script(script)
         self.next_scene = next_scene
         self.backdrop, self.title, self.subtitle = backdrop, title, subtitle
@@ -157,8 +157,10 @@ class CutsceneScene(Scene):
                 self.game.change_scene(self.next_scene())
             return
 
-        if self.typewriter.update():
-            self.game.audio.play("beep")
+        if self.typewriter.update() and self.line is not None:
+            self._typed += 1
+            if self._typed % 2:
+                self.game.audio.voice(self.line.speaker)
         self.radar_angle += 0.05
         for dot in self.radar_dots:
             dot[1] += dot[2]

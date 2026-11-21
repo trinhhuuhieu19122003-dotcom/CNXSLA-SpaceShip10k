@@ -61,6 +61,7 @@ class PauseScene(Scene):
         if action == "resume":
             self.countdown = int(config.RESUME_COUNTDOWN_SECONDS * config.TICK_RATE)
             self._auto_resume = False
+            self.game.audio.play("ui_move")
         else:
             self.game.change_scene(MenuScene(self.game))
 
@@ -69,7 +70,12 @@ class PauseScene(Scene):
         self.hand_seen_ticks = 0
         self._auto_resume = False
 
+    def _count_number(self) -> int:
+        total = config.RESUME_COUNTDOWN_SECONDS * config.TICK_RATE
+        return max(1, math.ceil(self.countdown / total * 3))
+
     def update(self, controls) -> None:
+        self.game.audio.duck()                       # nhạc nhỏ lại khi tạm dừng
         pinching = controls.gesture is Gesture.PINCH
         if self.counting and self._auto_resume and pinching and controls.target is not None:
             # Một lần chụm chủ ý có thể ngắt đếm tự động để dùng menu.
@@ -86,7 +92,10 @@ class PauseScene(Scene):
             if self.reason == "hand" and not hand_visible and controls.hand_absent > 0.5:
                 self._cancel_countdown()
                 return
+            before = self._count_number()
             self.countdown -= 1
+            if self.countdown and self._count_number() != before:
+                self.game.audio.play("ui_move")
             if self.countdown == 0:
                 self.game.change_scene(self.gameplay)
 

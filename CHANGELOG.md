@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.1.0-dev] – Âm thanh
+- Viết lại `core/audio.py`: 25 hiệu ứng CC0 (Kenney, SRG774) thay cho 2 tiếng cũ; giới hạn số tiếng phát chồng và
+  khoảng nghỉ tối thiểu cho từng tiếng; tiếng lặp nhiều có 3 cao độ ngẫu nhiên (RNG riêng, không làm lệch trận).
+- Gắn tiếng cho mọi sự kiện: bắn theo từng súng, trúng đạn, nổ nhỏ/lớn/boss, bị thương, khiên chặn đạn, nhặt đồ,
+  lên cấp, **đổi súng mất cấp** (tiếng "hụt"), Nộ đầy, 4 kỹ năng Nộ, boss đổi pha, qua ải, thắng/thua, menu.
+- Tiếng tổng hợp bằng numpy: **còi báo động boss**, **giọng gõ chữ riêng** cho KX-17 / ARIA / Chỉ huy trong đoạn hội
+  thoại, tiếng mở bộ đàm khi có thoại trong trận.
+- Nhạc: đoạn hội thoại, **mỗi hồi một bài**, trận boss dùng **nhạc gốc thời đại học**, Tàu Mẹ có nhạc trận cuối,
+  đoạn kết có nhạc riêng; Hỏa ngục hết im lặng. Đổi bài nhỏ dần rồi to dần; nhạc tự nhỏ lại khi có thoại/tạm dừng.
+- Cài đặt thêm **Nhạc nền** và **Hiệu ứng** (0–100%, lưu trong `settings.json`); đếm ngược 3-2-1 có tiếng tích.
+- Hai bài nhạc gốc được giảm âm lượng cho đều với nhạc mới; bỏ `laser.mp3`, `explosion.mp3` cũ (vẫn còn ở `main`).
+- Thêm `CREDITS.md`; 10 test mới (`tests/test_audio.py`), tổng 77.
+
 ## [2.1.0-dev] – Màn Hướng dẫn mới & Sổ tay chiến đấu
 - Màn Hướng dẫn chia **5 thẻ**: Điều khiển · Vũ khí · Vật phẩm · Kẻ địch · Chế độ chơi; đổi thẻ bằng ←/→,
   chuột hoặc di tay + chụm tay.

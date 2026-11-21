@@ -45,9 +45,9 @@ class Game:
 
         self.rng = random.Random(seed)
         self.assets = Assets()
-        self.audio = Audio()
         self.save = save or SaveData.load()
         self.settings = settings or Settings.load()
+        self.audio = Audio(music_volume=self.settings.music_volume, sfx_volume=self.settings.sfx_volume)
         self.starfield = Starfield(rng=self.rng)
         self.tracker = HandTracker(camera_index).start() if camera else None
         self.controls = ControlHub(self.tracker, self.settings)
@@ -158,6 +158,7 @@ class Game:
             self.menu_pinch_consumed = False
         self.scene.update(controls)
         self._apply_pending_scene()
+        self.audio.update()
 
     def render(self) -> None:
         self.scene.draw(self.screen)

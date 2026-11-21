@@ -86,7 +86,7 @@ class CalibrationScene(Scene):
             settings.save()
             self.game.controls.apply_settings()
             self.done_ticks = 1
-            self.game.audio.play("beep")
+            self.game.audio.play("level_up")
 
     # --- Vẽ -----------------------------------------------------------------------------
     def draw(self, surface: pygame.Surface) -> None:

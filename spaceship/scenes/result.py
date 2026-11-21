@@ -27,9 +27,16 @@ class ResultScene(Scene):
         self.result = result
         self.new_record = new_record
         self.level, self.stars, self.loadout, self.ending = level, stars, loadout, ending
+        self.music = "ending" if ending else None      # đoạn kết: giữ nhạc kết thúc
+        self._jingle_played = False
         self.ticks = 0
         self.buttons = self._make_buttons()
         self.menu = MenuList.for_buttons(game, self.buttons, self._do)
+
+    def on_enter(self) -> None:
+        if not self._jingle_played:                   # không phát lại khi quay về từ màn khác
+            self._jingle_played = True
+            self.game.audio.play("victory" if self.result.victory else "defeat")
 
     def _make_buttons(self) -> List[Button]:
         r = self.result
@@ -55,6 +62,7 @@ class ResultScene(Scene):
                 self._do(self.buttons[0].action)
                 return
             elif event.key == pygame.K_ESCAPE:
+                self.game.audio.play("ui_back")
                 self._do("menu")
                 return
         self.menu.handle_event(event)
