@@ -139,7 +139,7 @@ Dữ liệu của bản gốc (`highscore.txt`, `stats.json`) được tự nh�
 Lần đầu chơi mỗi khi mở game, màn **Hiệu chỉnh tay** ghi nhận tư thế nghỉ của bạn làm tâm màn hình.
 Độ nhạy tay (Thấp / Vừa / Cao) và hiệu chỉnh lại nằm trong **Cài đặt**. Tay trái hay tay phải đều được.
 
-**Cảm giác đánh:** bị trúng đạn thì màn hình khựng một nhịp, rung nhẹ, viền đỏ loé lên và tàu được **bất tử nửa
+**Cảm giác đánh:** bị trúng đạn thì màn hình khựng một nhịp, rung nhẹ, viền đỏ loé lên và tàu được **bất tử 1/4
 giây** (một chùm đạn không rút sạch máu); máu dưới 30% viền đỏ đập theo nhịp tim; hạ boss khựng hình lâu hơn. Ai dễ
 chóng mặt chọn **Cài đặt → Rung & nháy màn hình: Nhẹ / Tắt** (viền đỏ báo trúng đạn vẫn giữ). Chi tiết:
 [docs/design/cam-giac-danh.md](docs/design/cam-giac-danh.md).

@@ -40,7 +40,20 @@ Bình phương là mấu chốt: cú nhẹ gần như không rung, cú nặng gi
 Trước đây chỉ có bất tử sau khi hồi sinh. Một chùm 3 viên đạn sát nhau có thể trừ 45 máu trong 3 tick:
 người chơi không kịp phản ứng, nhất là khi lái bằng tay (chậm hơn bàn phím).
 
-Giờ sau mỗi lần trúng đạn được bất tử `MERCY_TICKS` = 30 tick (0,5 giây). Lúc bất tử tàu chỉ ẩn 1/4 thời gian
+Giờ sau mỗi lần trúng đạn được bất tử `MERCY_TICKS` = 15 tick (0,25 giây). Chùm đạn thường bay sát nhau trong
+vài tick nên 0,25 giây đủ để chỉ bị trừ một lần.
+
+Vì sao không dài hơn? Đã cho một bot né đạn đơn giản chơi 2 phút × 6 ván mỗi cấu hình:
+
+| Cấu hình | Ải 6 (Thường): mất mạng/phút | Hỏa ngục: mất mạng/phút |
+|---|---|---|
+| Không bất tử ngắn (bản trước) | 0,68 | 6,45 |
+| Bất tử 0,25 giây (**đang dùng**) | 0,51 | 4,52 |
+| Bất tử 0,5 giây | 0,26 | 4,07 |
+
+0,5 giây làm game dễ đi quá nhiều, mất cái "cay" của bản gốc. 0,25 giây chỉ bỏ đi những lần chết oan.
+Lính cảm tử báo trước gần như không làm bot chết ít đi (bot vốn tránh xa địch); nó chỉ giúp người chơi đọc được
+tình huống. Lúc bất tử tàu chỉ ẩn 1/4 thời gian
 (trước là 1/2), vì đang né đạn mà tàu biến mất thì càng dễ chết oan.
 
 ## 4. Viền đỏ & chớp sáng

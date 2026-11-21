@@ -188,8 +188,9 @@ HITSTOP_HURT = 4                 # bị trúng đạn
 HITSTOP_LIFE_LOST = 10           # mất một mạng
 HITSTOP_ELITE = 3                # hạ địch to (Lính Khiên, Đẻ Trứng, Pháo tháp)
 HITSTOP_BOSS = 12                # hạ boss
-#: Sau khi trúng đạn được bất tử ngắn (nửa giây): một chùm đạn không rút sạch máu trong 3 tick.
-MERCY_TICKS = 30
+#: Sau khi trúng đạn được bất tử ngắn (1/4 giây): một chùm đạn không rút sạch máu trong 3 tick.
+#: Cố ý ngắn (đã thử 0,5 giây: bot mất mạng ít hơn ~40-60%, game dễ hẳn) - chỉ chống "trúng 3 viên một lúc".
+MERCY_TICKS = 15
 #: Viền đỏ quanh màn hình khi bị trúng đạn / khi máu thấp.
 HURT_VIGNETTE_TICKS = 24
 LOW_HP_RATIO = 0.3

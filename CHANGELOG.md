@@ -12,6 +12,8 @@
 - **Hủy đạn**: hạ boss hoặc boss sang pha mới → đạn địch trên màn thành tia sáng vàng, +5 điểm mỗi viên.
 - **Chuỗi hạ địch**: hạ liên tiếp (cách nhau < 2,5 giây), mỗi 10 lần +1 bậc nhân điểm, tối đa x4; bị trúng đạn mất
   chuỗi. Hiện "CHUỖI xN" trên tàu, trên dải điểm, ở bảng trái màn rộng; màn Kết quả ghi chuỗi dài nhất.
+- **Bất tử sau khi trúng đạn rút còn 0,25 giây** (trước: 0,5): bot né đạn chạy 6 ván mỗi cấu hình cho thấy 0,5 giây
+  làm số mạng mất giảm ~60% ở ải 6 và ~37% ở Hỏa ngục, quá dễ. 0,25 giây vẫn chặn được "trúng cả chùm 3 viên".
 - **Sát đạn (graze)**: đạn địch sượt qua trong 34 px mà không trúng → +2 điểm (nhân theo chuỗi), tia sáng nhỏ,
   tiếng "xẹt", và giữ chuỗi hạ không bị đứt. Không tính khi đang bất tử.
 - **Thống kê**: lưu chuỗi hạ dài nhất của từng chế độ (`ModeRecord.best_combo`), hiện dưới Điểm cao.
@@ -25,7 +27,7 @@
   Cú nhẹ chỉ hơi nhích, hạ boss giật mạnh; thay cho rung ±8 px cố định.
 - **Khựng hình (hitstop)** `World.freeze`: trúng đạn 4 tick, mất mạng 10, hạ địch to 3, hạ boss 12. Không cộng dồn;
   chữ thông báo vẫn chạy trong lúc khựng.
-- **Bất tử ngắn sau khi trúng đạn** (`MERCY_TICKS` = 0,5 giây): chùm đạn sát nhau chỉ trừ máu một lần. Lúc bất tử tàu
+- **Bất tử ngắn sau khi trúng đạn** (`MERCY_TICKS` = 0,25 giây): chùm đạn sát nhau chỉ trừ máu một lần. Lúc bất tử tàu
   chỉ ẩn 1/4 thời gian (trước là 1/2) nên vẫn thấy rõ để né; vòng vàng chỉ còn sau khi hồi sinh.
 - **Viền đỏ** (`ui/feel.py`): loé khi trúng đạn, đập theo nhịp tim khi máu ≤ 30%. Vẽ trước HUD.
 - **Chớp sáng mờ dần** (tối đa alpha 150) thay cho trắng xóa cả màn.
