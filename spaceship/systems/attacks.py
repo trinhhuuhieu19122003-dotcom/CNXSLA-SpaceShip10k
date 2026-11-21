@@ -14,6 +14,7 @@ import math
 
 from spaceship import config
 from spaceship.config import GameMode
+from spaceship.entities.effects import Shockwave
 from spaceship.entities.enemies import Boss, Enemy, InfectedAlly, Parasite
 from spaceship.entities.projectiles import EnemyBullet
 from spaceship.systems.world import World
@@ -262,6 +263,8 @@ def boss_attack(world: World, boss: Boss) -> None:
     if phase != boss.phase:
         if phase > boss.phase and boss.arrived:
             world.cancel_enemy_bullets()              # chuyển pha: dọn đạn cũ, thưởng điểm, nhịp thở ngắn
+            world.particles.append(Shockwave(boss.x, boss.y, (255, 220, 110), max_radius=260, life=26))
+            world.shake(6)
         boss.phase = phase
         if boss.kind in SHIELD_REGEN_KINDS:           # chuyển pha -> hồi một lớp khiên
             boss.shield_hp += boss.max_hp * 0.11
