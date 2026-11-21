@@ -42,6 +42,10 @@ def upscale(source: pygame.Surface, size: Tuple[int, int]) -> pygame.Surface:
         return source
     sw, sh = source.get_size()
     k = min(size[0] // sw, size[1] // sh)
+    if k >= 3:
+        # 4K trở lên: phóng thẳng bằng nhân điểm ảnh (mỗi điểm ảnh game thành khối 3-4 điểm ảnh màn hình, lệch
+        # nhau 1 điểm không thấy được). Làm mượt ảnh 5 triệu điểm ảnh tốn ~20 ms/hình, kéo game xuống ~20 FPS.
+        return pygame.transform.scale(source, size)
     if k >= 2:
         source = pygame.transform.scale(source, (sw * k, sh * k))
         if source.get_size() == size:
@@ -348,16 +352,20 @@ class Game:
             self.window.fill((0, 0, 0))
             return
         self._backdrop_frame += 1
-        if self._backdrop is None or self._backdrop_key != (ww, wh) or self._backdrop_frame % 4 == 0:
+        if self._backdrop is None or self._backdrop_key != (ww, wh) or self._backdrop_frame % 6 == 0:
             self._backdrop_key = (ww, wh)
             tiny = pygame.transform.smoothscale(source, (40, 35))
             # Làm tối trên ảnh tí hon (1 400 điểm ảnh) rồi mới phóng: kết quả y hệt nhưng nhanh hơn ~20 lần so với
             # làm tối ảnh đã phóng (3 triệu điểm ảnh ở 1080p, từng gây giật ~30 ms mỗi 4 hình ở menu).
             tiny.fill((95, 95, 108), special_flags=pygame.BLEND_MULT)
+            # Chỉ phóng phần sẽ hiện trong cửa sổ (ảnh "phủ kín" bị cắt bớt 2 mép): ở 4K đỡ ~40% điểm ảnh phải làm mượt.
             cover = max(ww / config.WIDTH, wh / config.HEIGHT)
-            self._backdrop = pygame.transform.smoothscale(
-                tiny, (int(config.WIDTH * cover) + 2, int(config.HEIGHT * cover) + 2))
-        self.window.blit(self._backdrop, self._backdrop.get_rect(center=(ww // 2, wh // 2)))
+            tw, th = tiny.get_size()
+            crop = pygame.Rect(0, 0, max(1, round(tw * ww / (config.WIDTH * cover))),
+                               max(1, round(th * wh / (config.HEIGHT * cover))))
+            crop.center = (tw // 2, th // 2)
+            self._backdrop = pygame.transform.smoothscale(tiny.subsurface(crop.clip(tiny.get_rect())), (ww, wh))
+        self.window.blit(self._backdrop, (0, 0))
 
     def _darken(self, surface: pygame.Surface, darkness: int) -> None:
         if not darkness:

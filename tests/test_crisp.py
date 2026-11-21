@@ -160,3 +160,18 @@ class HudCornerCrispTest(unittest.TestCase):
         frame = pygame.Surface((config.WIDTH, config.HEIGHT))
         play.draw(frame)                                          # vẽ thẳng (không ghi) vẫn đủ chữ
         self.assertGreater(pygame.transform.average_color(frame, (20, config.HEIGHT - 70, 30, 20))[0], 5)
+
+
+class UpscaleTest(unittest.TestCase):
+    def test_sizes_and_sharp_paths(self):
+        from spaceship.app import upscale
+
+        src = pygame.Surface((800, 700))
+        src.fill((0, 0, 0))
+        src.fill((255, 255, 255), (400, 0, 1, 700))            # vạch trắng rộng 1 điểm ảnh
+        self.assertIs(upscale(src, (800, 700)), src)
+        for size in ((1234, 1080), (1645, 1440), (2468, 2160)):
+            self.assertEqual(upscale(src, size).get_size(), size)
+        big = upscale(src, (2468, 2160))                        # 4K: nhân điểm ảnh thẳng, không làm mượt
+        row = [big.get_at((x, 100))[0] for x in range(1230, 1250)]
+        self.assertTrue(set(row) <= {0, 255})

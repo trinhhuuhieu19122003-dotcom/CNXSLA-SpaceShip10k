@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/Python-3.10–3.13-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python">
   <img src="https://img.shields.io/badge/pygame-2.5+-2b9348?style=flat-square" alt="pygame">
   <img src="https://img.shields.io/badge/MediaPipe-Hands-4285F4?style=flat-square&logo=google&logoColor=white" alt="MediaPipe">
-  <img src="https://img.shields.io/badge/test-153_passed-success?style=flat-square" alt="Test">
+  <img src="https://img.shields.io/badge/test-154_passed-success?style=flat-square" alt="Test">
 </p>
 
 <p align="center">
@@ -65,7 +65,7 @@
 | **Đồ họa phát sáng** | Đạn neon, vụ nổ có sóng xung kích, địch nháy khi trúng đạn, nền cuộn theo từng hồi. Chữ vẽ lại ở độ phân giải màn hình nên toàn màn hình 1080p/2K/4K vẫn sắc nét. |
 | **Cảm giác đánh** | Khựng hình khi trúng đòn, rung theo độ nặng, viền đỏ khi trúng đạn / máu thấp kèm tiếng tim, lính cảm tử báo trước khi lao, hủy đạn khi hạ boss; tắt bớt được trong Cài đặt. |
 | **Có chiều sâu** | 4 súng, mỗi súng một dạng tối thượng ở cấp 6 và một kỹ năng Nộ riêng; 3 mức độ khó; chấm 1–3 sao mỗi ải; chuỗi hạ nhân điểm tới x4, sát đạn; 21 huy hiệu và Bảng điểm 5 ván cao nhất mỗi chế độ. |
-| **Mã nguồn sạch, có test** | Chia module rõ ràng, dữ liệu ải tách khỏi logic, 153 test tự động, có bot tự chơi hết chiến dịch. |
+| **Mã nguồn sạch, có test** | Chia module rõ ràng, dữ liệu ải tách khỏi logic, 154 test tự động, có bot tự chơi hết chiến dịch. |
 
 ## Cốt truyện
 
