@@ -27,6 +27,17 @@ class StorageTest(unittest.TestCase):
         self.assertEqual((rec.best_score, rec.best_time), (100, 90))
         self.assertEqual(again.highscore, 100)
 
+    def test_best_combo_is_kept_and_old_saves_load(self):
+        data = self.load()
+        data.record(GameResult(GameMode.ENDLESS, 100, 10, 1, 30, best_combo=24))
+        data.record(GameResult(GameMode.ENDLESS, 50, 5, 0, 30, best_combo=7))
+        self.assertEqual(self.load().modes[GameMode.ENDLESS].best_combo, 24)
+        raw = json.loads(self.path.read_text(encoding="utf-8"))
+        for record in raw["modes"].values():
+            record.pop("best_combo")                       # file lưu cũ chưa có trường này
+        self.path.write_text(json.dumps(raw), encoding="utf-8")
+        self.assertEqual(self.load().modes[GameMode.ENDLESS].best_combo, 0)
+
     def test_new_record_flag(self):
         data = self.load()
         self.assertTrue(data.record(GameResult(GameMode.CAMPAIGN, 10, 1, 0, 5)))

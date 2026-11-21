@@ -46,6 +46,7 @@ class ModeRecord:
     total_boss_kills: int = 0
     games_played: int = 0
     best_time: float = 0.0
+    best_combo: int = 0                 # chuỗi hạ liên tiếp dài nhất
 
 
 @dataclass
@@ -56,6 +57,7 @@ class GameResult:
     boss_kills: int
     survival_time: float
     victory: bool = False
+    best_combo: int = 0
 
 
 @dataclass
@@ -154,6 +156,7 @@ class SaveData:
         rec.total_boss_kills += result.boss_kills
         rec.best_score = max(rec.best_score, result.score)
         rec.best_time = max(rec.best_time, round(result.survival_time, 1))
+        rec.best_combo = max(rec.best_combo, result.best_combo)
         new_record = result.score > self.highscore
         if new_record:
             self.highscore = result.score

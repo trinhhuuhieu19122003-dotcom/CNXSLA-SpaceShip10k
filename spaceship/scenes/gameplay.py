@@ -347,7 +347,7 @@ class GameplayScene(Scene):
         w = self.world
         victory = w.outcome == "victory"
         result = GameResult(mode=self.mode, score=w.score, kills=w.kills, boss_kills=w.boss_kills,
-                            survival_time=w.survival_time, victory=victory)
+                            survival_time=w.survival_time, victory=victory, best_combo=w.best_combo)
         new_record = self.game.save.record(result)
         game = self.game
         stars = self.stars if victory and self.level is not None else 0

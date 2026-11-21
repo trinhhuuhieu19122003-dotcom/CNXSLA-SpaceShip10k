@@ -371,6 +371,9 @@ class AchievementsScene(Scene):
             for (label, cx), value in zip(self.COLUMNS, values):
                 text = fit_text(a, str(value), 22, ACCENT if label == "ĐIỂM CAO" else TEXT, 74, role="ui")
                 surface.blit(text, text.get_rect(center=(cx, row.centery)))
+                if label == "ĐIỂM CAO" and rec.best_combo >= 2:          # chuỗi hạ dài nhất, ngay dưới điểm cao
+                    combo = fit_text(a, f"chuỗi {rec.best_combo}", 13, SECONDARY, 80, role="label")
+                    surface.blit(combo, combo.get_rect(center=(cx, row.centery + 24)))
         extra = (f"Chu kỳ đã phá đảo: {len(save.cycle_history)} · Kỹ năng Nộ đã dùng: {save.counters.get('skills', 0)}"
                  f" · Đạn hộ vệ đã chặn: {save.counters.get('guard_blocks', 0)}")
         blit_center(surface, fit_text(a, extra, 14, SECONDARY, PANEL.width - 50, role="body"), PANEL.bottom - 78)
