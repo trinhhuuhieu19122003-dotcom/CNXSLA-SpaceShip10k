@@ -153,3 +153,84 @@ class ScreenFxSettingTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class KamikazeTelegraphTest(unittest.TestCase):
+    def make(self):
+        from spaceship.entities.player import Player
+
+        w = world()
+        e = Enemy(1, stage=2, rng=random.Random(1), kamikaze_chance=1)
+        e.x, e.y, e.reached_target = 400, 150, True
+        e.hp = e.max_hp * 0.2                      # bị thương nặng -> nổi điên
+        w.enemies.append(e)
+        return w, e
+
+    def test_locks_on_before_diving_and_beeps(self):
+        from spaceship.systems import attacks
+
+        w, e = self.make()
+        attacks.run_enemy_ai(w)
+        self.assertIn("lock_on", w.sounds)
+        start = (e.x, e.y)
+        for _ in range(config.KAMIKAZE_WINDUP_TICKS - 1):
+            e.update(w.player)
+        self.assertEqual((e.x, e.y), start)        # đang khóa: đứng yên (chỉ rung khi vẽ)
+        e.update(w.player)
+        e.update(w.player)
+        self.assertGreater(e.y, start[1])          # đã lao xuống phía tàu
+
+    def test_dive_turns_slowly_so_a_side_step_dodges(self):
+        w, e = self.make()
+        p = w.player
+        p.x, p.y = 400, 600
+        for _ in range(config.KAMIKAZE_WINDUP_TICKS + 1):
+            e.update(p)
+        p.x = 650                                  # né ngang ngay khi nó lao
+        closest = 10 ** 9
+        for _ in range(200):
+            e.update(p)
+            closest = min(closest, ((e.x - p.x) ** 2 + (e.y - p.y) ** 2) ** 0.5)
+            if e.gone:
+                break
+        self.assertGreater(closest, 30)            # không đâm trúng
+        self.assertTrue(e.gone)                    # bay trượt ra khỏi màn và được dọn
+
+    def test_lock_on_draws(self):
+        import pygame
+        from spaceship.core.assets import Assets
+
+        w, e = self.make()
+        e.update(w.player)
+        e.draw(pygame.Surface((800, 700)), Assets())
+
+
+class BulletCancelTest(unittest.TestCase):
+    def test_boss_kill_turns_bullets_into_points(self):
+        w = world()
+        w.enemy_bullets.extend(EnemyBullet(100 + i * 10, 200, 90) for i in range(10))
+        boss = Boss(1.0, stage=1)
+        w.enemies.append(boss)
+        score = w.score
+        combat.kill_enemy(w, boss)
+        self.assertEqual(w.enemy_bullets, [])
+        self.assertEqual(w.score - score, boss.score + 10 * config.BULLET_CANCEL_SCORE)
+        self.assertIn("bullet_cancel", w.sounds)
+
+    def test_boss_phase_change_cancels_bullets(self):
+        from spaceship.systems import attacks
+
+        w = world()
+        boss = Boss(1.0, stage=1)
+        boss.y = boss.hover_y if hasattr(boss, "hover_y") else 150
+        w.enemies.append(boss)
+        for _ in range(400):
+            if boss.arrived:
+                break
+            boss.update(w.player)
+        self.assertTrue(boss.arrived)
+        w.enemy_bullets.extend(EnemyBullet(300, 300, 90) for _ in range(5))
+        boss.hp = boss.max_hp * 0.5                # sang pha 2
+        attacks.boss_attack(w, boss)
+        self.assertEqual(boss.phase, 2)
+        self.assertFalse(any(b.y == 300 and b.x == 300 for b in w.enemy_bullets))

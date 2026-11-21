@@ -260,6 +260,8 @@ def boss_attack(world: World, boss: Boss) -> None:
     ratio = boss.hp_ratio
     phase = _phase_for(ratio)
     if phase != boss.phase:
+        if phase > boss.phase and boss.arrived:
+            world.cancel_enemy_bullets()              # chuyển pha: dọn đạn cũ, thưởng điểm, nhịp thở ngắn
         boss.phase = phase
         if boss.kind in SHIELD_REGEN_KINDS:           # chuyển pha -> hồi một lớp khiên
             boss.shield_hp += boss.max_hp * 0.11
@@ -284,6 +286,8 @@ def run_enemy_ai(world: World) -> None:
         if enemy.hp_bar_timer > 0:
             enemy.hp_bar_timer -= 1
         enemy.update(world.player)
+        if getattr(enemy, "just_locked", False):
+            world.play("lock_on")                     # kamikaze khóa mục tiêu: bíp cảnh báo
         if enemy.is_boss:
             boss_attack(world, enemy)
         elif enemy.ai in ENEMY_AI:

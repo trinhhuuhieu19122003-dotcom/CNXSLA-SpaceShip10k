@@ -199,3 +199,10 @@ FLASH_MAX_ALPHA = 150
 SCREEN_FX_LEVELS = ("full", "reduced", "off")
 SCREEN_FX_LABELS = {"full": "ĐẦY ĐỦ", "reduced": "NHẸ", "off": "TẮT"}
 SCREEN_FX_SCALE = {"full": 1.0, "reduced": 0.4, "off": 0.0}
+#: Kamikaze: khựng lại "khóa mục tiêu" (rung + vòng đỏ + tiếng bíp) rồi mới lao; khi lao chỉ bẻ lái được
+#: chừng này độ mỗi tick và chỉ trong một khoảng ngắn, sau đó bay thẳng: né ngang kịp nếu phản xạ nhanh.
+KAMIKAZE_WINDUP_TICKS = 30
+KAMIKAZE_TURN_DEG = 1.0
+KAMIKAZE_HOMING_TICKS = 20
+#: Hạ boss / boss chuyển pha: đạn địch trên màn biến thành điểm thưởng ("hủy đạn" kiểu game bắn tàu Nhật).
+BULLET_CANCEL_SCORE = 5

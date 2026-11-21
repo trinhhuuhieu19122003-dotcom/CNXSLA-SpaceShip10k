@@ -83,6 +83,7 @@ def kill_enemy(world: World, enemy: EnemyBase) -> None:
         for dx, dy, size in ((0, 0, 3.0), (-50, -20, 1.6), (55, 15, 1.6), (-20, 40, 1.2), (30, -40, 1.2)):
             world.explode(enemy.x + dx, enemy.y + dy, size)
         world.boss_kills += 1
+        world.cancel_enemy_bullets()
         world.shake(20)
         world.freeze(config.HITSTOP_BOSS)
         world.defeated_bosses.append(enemy)

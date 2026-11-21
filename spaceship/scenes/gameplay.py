@@ -100,6 +100,7 @@ class GameplayScene(Scene):
         self._boss_track: Optional[str] = None
         self._boss_phases: dict[int, int] = {}
         self._rage_was_full = self.world.player.rage_full
+        self._heartbeat = -1
         self._radio_line = None
         game.controls.reset_hand_mode()
 
@@ -308,6 +309,12 @@ class GameplayScene(Scene):
             if boss.phase != before:
                 self._boss_phases[boss.id] = boss.phase
                 w.play("boss_phase")
+        p = w.player
+        if 0 < p.hp <= p.max_hp * config.LOW_HP_RATIO and not w.outcome:    # máu thấp: tim đập theo viền đỏ
+            beat = int(w.survival_time * feel.LOW_HP_BEATS_PER_SECOND)
+            if beat != self._heartbeat:
+                self._heartbeat = beat
+                w.play("heartbeat")
         if w.player.rage_full and not self._rage_was_full:
             w.play("rage_full")
         self._rage_was_full = w.player.rage_full

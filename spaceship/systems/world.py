@@ -144,6 +144,18 @@ class World:
     def bosses(self) -> List[EnemyBase]:
         return [e for e in self.enemies if e.is_boss]
 
+    def cancel_enemy_bullets(self) -> int:
+        """Đạn địch đang bay biến thành tia sáng vàng + điểm thưởng (khi hạ boss / boss chuyển pha).
+        Vừa là phần thưởng, vừa tránh chết oan vì đạn sót lại lúc khung cảnh đang đổi."""
+        count = len(self.enemy_bullets)
+        for bullet in self.enemy_bullets:
+            self.particles.append(Flash(bullet.x, bullet.y, (255, 220, 110), radius=9, life=12))
+        self.enemy_bullets.clear()
+        if count:
+            self.score += count * config.BULLET_CANCEL_SCORE
+            self.play("bullet_cancel")
+        return count
+
     def clear_projectiles(self) -> None:
         self.bullets.clear()
         self.enemy_bullets.clear()

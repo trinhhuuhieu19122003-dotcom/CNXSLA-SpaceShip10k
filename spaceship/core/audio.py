@@ -218,6 +218,26 @@ class Audio:
         t = t_axis(0.12)
         glitch = noise_rng.uniform(-1, 1, len(t)) * self._envelope(len(t), rate, 0.002, 0.05) * 0.5
         sounds["glitch"] = (self._to_sound(glitch), 0.25, Sfx("", 0, 1, 80))
+
+        # Kamikaze khóa mục tiêu: 2 tiếng bíp cao, gắt
+        lock = np.concatenate([blip(1480, 0.05, "square"), gap(0.04), blip(1480, 0.07, "square")])
+        sounds["lock_on"] = (self._to_sound(lock), 0.32, Sfx("", 0, 1, 250))
+
+        # Nhịp tim khi máu thấp: "thịch-thịch" trầm
+        def thump(freq: float, seconds: float) -> np.ndarray:
+            t = t_axis(seconds)
+            return np.sin(2 * np.pi * freq * t * (1 - 0.3 * t / seconds)) * np.exp(-t * 14)
+
+        beat = np.concatenate([thump(62, 0.16), gap(0.09), thump(52, 0.2)]) * 0.9
+        sounds["heartbeat"] = (self._to_sound(beat), 0.55, Sfx("", 0, 1, 600))
+
+        # Hủy đạn: tiếng "lấp lánh" quét lên
+        t = t_axis(0.42)
+        sweep = 700 + 1900 * (t / t[-1]) ** 0.7
+        phase = 2 * np.pi * np.cumsum(sweep) / rate
+        shimmer = (np.sin(phase) * (0.6 + 0.4 * np.sin(2 * np.pi * 28 * t))
+                   * self._envelope(len(t), rate, 0.005, 0.25)) * 0.55
+        sounds["bullet_cancel"] = (self._to_sound(shimmer), 0.4, Sfx("", 0, 1, 400))
         return sounds
 
     # --- Âm lượng ---------------------------------------------------------------------------

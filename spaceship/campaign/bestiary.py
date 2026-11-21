@@ -18,8 +18,8 @@ BESTIARY = {
     ),
     "kamikaze": BestiaryEntry(
         "LÍNH CẢM TỬ", "enemy",
-        "Lính bị thương nặng sẽ lao thẳng vào tàu.",
-        "Hạ dứt điểm, đừng bỏ dở khi chúng còn ít máu.",
+        "Lính bị thương nặng: khựng lại, hiện vòng đỏ + vạch ngắm, rồi lao vào tàu.",
+        "Thấy vạch ngắm thì hạ ngay hoặc né ngang: lao rồi chỉ bẻ lái được một chút.",
     ),
     "parasite": BestiaryEntry(
         "KÝ SINH", "parasite",

@@ -26,7 +26,7 @@ from typing import Optional
 import pygame
 
 from spaceship import config
-from spaceship.config import NEON_GREEN, NEON_MAGENTA, NEON_RED, WIDTH
+from spaceship.config import HEIGHT, NEON_GREEN, NEON_MAGENTA, NEON_RED, WIDTH
 
 _ids = itertools.count(1)
 
@@ -131,6 +131,10 @@ class Enemy(EnemyBase):
         self.arrived_at = 0
         self.shoot_timer = rng.randint(60, 120)
         self.kamikaze = False
+        self.windup = 0                 # > 0: đang khóa mục tiêu, sắp lao
+        self.heading: Optional[float] = None
+        self.dive_ticks = 0
+        self.just_locked = False        # tick đầu tiên khóa mục tiêu (để phát tiếng bíp)
         chance = kamikaze_chance if kamikaze_chance is not None else (0.3 if stage >= 2 else 0.0)
         if stage >= 2:
             self.dx = rng.choice([-2, -1.5, 1.5, 2]) * min(difficulty, 2.0)
@@ -146,6 +150,8 @@ class Enemy(EnemyBase):
 
     @property
     def gone(self) -> bool:
+        if self.heading is not None and self.windup == 0:        # kamikaze lao trượt ra khỏi màn
+            return not (-80 < self.x < WIDTH + 80 and -80 < self.y < HEIGHT + 80)
         return self.retreating and self.y < -60
 
     @property
@@ -156,10 +162,9 @@ class Enemy(EnemyBase):
 
     def update(self, player=None) -> None:
         self.age += 1
+        self.just_locked = False
         if self.enraged and player is not None:
-            ang = math.atan2(player.y - self.y, player.x - self.x)
-            self.x += math.cos(ang) * config.KAMIKAZE_SPEED
-            self.y += math.sin(ang) * config.KAMIKAZE_SPEED
+            self._dive(player)
         elif self.retreating:
             self.y -= 4                                    # rút lui: bay ngược lên khỏi màn hình
         elif not self.reached_target and self.y < self.target_y:
@@ -174,9 +179,48 @@ class Enemy(EnemyBase):
             if self.x < self.radius or self.x > WIDTH - self.radius:
                 self.dx *= -1
 
+    def _dive(self, player) -> None:
+        """Kamikaze: khóa mục tiêu (đứng rung tại chỗ) -> lao, bẻ lái có giới hạn -> bay thẳng."""
+        aim = math.atan2(player.y - self.y, player.x - self.x)
+        if self.heading is None:
+            self.heading, self.windup, self.just_locked = aim, config.KAMIKAZE_WINDUP_TICKS, True
+        if self.windup > 0:
+            self.windup -= 1
+            self.heading = aim                                   # vẫn nhắm theo người chơi khi đang khóa
+            return
+        self.dive_ticks += 1
+        if self.dive_ticks <= config.KAMIKAZE_HOMING_TICKS:
+            turn = math.radians(config.KAMIKAZE_TURN_DEG)
+            diff = (aim - self.heading + math.pi) % (2 * math.pi) - math.pi
+            self.heading += max(-turn, min(turn, diff))
+        self.x += math.cos(self.heading) * config.KAMIKAZE_SPEED
+        self.y += math.sin(self.heading) * config.KAMIKAZE_SPEED
+
     def draw(self, surface: pygame.Surface, assets) -> None:
+        if self.windup > 0:
+            self._draw_lock_on(surface, assets)
+            return
         self._draw_sprite(surface, assets, add=self.enraged)
         self._draw_hp_bar(surface, 30, 25)
+
+    def _draw_lock_on(self, surface: pygame.Surface, assets) -> None:
+        """Cảnh báo sắp lao: thân rung, vòng đỏ co lại, vạch ngắm hướng lao."""
+        k = 1 - self.windup / config.KAMIKAZE_WINDUP_TICKS          # 0 -> 1 khi sắp lao
+        jitter = 2 if self.windup % 4 < 2 else -2
+        x, y = self.x, self.y
+        self.x += jitter
+        self._draw_sprite(surface, assets, add=self.windup % 6 < 3)
+        self.x = x
+        red = (255, int(80 * (1 - k)), 60)
+        pygame.draw.circle(surface, red, (int(x), int(y)), int(36 - 14 * k), 3)
+        if self.windup % 10 < 5:                                      # vòng ngoài nhấp nháy: dễ thấy khi đạn dày
+            pygame.draw.circle(surface, (255, 200, 80), (int(x), int(y)), int(44 - 14 * k), 1)
+        if self.heading is not None:
+            for i in range(5):                                        # vạch đứt khúc theo hướng sẽ lao
+                a, b = 30 + i * 24, 44 + i * 24
+                start = (x + math.cos(self.heading) * a, y + math.sin(self.heading) * a)
+                end = (x + math.cos(self.heading) * b, y + math.sin(self.heading) * b)
+                pygame.draw.line(surface, red, start, end, 2 + int(k * 2))
 
 
 # --- Ký Sinh ------------------------------------------------------------------------------

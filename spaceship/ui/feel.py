@@ -51,7 +51,7 @@ def vignette_alpha(world, fx_scale: float = 1.0) -> int:
         lo, hi = LOW_HP_ALPHA
         beat = 0.5
         if fx_scale > 0:
-            beat = 0.5 + 0.5 * math.sin(world.survival_time * LOW_HP_BEATS_PER_SECOND * 2 * math.pi)
+            beat = 0.5 + 0.5 * math.cos(world.survival_time * LOW_HP_BEATS_PER_SECOND * 2 * math.pi)   # đậm nhất đúng lúc tim đập
         low = lo + (hi - lo) * beat
     return int(max(hurt, low))
 
