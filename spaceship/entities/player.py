@@ -32,8 +32,10 @@ HOMING_ANGLES = {1: [90], 2: [80, 100], 3: [70, 90, 110], 4: [60, 80, 100, 120],
                  5: [50, 70, 90, 110, 130], 6: [0, 51, 103, 154, 206, 257, 309]}   # cấp 6: 7 tên lửa xoắn ốc
 
 SHIP_WIDTH = 100
+GUARD_COLOR = (110, 225, 255)
 DRONE_WIDTH = 54
-DRONE_OFFSETS = ((55, 15), (-55, 15))      # drone 1 bên phải, drone 2 bên trái
+DRONE_OFFSETS = ((55, 15),)                # drone tấn công bên phải
+GUARD_WIDTH = 46                           # drone hộ vệ (bay vòng quanh tàu)
 
 
 class Player:
@@ -51,8 +53,10 @@ class Player:
         self.invincible_timer = 0
         self.shield_timer = 0
         self.fire_cooldown = 0
-        self.drones = 0                 # 0..2
+        self.drones = 0                 # 0..2: 1 = drone tấn công, 2 = thêm drone hộ vệ
         self.drone_cooldown = 0
+        self.guard_angle = 0.0
+        self.guard_cooldown = 0
         self.burn_unlocked = False
         self.focus = False              # đang né chậm (hiện điểm va chạm)
         self.muzzle = 0                 # > 0: đang lóe sáng đầu nòng
@@ -66,6 +70,15 @@ class Player:
     @property
     def has_drone(self) -> bool:
         return self.drones > 0
+
+    @property
+    def has_guard(self) -> bool:
+        return self.drones >= 2
+
+    @property
+    def guard_pos(self):
+        return (self.x + math.cos(self.guard_angle) * config.GUARD_ORBIT_RADIUS,
+                self.y + 10 + math.sin(self.guard_angle) * config.GUARD_ORBIT_RADIUS * 0.75)
 
     @property
     def shield_active(self) -> bool:
@@ -106,7 +119,10 @@ class Player:
         self.y = max(50, min(HEIGHT - 50, self.y))
 
     def tick_timers(self) -> None:
-        for name in ("invincible_timer", "shield_timer", "fire_cooldown", "drone_cooldown", "muzzle", "beam"):
+        if self.has_guard:
+            self.guard_angle = (self.guard_angle + config.GUARD_ORBIT_SPEED) % math.tau
+        for name in ("invincible_timer", "shield_timer", "fire_cooldown", "drone_cooldown", "guard_cooldown",
+                     "muzzle", "beam"):
             value = getattr(self, name)
             if value > 0:
                 setattr(self, name, value - 1)
@@ -140,7 +156,7 @@ class Player:
         if not self.drones or self.drone_cooldown > 0:
             return
         targets = [e for e in enemies if e.y > 0 and not e.is_obstacle]
-        for ox, oy in DRONE_OFFSETS[: self.drones]:
+        for ox, oy in DRONE_OFFSETS:
             x, y = self.x + ox, self.y + oy - 16
             near = [e for e in targets if math.hypot(e.x - x, e.y - y) < config.DRONE_RANGE]
             angle = 90.0
@@ -240,9 +256,25 @@ class Player:
             pygame.draw.polygon(surface, NEON_CYAN, [(x, y - 12), (x - 6, y + 5), (x + 6, y + 5)])
             pygame.draw.polygon(surface, self.color, body, 3)
 
+    def _draw_guard(self, surface: pygame.Surface, assets) -> None:
+        """Drone hộ vệ: hình riêng (drone_guard.png) nếu có, không thì vẽ khối lục giác phát khiên."""
+        gx, gy = self.guard_pos
+        ready = self.guard_cooldown <= 0
+        glow.add(surface, glow.orb(GUARD_COLOR if ready else glow.scale(GUARD_COLOR, 0.5), 10, core=0.0), (gx, gy))
+        sprite = assets.image("drone_guard", GUARD_WIDTH)
+        if sprite is not None:
+            surface.blit(sprite, sprite.get_rect(center=(int(gx), int(gy))))
+            return
+        pts = [(gx + math.cos(a) * 13, gy + math.sin(a) * 13) for a in (math.radians(30 + 60 * i) for i in range(6))]
+        pygame.draw.polygon(surface, (30, 38, 50), pts)
+        pygame.draw.polygon(surface, GUARD_COLOR, pts, 2)
+        glow.add(surface, glow.orb(GUARD_COLOR, 4, core=0.8), (gx, gy))
+
     def _draw_drone(self, surface: pygame.Surface, assets) -> None:
+        if self.has_guard:
+            self._draw_guard(surface, assets)
         sprite = assets.image("drone_ally", DRONE_WIDTH)
-        for ox, oy in DRONE_OFFSETS[: self.drones]:
+        for ox, oy in DRONE_OFFSETS:
             dx, dy = self.x + ox, self.y + oy
             glow.add(surface, glow.orb((0, 150, 200), 5, core=0.0), (dx, dy + 20))
             if sprite is None:

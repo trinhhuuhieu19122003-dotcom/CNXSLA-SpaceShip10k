@@ -35,7 +35,7 @@ ITEM_CARDS = (
     ("upgrade_homing", "HOMING", "Tên lửa tự đuổi mục tiêu."),
     ("upgrade_lightning", "TIA SÉT", "Đánh dây chuyền qua nhiều địch."),
     ("upgrade_universal", "UNIVERSAL", "Nâng cấp súng đang cầm."),
-    ("upgrade_drone", "DRONE", "Tàu phụ tự bắn. Thưởng ải 3 và 9."),
+    ("upgrade_drone", "DRONE", "Ải 3: drone tự ngắm bắn. Ải 9: drone hộ vệ bắn hạ đạn địch."),
     ("upgrade_burn", "THIÊU ĐỐT", f"Đạn gây cháy {config.BURN_DAMAGE_PER_SECOND} HP/s. Thưởng ải 7."),
 )
 

@@ -142,7 +142,7 @@ def draw_status_panel(surface: pygame.Surface, assets, rect: pygame.Rect, world,
     col.y += 44
     if p.bonus_damage:
         col.value(f"+{p.bonus_damage} sát thương", 13, YELLOW, role="label")
-    perks = [txt for txt, on in (("DRONE x2" if p.drones > 1 else "DRONE", p.drones),
+    perks = [txt for txt, on in (("DRONE + HỘ VỆ" if p.drones > 1 else "DRONE", p.drones),
                                  ("THIÊU ĐỐT", p.burn_unlocked)) if on]
     if p.shield_active:
         perks.append(f"KHIÊN {p.shield_timer / config.TICK_RATE:.1f}s")

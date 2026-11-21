@@ -145,6 +145,27 @@ def _fire_lightning(world: World) -> bool:
     return True
 
 
+def update_guard(world: World) -> bool:
+    """DRONE HỘ VỆ: bắn hạ viên đạn địch gần tàu nhất (trong tầm). Trả về True nếu vừa chặn một viên."""
+    p = world.player
+    if not p.has_guard or p.guard_cooldown > 0 or not world.enemy_bullets:
+        return False
+    near = [b for b in world.enemy_bullets
+            if math.hypot(b.x - p.x, b.y - p.y) < config.GUARD_RANGE]
+    if not near:
+        return False
+    target = min(near, key=lambda b: math.hypot(b.x - p.x, b.y - p.y))
+    world.enemy_bullets.remove(target)
+    gx, gy = p.guard_pos
+    world.particles.append(LightningArc([(gx, gy), ((gx + target.x) / 2 + random.uniform(-6, 6),
+                                                    (gy + target.y) / 2 + random.uniform(-6, 6)), (target.x, target.y)],
+                                        color=(110, 225, 255), life=6, width=2))
+    world.sparks(target.x, target.y, (110, 225, 255), 4)
+    world.play("shield_block")
+    p.guard_cooldown = config.GUARD_COOLDOWN_TICKS
+    return True
+
+
 def fire_player(world: World) -> bool:
     """Bắn súng đang cầm (nếu hết hồi chiêu). Trả về True nếu đã bắn."""
     p = world.player

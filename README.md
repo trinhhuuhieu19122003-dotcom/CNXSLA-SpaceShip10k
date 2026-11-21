@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/Python-3.10–3.13-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python">
   <img src="https://img.shields.io/badge/pygame-2.5+-2b9348?style=flat-square" alt="pygame">
   <img src="https://img.shields.io/badge/MediaPipe-Hands-4285F4?style=flat-square&logo=google&logoColor=white" alt="MediaPipe">
-  <img src="https://img.shields.io/badge/test-101_passed-success?style=flat-square" alt="Test">
+  <img src="https://img.shields.io/badge/test-102_passed-success?style=flat-square" alt="Test">
 </p>
 
 <p align="center">
@@ -61,7 +61,7 @@
 | **Âm thanh sống động** | 25 hiệu ứng CC0 + tiếng tổng hợp (còi boss, giọng gõ chữ riêng từng nhân vật); nhạc riêng cho từng hồi, chuyển bài mượt, tự nhỏ lại khi có hội thoại; chỉnh âm lượng nhạc và hiệu ứng riêng. |
 | **Đồ họa phát sáng** | Đạn neon, vụ nổ có sóng xung kích, địch nháy khi trúng đạn, nền cuộn theo từng hồi. |
 | **Có chiều sâu** | 4 súng, mỗi súng một dạng tối thượng ở cấp 6 và một kỹ năng Nộ riêng; 3 mức độ khó; chấm 1–3 sao mỗi ải. |
-| **Mã nguồn sạch, có test** | Chia module rõ ràng, dữ liệu ải tách khỏi logic, 101 test tự động, có bot tự chơi hết chiến dịch. |
+| **Mã nguồn sạch, có test** | Chia module rõ ràng, dữ liệu ải tách khỏi logic, 102 test tự động, có bot tự chơi hết chiến dịch. |
 
 ## Cốt truyện
 
@@ -166,7 +166,7 @@ một luật có chủ đích để người chơi phải né cả vật phẩm.
 | Hồi máu | +30 HP (Hỏa ngục: +5) |
 | Khiên | Bất tử 3 giây, húc chết địch thường |
 | Universal | Nâng cấp súng đang dùng |
-| Drone (tối đa 2) | Phi thuyền phụ tự bắn. Thưởng khi hạ boss ải 3 và ải 9 |
+| Drone | Ải 3: **drone tấn công** tự ngắm địch gần nhất. Ải 9: **drone hộ vệ** bay quanh tàu, bắn hạ đạn địch tới gần |
 | Thiêu đốt | Đạn gây cháy 6 HP/giây. Thưởng khi hạ boss ải 7 |
 
 Phần thưởng boss tự bay vào tàu, không bao giờ rơi mất.

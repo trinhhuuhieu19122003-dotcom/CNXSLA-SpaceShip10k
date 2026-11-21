@@ -5,7 +5,9 @@
   điểm trúng; tồn tại lâu hơn (10 tick) nên nhìn thấy liên tục. Bão Sét và màn Hướng dẫn dùng chung kiểu mới.
 - Plasma to và sáng hơn (quầng ngoài + vệt dài hơn); Laser có lõi trắng nóng; Homing có lửa đuôi phập phồng.
 - **Drone** tự ngắm địch gần nhất trong tầm 420, bắn kim sáng cam ~4 phát/giây, 4 sát thương/phát (bản cũ: 1 phát/giây,
-  2 sát thương, bắn thẳng) - khoảng 16 sát thương/giây mỗi drone; không hồi Nộ. Ảnh so sánh: `docs/screenshots/dan-truoc-sau.png`.
+  2 sát thương, bắn thẳng) - khoảng 16 sát thương/giây; không hồi Nộ.
+- **Drone thứ 2 = DRONE HỘ VỆ**: bay vòng quanh tàu, tự bắn hạ viên đạn địch gần nhất trong tầm 150 (~2 viên/giây)
+  bằng tia điện xanh. Hình riêng `assets/images/drone_guard.png` (Codex vẽ); chưa có thì vẽ khối lục giác thay thế. Ảnh so sánh: `docs/screenshots/dan-truoc-sau.png`.
 
 ## [2.1.0-dev] – Nhịp sóng: thả địch có nhịp, hết "ồ ạt"
 - Lính trong đội hình **bay vào lần lượt** (Galaga), nhanh rồi chậm dần; **không bắn khi đang bay vào** và chờ

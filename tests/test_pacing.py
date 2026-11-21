@@ -127,3 +127,25 @@ class SurvivalPacingTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class GuardDroneTest(unittest.TestCase):
+    def test_guard_shoots_down_nearby_bullets_only(self):
+        from spaceship.systems import weapons
+
+        w = world()
+        p = w.player
+        near = EnemyBullet(p.x + 40, p.y - 90, 90, "normal")
+        far = EnemyBullet(p.x, p.y - 400, 90, "normal")
+        w.enemy_bullets = [near, far]
+        p.drones = 1
+        self.assertFalse(weapons.update_guard(w))               # 1 drone: chưa có hộ vệ
+        p.drones = 2
+        self.assertTrue(weapons.update_guard(w))
+        self.assertEqual(w.enemy_bullets, [far])                 # chỉ chặn viên ở gần
+        self.assertFalse(weapons.update_guard(w))                # đang hồi chiêu
+        p.guard_cooldown = 0
+        self.assertFalse(weapons.update_guard(w))                # viên còn lại ở quá xa
+        before = p.guard_angle
+        p.tick_timers()
+        self.assertNotEqual(p.guard_angle, before)               # bay vòng quanh tàu

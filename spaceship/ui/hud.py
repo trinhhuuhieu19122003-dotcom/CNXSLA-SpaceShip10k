@@ -103,7 +103,7 @@ def draw_hud(surface: pygame.Surface, assets, world: World, controls=None, direc
     if p.shield_active:
         surface.blit(assets.text(f"KHIÊN {p.shield_timer / config.TICK_RATE:.1f}s", 14, ACCENT, role="label"), (12, 106))
     if p.burn_unlocked or p.drones:
-        drone = "DRONE x2" if p.drones > 1 else "DRONE"
+        drone = "DRONE + HỘ VỆ" if p.drones > 1 else "DRONE"
         perks = " + ".join(t for t, on in ((drone, p.drones), ("THIÊU ĐỐT", p.burn_unlocked)) if on)
         surface.blit(assets.text(perks, 12, YELLOW, role="label"), (12, 124))
     boss = next((e for e in world.enemies if e.is_boss), None)

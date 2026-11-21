@@ -157,6 +157,7 @@ class GameplayScene(Scene):
         if controls.fire and weapons.fire_player(w):
             w.play(f"fire_{p.weapon}")
         p.fire_drone(w.bullets, w.enemies)
+        weapons.update_guard(w)
         if controls.nuke and p.rage_full:
             weapons.trigger_skill(w)
         weapons.update_skills(w)

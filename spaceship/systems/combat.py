@@ -207,7 +207,7 @@ def collect_items(world: World) -> None:
         if kind == "upgrade_drone":
             world.play("level_up")
             player.drones = min(2, player.drones + 1)
-            world.announce("NHẬN ĐƯỢC DRONE" if player.drones == 1 else "DRONE THỨ HAI", 2.0)
+            world.announce("NHẬN ĐƯỢC DRONE" if player.drones == 1 else "DRONE HỘ VỆ: CHẶN ĐẠN ĐỊCH", 2.0)
         elif kind == "upgrade_burn":
             player.burn_unlocked = True
             world.play("level_up")

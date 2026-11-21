@@ -78,6 +78,11 @@ LIGHTNING_DAMAGE_PER_LEVEL = 3     # sét không bắn nhiều tia hơn khi lên
 DRONE_DAMAGE = 4                 # drone tự ngắm địch gần nhất, ~4 phát/giây (bản đầu: 2 sát thương/giây)
 DRONE_COOLDOWN_TICKS = 15
 DRONE_RANGE = 420
+#: Drone thứ 2 = DRONE HỘ VỆ: bay vòng quanh tàu, tự bắn hạ đạn địch bay tới gần.
+GUARD_ORBIT_RADIUS = 66
+GUARD_ORBIT_SPEED = 0.045          # rad/tick (~2,3 giây một vòng)
+GUARD_RANGE = 150                  # chỉ chặn đạn đã vào gần tàu chừng này
+GUARD_COOLDOWN_TICKS = 28          # ~2 viên/giây
 
 # --- Kỹ năng Nộ (mỗi súng một kiểu, thay cho Nuke dùng chung) -------------------------
 SKILL_LASER_TICKS = 180            # Đại Pháo: tia khổng lồ 3 giây
