@@ -152,6 +152,8 @@ Hạ boss / boss đổi pha thì đạn địch trên màn biến thành điểm
 **Toàn màn hình:** chữ được vẽ lại ở độ phân giải màn hình nên vẫn sắc nét ở 1080p/2K/4K
 ([docs/design/chu-sac-net.md](docs/design/chu-sac-net.md)).
 
+Muốn tự kiểm tra từng tính năng mới: [docs/choi-thu.md](docs/choi-thu.md).
+
 ## Chế độ chơi
 
 | Chế độ | Mô tả |
