@@ -23,6 +23,7 @@ from spaceship.entities.effects import Starfield
 from spaceship.input.controls import ControlHub
 from spaceship.input.gestures import Gesture
 from spaceship.input.hand_tracker import PREVIEW_SIZE, HandTracker, TrackerState
+from spaceship.ui.crisp import make_crisp
 from spaceship.ui.widgets import MUTED, fit_text
 
 log = logging.getLogger(__name__)
@@ -30,6 +31,8 @@ log = logging.getLogger(__name__)
 
 #: Mã ứng dụng cho Windows; trùng với lối tắt do scripts/create_shortcut.ps1 tạo.
 WINDOWS_APP_ID = "IamSoftware.SpaceShip10K"
+#: Phóng to quá mức này thì vẽ lại chữ ở cỡ lớn (ui/crisp.py); 1:1 thì chữ vốn đã nét.
+CRISP_MIN_SCALE = 1.05
 
 
 def upscale(source: pygame.Surface, size: Tuple[int, int]) -> pygame.Surface:
@@ -96,10 +99,12 @@ class Game:
         self.window = self._create_window()
         self._backdrop: Optional[pygame.Surface] = None     # ảnh mờ lấp 2 bên khi màn hình rộng
         self._backdrop_frame = 0
+        self._backdrop_key: Optional[Tuple[int, int]] = None
         self._canvas: Optional[pygame.Surface] = None       # nơi vẽ 2 bảng bên (màn rộng)
         self._side_images: Optional[tuple] = None           # 2 bảng bên đã phóng to, dùng lại giữa các hình
         self.wide_layout = False                            # đang vẽ 2 bảng bên (HUD dời khỏi chiến trường)
-        self.screen = pygame.Surface((config.WIDTH, config.HEIGHT)).convert()
+        self.crisp_text = True                              # vẽ lại chữ sắc nét khi phóng to (ui/crisp.py)
+        self.screen = make_crisp((config.WIDTH, config.HEIGHT))   # ghi lại chữ để vẽ lại sắc nét khi phóng to
         self.clock = pygame.time.Clock()
         self.fps = fps
 
@@ -257,16 +262,26 @@ class Game:
     def render(self) -> None:
         scale, ox, oy, side = self._layout()
         self.wide_layout = side > 0
+        self.screen.begin(self.crisp_text and scale > CRISP_MIN_SCALE)
         self.scene.draw(self.screen)
         source, darkness = self._transition_frame()
         if side:
             self._render_wide(source, darkness, scale, ox, oy, side)
+            self.screen.begin(False)
             return
         scale, ox, oy = self._viewport()
         dx, dy = self.scene.screen_offset() if source is self.screen else (0, 0)
         size = (int(config.WIDTH * scale), int(config.HEIGHT * scale))
-        self._draw_backdrop(source, size)
-        frame = upscale(source, size)
+        if source is self.screen and self.screen.records:
+            self._draw_backdrop(source, size)            # nền mờ 2 bên không cần chữ
+            frame = upscale(source, size)
+            if frame is source:
+                frame = frame.copy()
+            self.screen.draw_crisp(frame, self.assets, size[0] / config.WIDTH, size[1] / config.HEIGHT)
+        else:
+            self._draw_backdrop(source, size)
+            frame = upscale(source, size)
+        self.screen.begin(False)                         # tấm 800x700 có lại đủ chữ (cho chuyển cảnh)
         self.window.blit(frame, (ox + int(dx * scale), oy + int(dy * scale)))
         if ox > 0 or oy > 0:                                 # viền mảnh tách khung game khỏi nền mờ
             pygame.draw.rect(self.window, (40, 61, 76), (ox - 1, oy - 1, size[0] + 2, size[1] + 2), 1)
@@ -290,12 +305,19 @@ class Game:
             self._side_images = None
         elif getattr(self, "_side_key", None) != key or self._side_images is None or self._wide_frame % 2 == 0:
             if self._canvas is None or self._canvas.get_size() != (side * 2, config.HEIGHT):
-                self._canvas = pygame.Surface((side * 2, config.HEIGHT)).convert()
+                self._canvas = make_crisp((side * 2, config.HEIGHT))
             canvas = self._canvas
+            canvas.begin(self.crisp_text and scale > CRISP_MIN_SCALE)
             canvas.fill(SIDEBAR_BG)
             left, right = pygame.Rect(0, 0, side, config.HEIGHT), pygame.Rect(side, 0, side, config.HEIGHT)
             self.scene.draw_sidebars(canvas, left, right)
-            self._side_images = tuple(upscale(canvas.subsurface(r), (side_w, height)) for r in (left, right))
+            images = []
+            for r in (left, right):
+                image = upscale(canvas.subsurface(r), (side_w, height)).copy()
+                canvas.draw_crisp(image, self.assets, side_w / side, height / config.HEIGHT, region=r)
+                images.append(image)
+            canvas.begin(False)
+            self._side_images = tuple(images)
             self._side_key = key
         if oy > 0 or ox > 0:
             self.window.fill((0, 0, 0))
@@ -307,6 +329,10 @@ class Game:
             self.window.fill(SIDEBAR_BG, (right_x, oy, ww - right_x - ox, height))
         dx, dy = self.scene.screen_offset() if source is self.screen else (0, 0)
         frame = upscale(source, (field_w, height))
+        if source is self.screen and self.screen.records:
+            if frame is source:
+                frame = frame.copy()
+            self.screen.draw_crisp(frame, self.assets, field_w / config.WIDTH, height / config.HEIGHT)
         self.window.set_clip(pygame.Rect(field_x, oy, field_w, height))   # rung màn không lấn sang bảng bên
         self.window.blit(frame, (field_x + int(dx * scale), oy + int(dy * scale)))
         self.window.set_clip(None)
@@ -322,14 +348,16 @@ class Game:
             self.window.fill((0, 0, 0))
             return
         self._backdrop_frame += 1
-        if self._backdrop is None or self._backdrop.get_size() != (ww, wh) or self._backdrop_frame % 4 == 0:
+        if self._backdrop is None or self._backdrop_key != (ww, wh) or self._backdrop_frame % 4 == 0:
+            self._backdrop_key = (ww, wh)
             tiny = pygame.transform.smoothscale(source, (40, 35))
+            # Làm tối trên ảnh tí hon (1 400 điểm ảnh) rồi mới phóng: kết quả y hệt nhưng nhanh hơn ~20 lần so với
+            # làm tối ảnh đã phóng (3 triệu điểm ảnh ở 1080p, từng gây giật ~30 ms mỗi 4 hình ở menu).
+            tiny.fill((95, 95, 108), special_flags=pygame.BLEND_MULT)
             cover = max(ww / config.WIDTH, wh / config.HEIGHT)
-            big = pygame.transform.smoothscale(tiny, (int(config.WIDTH * cover) + 2, int(config.HEIGHT * cover) + 2))
-            big.fill((95, 95, 108), special_flags=pygame.BLEND_MULT)
-            self._backdrop = pygame.Surface((ww, wh)).convert()
-            self._backdrop.blit(big, big.get_rect(center=(ww // 2, wh // 2)))
-        self.window.blit(self._backdrop, (0, 0))
+            self._backdrop = pygame.transform.smoothscale(
+                tiny, (int(config.WIDTH * cover) + 2, int(config.HEIGHT * cover) + 2))
+        self.window.blit(self._backdrop, self._backdrop.get_rect(center=(ww // 2, wh // 2)))
 
     def _darken(self, surface: pygame.Surface, darkness: int) -> None:
         if not darkness:

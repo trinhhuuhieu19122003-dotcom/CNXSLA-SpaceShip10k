@@ -14,6 +14,7 @@ from unicodedata import normalize
 import pygame
 
 from spaceship.config import ASSETS_DIR, FONT_NAMES, IMAGES_DIR
+from spaceship.ui.crisp import TextSurface
 
 log = logging.getLogger(__name__)
 FONTS_DIR = ASSETS_DIR / "fonts"
@@ -101,4 +102,12 @@ class Assets:
 
     def text(self, text: str, size: int, color, bold: bool = True, italic: bool = False, *,
              role: Optional[str] = None) -> pygame.Surface:
-        return self.font(size, bold, italic, role=role).render(normalize("NFC", text), True, color)
+        """Một dòng chữ. Kết quả nhớ cách vẽ (``TextSurface.spec``) để khi phóng to toàn màn hình, chữ được vẽ
+        lại ở cỡ lớn cho sắc nét (xem ``ui/crisp.py``)."""
+        text = normalize("NFC", text)
+        image = self.font(size, bold, italic, role=role).render(text, True, color)
+        try:
+            spec = (text, size, tuple(pygame.Color(color)), bold, italic, role)
+        except (TypeError, ValueError):
+            return image
+        return TextSurface.wrap(image, spec)

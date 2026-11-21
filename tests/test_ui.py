@@ -147,7 +147,9 @@ class FullscreenSettingTest(unittest.TestCase):
         game.render()
         corner = game.window.get_at((5, 360))
         self.assertIsNotNone(game._backdrop)
-        self.assertEqual(game._backdrop.get_size(), (1280, 720))
+        bw, bh = game._backdrop.get_size()                     # ảnh nền mờ phủ kín cửa sổ (đặt giữa)
+        self.assertGreaterEqual(bw, 1280)
+        self.assertGreaterEqual(bh, 720)
         self.assertGreaterEqual(corner.a, 0)
 
 
