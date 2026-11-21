@@ -7,6 +7,7 @@ import random
 import pygame
 
 from spaceship.config import HEIGHT, WHITE, WIDTH
+from spaceship.ui import glow
 
 # (số sao, tốc độ, kích thước, bảng màu)
 STAR_LAYERS = (
@@ -96,8 +97,78 @@ class Particle:
         self.life -= 1
 
     def draw(self, surface: pygame.Surface) -> None:
-        if self.radius > 0:
-            pygame.draw.circle(surface, self.color, (int(self.x), int(self.y)), int(self.radius))
+        if self.radius >= 1:
+            glow.add(surface, glow.orb(self.color, int(self.radius), core=0.3, halo=0.8), (self.x, self.y))
+
+
+class Spark:
+    """Tia lửa: vệt sáng ngắn văng ra khi đạn trúng."""
+
+    def __init__(self, x, y, color, rng=random, speed=(4, 9)) -> None:
+        self.x, self.y, self.color = x, y, color
+        angle = rng.uniform(0, math.pi * 2)
+        v = rng.uniform(*speed)
+        self.dx, self.dy = math.cos(angle) * v, math.sin(angle) * v
+        self.life = self.max_life = rng.randint(6, 12)
+
+    @property
+    def alive(self) -> bool:
+        return self.life > 0
+
+    def update(self) -> None:
+        self.x += self.dx
+        self.y += self.dy
+        self.dx *= 0.85
+        self.dy *= 0.85
+        self.life -= 1
+
+    def draw(self, surface: pygame.Surface) -> None:
+        k = self.life / self.max_life
+        tail = (self.x - self.dx * 2.5, self.y - self.dy * 2.5)
+        pygame.draw.line(surface, glow.scale(self.color, k), (self.x, self.y), tail, 2)
+
+
+class Shockwave:
+    """Vòng sóng xung kích lan ra từ tâm vụ nổ."""
+
+    def __init__(self, x, y, color, max_radius: float = 60, life: int = 18) -> None:
+        self.x, self.y, self.color = x, y, color
+        self.max_radius = max_radius
+        self.life = self.max_life = life
+
+    @property
+    def alive(self) -> bool:
+        return self.life > 0
+
+    def update(self) -> None:
+        self.life -= 1
+
+    def draw(self, surface: pygame.Surface) -> None:
+        t = 1 - self.life / self.max_life                      # 0 -> 1
+        radius = int(6 + (self.max_radius - 6) * (1 - (1 - t) ** 2))
+        width = max(1, int(6 * (1 - t)))
+        pygame.draw.circle(surface, glow.scale(self.color, 1 - t), (int(self.x), int(self.y)), radius, width)
+
+
+class Flash:
+    """Chớp sáng tròn ở tâm vụ nổ / đầu nòng súng."""
+
+    def __init__(self, x, y, color, radius: int = 24, life: int = 8) -> None:
+        self.x, self.y, self.color = x, y, color
+        self.radius = radius
+        self.life = self.max_life = life
+
+    @property
+    def alive(self) -> bool:
+        return self.life > 0
+
+    def update(self) -> None:
+        self.life -= 1
+
+    def draw(self, surface: pygame.Surface) -> None:
+        k = self.life / self.max_life
+        r = max(2, int(self.radius * (0.5 + 0.5 * k)) // 3 * 3)         # làm tròn để cache ít ảnh
+        glow.add(surface, glow.orb(glow.scale(self.color, k), r, core=0.5 * k), (self.x, self.y))
 
 
 class DamageNumber:

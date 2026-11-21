@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from typing import List, Optional
 
 from spaceship.config import GameMode
-from spaceship.entities.effects import DamageNumber, Particle
+from spaceship.entities.effects import DamageNumber, Flash, Particle, Shockwave, Spark
 from spaceship.entities.enemies import Boss, EnemyBase
 from spaceship.entities.items import Item
 from spaceship.entities.player import Player
@@ -49,6 +49,17 @@ class World:
 
     def burst(self, x: float, y: float, color, count: int, speed_scale: float = 1.0) -> None:
         self.particles.extend(Particle(x, y, color, speed_scale, rng=self.rng) for _ in range(count))
+
+    def sparks(self, x: float, y: float, color, count: int) -> None:
+        self.particles.extend(Spark(x, y, color, rng=self.rng) for _ in range(count))
+
+    def explode(self, x: float, y: float, size: float = 1.0) -> None:
+        """Vụ nổ: chớp sáng + sóng xung kích + mảnh vỡ cháy + tia lửa."""
+        self.particles.append(Flash(x, y, (255, 160, 60), radius=int(18 * size), life=8))
+        self.particles.append(Shockwave(x, y, (255, 140, 60), max_radius=50 * size, life=int(14 + 6 * size)))
+        for color in ((255, 200, 80), (255, 110, 30), (220, 40, 20)):
+            self.burst(x, y, color, int(5 * size), speed_scale=0.6 + 0.3 * size)
+        self.sparks(x, y, (255, 230, 150), int(6 * size))
 
     def spawn_particle(self, x: float, y: float, color) -> None:
         self.particles.append(Particle(x, y, color, rng=self.rng))

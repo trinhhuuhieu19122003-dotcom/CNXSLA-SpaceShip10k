@@ -98,7 +98,7 @@ class HowToPlayScene(_InfoScene):
         ]
         for i, (kind, desc) in enumerate(items):
             y = top + 32 + i * 36
-            draw_item_icon(surface, a, kind, right + 12, y + 12)
+            draw_item_icon(surface, a, kind, right + 12, y + 12, size=0.8)
             surface.blit(a.text(desc, 15, WHITE, bold=False), (right + 35, y + 3))
         note = "Nhặt cùng loại súng: lên cấp (tối đa 6) · Khác loại: đổi súng"
         surface.blit(a.text(note, 13, HOMING_COLOR, bold=False), (right, top + 32 + len(items) * 36 + 6))

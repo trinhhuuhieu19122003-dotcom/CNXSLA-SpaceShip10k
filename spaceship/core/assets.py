@@ -50,6 +50,19 @@ class Assets:
                 self._scaled[key] = pygame.transform.smoothscale(raw, (int(width), height))
         return self._scaled[key]
 
+    def silhouette(self, name: str, width: int) -> Optional[pygame.Surface]:
+        """Bóng trắng cùng hình dạng sprite (giữ kênh alpha) để làm hiệu ứng nháy khi trúng đạn."""
+        key = ("__white__" + name, int(width))
+        if key not in self._scaled:
+            base = self.image(name, width)
+            if base is None:
+                self._scaled[key] = None
+            else:
+                white = base.copy()
+                white.fill((255, 255, 255, 0), special_flags=pygame.BLEND_RGBA_MAX)
+                self._scaled[key] = white
+        return self._scaled[key]
+
     # --- Font ------------------------------------------------------------------
     def font(self, size: int, bold: bool = True, italic: bool = False) -> pygame.font.Font:
         key = (size, bold, italic)

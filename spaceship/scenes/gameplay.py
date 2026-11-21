@@ -140,7 +140,7 @@ class GameplayScene(Scene):
         surface.fill((0, 0, 0))
         self.game.starfield.draw(surface, inferno=self.mode is GameMode.INFERNO)
         for item in w.items:
-            item.draw(surface, assets)
+            item.draw(surface, assets, w.player.weapon)
         for particle in w.particles:
             particle.draw(surface)
         for bullet in w.bullets:

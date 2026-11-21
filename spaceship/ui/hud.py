@@ -8,7 +8,9 @@ import pygame
 from spaceship import config
 from spaceship.config import GRAY, HEIGHT, NEON_CYAN, NEON_GREEN, NEON_ORANGE, NEON_RED, WHITE, WIDTH, YELLOW
 from spaceship.input.gestures import Gesture
+from spaceship.entities.items import draw_item_icon
 from spaceship.systems.world import World
+from spaceship.ui import glow
 
 GESTURE_LABELS = {
     Gesture.FIST: ("NẮM TAY: NÉ CHẬM", NEON_CYAN),
@@ -23,28 +25,64 @@ def format_time(seconds: float) -> str:
     return f"{seconds // 60:02d}:{seconds % 60:02d}"
 
 
-def _bar(surface, x, y, ratio, border, fill) -> None:
-    pygame.draw.rect(surface, border, (x, y, BAR_W, BAR_H), 2)
-    pygame.draw.rect(surface, fill, (x + 2, y + 2, (BAR_W - 4) * max(0.0, min(1.0, ratio)), BAR_H - 4))
+SEGMENTS = 10
+
+
+def _hp_bar(surface, assets, x, y, ratio) -> None:
+    """Thanh máu chia 10 ô, đổi màu xanh -> vàng -> đỏ khi tụt máu."""
+    ratio = max(0.0, min(1.0, ratio))
+    color = NEON_GREEN if ratio > 0.5 else (YELLOW if ratio > 0.25 else NEON_RED)
+    surface.blit(assets.text("HP", 12, GRAY), (x, y + 1))
+    seg_w = (BAR_W - 24) / SEGMENTS
+    for i in range(SEGMENTS):
+        rect = pygame.Rect(x + 24 + i * seg_w, y, seg_w - 2, BAR_H)
+        filled = ratio * SEGMENTS - i
+        pygame.draw.rect(surface, (30, 34, 42), rect)
+        if filled > 0:
+            pygame.draw.rect(surface, color, (rect.x, rect.y, rect.w * min(1.0, filled), rect.h))
+
+
+def _rage_bar(surface, assets, x, y, ratio, t) -> None:
+    """Thanh Nộ; đầy thì phát sáng nhấp nháy + nhắc cách dùng."""
+    ratio = max(0.0, min(1.0, ratio))
+    surface.blit(assets.text("NỘ", 12, GRAY), (x, y + 1))
+    rect = pygame.Rect(x + 24, y, BAR_W - 24, BAR_H)
+    pygame.draw.rect(surface, (30, 34, 42), rect)
+    pygame.draw.rect(surface, NEON_ORANGE, (rect.x, rect.y, rect.w * ratio, rect.h))
+    if ratio >= 1.0:
+        pulse = 0.6 + 0.4 * math.sin(t * 8)
+        pygame.draw.rect(surface, glow.scale((255, 220, 120), pulse), rect.inflate(4, 4), 2)
+        surface.blit(assets.text("SẴN SÀNG - chụm tay / K", 12, NEON_ORANGE), (x + 24, y + BAR_H + 3))
+
+
+def _weapon_panel(surface, assets, p, cx, cy, t) -> None:
+    """Biểu tượng súng + 6 vạch cấp + sát thương cộng thêm."""
+    draw_item_icon(surface, assets, f"upgrade_{p.weapon}", cx, cy, t=t, size=1.1)
+    x = cx + 26
+    surface.blit(assets.text(p.weapon.upper(), 14, p.color), (x, cy - 18))
+    for i in range(config.MAX_WEAPON_LEVEL):
+        rect = pygame.Rect(x + i * 13, cy + 2, 10, 8)
+        if i < p.level:
+            pygame.draw.rect(surface, p.color, rect)
+        else:
+            pygame.draw.rect(surface, (60, 64, 74), rect, 1)
+    if p.bonus_damage:
+        surface.blit(assets.text(f"+{p.bonus_damage} DMG", 12, YELLOW), (x + 82, cy - 2))
 
 
 def draw_hud(surface: pygame.Surface, assets, world: World, controls=None) -> None:
     p = world.player
-    dmg = p.base_damage + p.bonus_damage
-    max_dmg = p.base_damage + config.MAX_BONUS_DAMAGE
     if world.mode.is_timed:
-        info = f"ĐIỂM: {world.score} | THỜI GIAN: {format_time(world.survival_time)} | DMG: {dmg}/{max_dmg}"
+        info = f"ĐIỂM: {world.score} | THỜI GIAN: {format_time(world.survival_time)}"
     else:
         waves = config.CAMPAIGN_WAVES.get(world.stage, 0)
         wave = "BOSS" if world.wave > waves else f"WAVE {world.wave}/{waves}"
-        info = f"ĐIỂM: {world.score} | STAGE {world.stage} - {wave} | DMG: {dmg}/{max_dmg}"
+        info = f"ĐIỂM: {world.score} | STAGE {world.stage} - {wave}"
     surface.blit(assets.text(info, 18, WHITE), (10, 10))
 
-    _bar(surface, 10, 40, p.hp / p.max_hp, NEON_RED, NEON_GREEN)
-    _bar(surface, 10, 65, p.rage / p.max_rage, GRAY, NEON_ORANGE)
-    surface.blit(assets.text("[NỘ]", 14, NEON_ORANGE if p.rage_full else GRAY), (215, 63))
-    weapon = assets.text(f"{p.weapon.upper()} Lv{p.level}", 14, p.color)
-    surface.blit(weapon, (215, 38))
+    _hp_bar(surface, assets, 10, 40, p.hp / p.max_hp)
+    _rage_bar(surface, assets, 10, 62, p.rage / p.max_rage, world.survival_time)
+    _weapon_panel(surface, assets, p, 248, 52, world.survival_time)
 
     for i in range(p.lives):
         hx = WIDTH - 30 - i * 30
@@ -53,10 +91,10 @@ def draw_hud(surface: pygame.Surface, assets, world: World, controls=None) -> No
     icon = "TAY" if controls is not None and controls.source == "hand" else "PHÍM"
     surface.blit(assets.text(f"ĐIỀU KHIỂN: {icon}", 12, GRAY), (WIDTH - 150, 36))
     if p.shield_active:
-        surface.blit(assets.text(f"KHIÊN {p.shield_timer / config.TICK_RATE:.1f}s", 14, (0, 255, 255)), (10, 88))
+        surface.blit(assets.text(f"KHIÊN {p.shield_timer / config.TICK_RATE:.1f}s", 14, (0, 255, 255)), (10, 98))
     if p.burn_unlocked or p.has_drone:
         perks = " + ".join(t for t, on in (("DRONE", p.has_drone), ("THIÊU ĐỐT", p.burn_unlocked)) if on)
-        surface.blit(assets.text(perks, 12, YELLOW), (10, 108))
+        surface.blit(assets.text(perks, 12, YELLOW), (10, 118))
     if controls is not None:
         draw_hand_indicator(surface, assets, controls, p.rage_full)
 

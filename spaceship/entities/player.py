@@ -20,6 +20,7 @@ from spaceship.config import (
     YELLOW,
 )
 from spaceship.entities.projectiles import Bullet
+from spaceship.ui import glow
 
 WEAPON_COLORS = {"plasma": PLASMA_COLOR, "laser": LASER_COLOR, "homing": HOMING_COLOR}
 
@@ -54,6 +55,8 @@ class Player:
         self.drone_cooldown = 0
         self.burn_unlocked = False
         self.focus = False              # đang né chậm (hiện điểm va chạm)
+        self.muzzle = 0                 # > 0: đang lóe sáng đầu nòng
+        self.beam = 0                   # > 0: đang phát tia laser cấp 6
 
     # --- Trạng thái ------------------------------------------------------------------
     @property
@@ -99,7 +102,7 @@ class Player:
         self.y = max(50, min(HEIGHT - 50, self.y))
 
     def tick_timers(self) -> None:
-        for name in ("invincible_timer", "shield_timer", "fire_cooldown", "drone_cooldown"):
+        for name in ("invincible_timer", "shield_timer", "fire_cooldown", "drone_cooldown", "muzzle", "beam"):
             value = getattr(self, name)
             if value > 0:
                 setattr(self, name, value - 1)
@@ -110,6 +113,7 @@ class Player:
             return False
         lvl = min(self.level, config.MAX_WEAPON_LEVEL)
         x, y = self.x, self.y - 20
+        self.muzzle = 4
         if self.weapon == "plasma":
             self.fire_cooldown = max(5, 14 - lvl * 2)
             bullets.extend(Bullet(x, y, "plasma", angle=a, level=lvl) for a in PLASMA_ANGLES[lvl])
@@ -117,6 +121,7 @@ class Player:
             self.fire_cooldown = max(10, (14 - lvl * 2) * 2)
             if lvl == 6:
                 bullets.append(Bullet(x, y, "laser", angle=90, level=6))
+                self.beam = self.fire_cooldown + 2
             else:
                 for off in LASER_OFFSETS[lvl]:
                     angle = 90 - off / 3 if lvl == 5 else 90
@@ -152,6 +157,8 @@ class Player:
             if self.invincible_timer % 10 < 5:
                 return
             pygame.draw.circle(surface, YELLOW, (int(self.x), int(self.y)), 55, 2)
+        if self.beam > 0:
+            self._draw_beam(surface)
         if self.shield_active:
             self._draw_shield(surface)
         self._draw_ship(surface, assets)
@@ -159,6 +166,17 @@ class Player:
             self._draw_drone(surface, assets)
         if self.focus:
             self._draw_hitbox(surface)
+
+    def _draw_beam(self, surface: pygame.Surface) -> None:
+        """Laser cấp 6: một dải sáng liền từ mũi tàu lên tới mép trên màn hình."""
+        top = int(self.y) - 30
+        if top <= 0:
+            return
+        width = 22 + (self.beam % 3) * 3                    # nhấp nháy giữa 3 độ rộng đã cache
+        tex = glow.beam(self.color, width, HEIGHT)
+        area = pygame.Rect(0, HEIGHT - top, tex.get_width(), top)
+        surface.blit(tex, (int(self.x) - tex.get_width() // 2, 0), area, special_flags=pygame.BLEND_RGB_ADD)
+        glow.add(surface, glow.orb(self.color, 15, core=0.6), (self.x, top))
 
     def _draw_hitbox(self, surface: pygame.Surface) -> None:
         """Né chậm: hiện đúng vùng va chạm thật để người chơi biết mình nhỏ cỡ nào."""
@@ -182,16 +200,20 @@ class Player:
     def _draw_ship(self, surface: pygame.Surface, assets) -> None:
         x, y = self.x, self.y
         hull = [(x, y - 30), (x - 25, y + 20), (x, y + 10), (x + 25, y + 20)]
-        glow = pygame.Surface((60, 60), pygame.SRCALPHA)
+        aura = pygame.Surface((60, 60), pygame.SRCALPHA)
         local = [(px - x + 30, py - y + 30) for px, py in hull]
         for thickness in range(5, 0, -1):
-            pygame.draw.polygon(glow, self.color + (int(100 / thickness),), local, thickness)
-        surface.blit(glow, (x - 30, y - 30))
+            pygame.draw.polygon(aura, self.color + (int(100 / thickness),), local, thickness)
+        surface.blit(aura, (x - 30, y - 30))
 
         sprite = assets.image("player", SHIP_WIDTH)
         flame = random.randint(10, 25)
+        for ex in (-12, 12):                                       # quầng sáng động cơ
+            glow.add(surface, glow.orb((0, 150, 200), 7, core=0.0, halo=1.0), (x + ex, y + 34))
         if sprite is not None:
             surface.blit(sprite, sprite.get_rect(center=(int(x), int(y))))
+            if self.muzzle > 0:                                    # lóe sáng đầu nòng khi bắn
+                glow.add(surface, glow.orb(self.color, 4 + self.muzzle * 2, core=0.6), (x, y - 34))
             base = y + 25
             pygame.draw.polygon(surface, NEON_ORANGE, [(x - 6, base), (x + 6, base), (x, base + flame)])
             pygame.draw.polygon(surface, YELLOW, [(x - 3, base), (x + 3, base), (x, base + flame / 2)])

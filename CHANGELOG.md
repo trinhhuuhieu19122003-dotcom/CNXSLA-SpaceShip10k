@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.1.0-dev] – Hình ảnh phát sáng (giai đoạn 2)
+- Đạn vẽ lại kiểu neon (cộng màu, quầng sáng cache sẵn): Plasma là quả cầu năng lượng có vệt mờ,
+  Laser là vệt sáng, Laser cấp 6 là **một dải tia liền từ mũi tàu**, Homing có lửa đuôi + vệt khói.
+- Đạn địch **viền tối + lõi sáng**, toàn tông nóng (đỏ/hồng/tím/cam) để không lẫn với đạn mình.
+- Lóe sáng đầu nòng, quầng sáng động cơ; địch **nháy trắng** khi trúng; tia lửa theo màu súng.
+- Vụ nổ: chớp sáng + sóng xung kích + mảnh cháy + tia lửa; boss nổ dây chuyền; Nuke nổ to.
+- Hộp vật phẩm mới: lục giác phát sáng, **mỗi loại một hình**; hộp súng khác súng đang cầm
+  **nháy viền đỏ + dấu "!"**.
+- HUD mới: thanh máu chia ô đổi màu, thanh Nộ sáng nhấp nháy khi đầy, ô súng có 6 vạch cấp.
+
 ## [2.1.0-dev] – Điều khiển tay đỡ mỏi (giai đoạn 1)
 - **Hiệu chỉnh tư thế nghỉ**: giữ yên tay ~2 giây, chỗ đó thành giữa màn hình; vùng điều khiển nhỏ quanh đó
   (tì khuỷu tay, nhích tay một gang là đi hết màn hình). Lưu lại cho lần sau.

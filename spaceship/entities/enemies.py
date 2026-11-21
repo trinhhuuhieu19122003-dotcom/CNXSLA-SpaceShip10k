@@ -35,10 +35,22 @@ class EnemyBase:
         self.shield_hp = 0.0
         self.max_shield = 0.0
         self.burning = False
+        self.hit_flash = 0          # > 0: vừa trúng đạn, vẽ nháy trắng
 
     @property
     def dead(self) -> bool:
         return self.hp <= 0
+
+    def _draw_hit_flash(self, surface, assets, name: str, width: int, angle: float = 0) -> None:
+        if self.hit_flash <= 0:
+            return
+        white = assets.silhouette(name, width)
+        if white is None:
+            return
+        if angle:
+            white = pygame.transform.rotate(white, angle)
+        white.set_alpha(30 * self.hit_flash)          # tối đa ~120: trúng liên tục vẫn nhìn rõ địch
+        surface.blit(white, white.get_rect(center=(int(self.x), int(self.y))))
 
     def _draw_hp_bar(self, surface, width: int, offset_y: float) -> None:
         x, y = self.x - width / 2, self.y - offset_y
@@ -84,6 +96,7 @@ class Enemy(EnemyBase):
         if sprite is not None:
             flags = pygame.BLEND_RGB_ADD if self.enraged else 0
             surface.blit(sprite, sprite.get_rect(center=(int(self.x), int(self.y))), special_flags=flags)
+            self._draw_hit_flash(surface, assets, "enemy", ENEMY_WIDTH)
         else:
             r = self.radius
             pts = [(self.x, self.y - r), (self.x + r + 5, self.y), (self.x, self.y + r), (self.x - r - 5, self.y)]
@@ -120,6 +133,7 @@ class Meteor(EnemyBase):
         if sprite is not None:
             rotated = pygame.transform.rotate(sprite, self.angle)
             surface.blit(rotated, rotated.get_rect(center=(int(self.x), int(self.y))))
+            self._draw_hit_flash(surface, assets, "meteor", int(self.radius * 2.5), self.angle)
         else:
             c, s = math.cos(math.radians(self.angle)), math.sin(math.radians(self.angle))
             pts = [(self.x + ox * c - oy * s, self.y + ox * s + oy * c) for ox, oy in self.outline]
@@ -172,6 +186,7 @@ class Boss(EnemyBase):
             flash = self.raging and pygame.time.get_ticks() % 200 < 100
             surface.blit(sprite, sprite.get_rect(center=(int(self.x), int(self.y))),
                          special_flags=pygame.BLEND_RGB_ADD if flash else 0)
+            self._draw_hit_flash(surface, assets, name, BOSS_WIDTH[self.stage])
         else:
             pygame.draw.circle(surface, NEON_MAGENTA, (int(self.x), int(self.y)), self.radius, 3)
         pygame.draw.rect(surface, NEON_RED, (self.x - 40, self.y - 60, 80, 6))

@@ -16,7 +16,7 @@ from spaceship.entities.enemies import EnemyBase
 from spaceship.systems import loot
 from spaceship.systems.world import World
 
-RED = (255, 0, 0)
+HIT_SPARK = {"plasma": (120, 200, 255), "laser": (255, 120, 100), "homing": (220, 140, 255), "drone_laser": (255, 170, 60)}
 BURN_ORANGE = (255, 100, 0)
 SHIELD_SPARK = (100, 255, 255)
 PLAYER_BULLET_RADIUS = config.PLAYER_HITBOX
@@ -26,6 +26,7 @@ PLAYER_BODY_RADIUS = 20
 # --- Sát thương ---------------------------------------------------------------------
 def damage_enemy(world: World, enemy: EnemyBase, amount: float, *, crit: bool = False, gain_rage: bool = True) -> None:
     player = world.player
+    enemy.hit_flash = 4                           # nháy trắng vài tick: cảm giác "trúng"
     if player.burn_unlocked:
         enemy.burning = True
     if enemy.is_boss:
@@ -66,7 +67,11 @@ def kill_enemy(world: World, enemy: EnemyBase) -> None:
     if enemy in world.enemies:
         world.enemies.remove(enemy)
     world.play("explosion")
-    world.burst(enemy.x, enemy.y, RED, 15)
+    if enemy.is_boss:
+        for dx, dy, size in ((0, 0, 3.0), (-50, -20, 1.6), (55, 15, 1.6), (-20, 40, 1.2), (30, -40, 1.2)):
+            world.explode(enemy.x + dx, enemy.y + dy, size)
+    else:
+        world.explode(enemy.x, enemy.y, 1.5 if enemy.is_meteor else 1.0)
     if enemy.is_boss:
         world.score += config.SCORE_BOSS_PER_STAGE * enemy.stage
         world.boss_kills += 1
@@ -96,20 +101,20 @@ def resolve_player_bullets(world: World) -> None:
                 if enemy.id not in bullet.hit_ids and bullet.hits(enemy):
                     bullet.hit_ids.add(enemy.id)
                     damage_enemy(world, enemy, config.DRONE_DAMAGE, gain_rage=False)
-                    world.burst(enemy.x, enemy.y, RED, 3)
+                    world.sparks(enemy.x, enemy.y + enemy.radius * 0.6, HIT_SPARK["drone_laser"], 3)
         elif bullet.is_piercing_laser:
             dmg = min(200, config.PIERCING_LASER_DAMAGE + player.bonus_damage)
             for enemy in world.enemies:
                 if enemy.id not in bullet.hit_ids and bullet.hits(enemy):
                     bullet.hit_ids.add(enemy.id)
                     damage_enemy(world, enemy, dmg, crit=True)
-                    world.burst(enemy.x, enemy.y, RED, 8)
+                    world.sparks(enemy.x, enemy.y + enemy.radius * 0.6, HIT_SPARK["laser"], 6)
         else:
             for enemy in world.enemies:
                 if bullet.hits(enemy):
                     base = config.WEAPON_BASE_DAMAGE.get(bullet.kind, 6)
                     damage_enemy(world, enemy, min(50, base + player.bonus_damage), crit=bullet.kind == "plasma")
-                    world.burst(enemy.x, enemy.y, NEON_CYAN, 5)
+                    world.sparks(bullet.x, bullet.y, HIT_SPARK.get(bullet.kind, NEON_CYAN), 4)
                     world.bullets.remove(bullet)
                     break
 
@@ -118,7 +123,7 @@ def detonate_nuke(world: World, nuke) -> None:
     world.flash = 6
     world.shake(25)
     world.play("explosion")
-    world.burst(nuke.x, nuke.y, RED, 50)
+    world.explode(nuke.x, nuke.y, 4.0)
     for enemy in list(world.enemies):
         if enemy.is_boss:
             enemy.shield_hp = 0                    # Nuke phá khiên boss
@@ -136,7 +141,7 @@ def resolve_enemy_bullets(world: World) -> None:
             continue
         if player.shield_active:
             world.enemy_bullets.remove(bullet)
-            world.burst(bullet.x, bullet.y, NEON_CYAN, 3)
+            world.sparks(bullet.x, bullet.y, NEON_CYAN, 4)
         elif player.invincible_timer <= 0:
             world.enemy_bullets.remove(bullet)
             damage_player(world, config.ENEMY_BULLET_DAMAGE.get(bullet.kind, config.ENEMY_BULLET_DAMAGE_DEFAULT))
@@ -159,7 +164,7 @@ def resolve_body_collisions(world: World) -> None:
             if not enemy.is_boss:                  # đâm vào nhau: địch nổ nhưng không được điểm
                 world.enemies.remove(enemy)
                 world.play("explosion")
-                world.burst(enemy.x, enemy.y, RED, 15)
+                world.explode(enemy.x, enemy.y, 1.0)
             damage_player(world, config.HEAVY_COLLISION_DAMAGE if heavy else config.COLLISION_DAMAGE)
             if world.outcome:
                 return

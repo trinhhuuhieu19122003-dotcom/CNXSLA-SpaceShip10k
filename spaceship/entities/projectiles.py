@@ -11,14 +11,13 @@ from spaceship.config import (
     HEIGHT,
     HOMING_COLOR,
     LASER_COLOR,
-    NEON_CYAN,
     NEON_ORANGE,
-    NEON_RED,
     PLASMA_COLOR,
     WHITE,
     WIDTH,
     YELLOW,
 )
+from spaceship.ui import glow
 
 BULLET_SPEED = {"plasma": 25, "laser": 18, "homing": 12, "drone_laser": 35}
 PIERCING_LASER_SPEED = 40
@@ -54,6 +53,10 @@ class Bullet:
 
     def update(self, enemies: Sequence = (), spawn_particle: Optional[Callable] = None) -> None:
         self.timer += 1
+        if self.kind == "plasma":
+            self.trail.append((self.x, self.y))
+            if len(self.trail) > 4:
+                self.trail.pop(0)
         if self.kind != "homing":
             self.x += self.dx
             self.y -= self.vy
@@ -84,59 +87,46 @@ class Bullet:
             return abs(self.x - enemy.x) < enemy.radius + 30 and enemy.y < self.y + enemy.radius
         return math.hypot(self.x - enemy.x, self.y - enemy.y) < enemy.radius + 5
 
-    # --- Vẽ -------------------------------------------------------------------------
+    # --- Vẽ (phát sáng, xem ui/glow.py) ---------------------------------------------
     def draw(self, surface: pygame.Surface) -> None:
-        x, y = int(self.x), int(self.y)
-        if self.kind == "plasma":
-            if self.level == 6:
-                pygame.draw.circle(surface, WHITE, (x, y), 12)
-                pygame.draw.circle(surface, PLASMA_COLOR, (x, y), 18, 5)
-                pygame.draw.circle(surface, (0, 50, 255), (x, y), 24, 2)
-                for _ in range(3):
-                    end = (self.x + random.randint(-20, 20), self.y + random.randint(-20, 20))
-                    pygame.draw.line(surface, WHITE, (self.x, self.y), end, 2)
-            else:
-                pygame.draw.circle(surface, (0, 100, 200), (x, y), 12)
-                pygame.draw.circle(surface, PLASMA_COLOR, (x, y), 8)
-                pygame.draw.circle(surface, WHITE, (x, y - 2), 4)
-                end = (self.x - self.dx * 1.5, self.y + self.vy * 1.5)
-                pygame.draw.line(surface, PLASMA_COLOR, (self.x, self.y), end, 4)
-                pygame.draw.line(surface, WHITE, (self.x, self.y), end, 1)
-        elif self.kind == "laser":
-            if self.level == 6:
-                beam = 1200
-                w = 12 + math.sin(pygame.time.get_ticks() / 30) * 2
-                pygame.draw.rect(surface, (120, 0, 0), (self.x - w * 2, self.y - beam, w * 4, beam), border_radius=10)
-                pygame.draw.rect(surface, LASER_COLOR, (self.x - w, self.y - beam, w * 2, beam), border_radius=6)
-                pygame.draw.rect(surface, WHITE, (self.x - w / 3, self.y - beam, w * 2 / 3, beam))
-                for i in range(0, beam, 100):
-                    offset = (pygame.time.get_ticks() / 2 + i) % beam
-                    pygame.draw.ellipse(surface, WHITE, (self.x - w * 2.5, self.y - offset - 10, w * 5, 20), 2)
-            else:
-                w = 6 if self.level >= 3 else 4
-                pygame.draw.rect(surface, (150, 0, 0), (self.x - w - 2, self.y - 25, w * 2 + 4, 45), border_radius=4)
-                pygame.draw.rect(surface, LASER_COLOR, (self.x - w, self.y - 20, w * 2, 40), border_radius=3)
-                pygame.draw.rect(surface, WHITE, (self.x - w / 3, self.y - 20, w * 2 / 3, 40), border_radius=2)
-        elif self.kind == "homing":
-            if len(self.trail) > 2:
-                for i, (tx, ty) in enumerate(self.trail):
-                    ratio = i / len(self.trail)
-                    color = (int(200 * ratio), 0, int(255 * ratio))
-                    pygame.draw.circle(surface, color, (int(tx), int(ty)), int(ratio * (8 if self.level == 6 else 4)))
-            ang = math.atan2(-self.vy, self.dx)
-            length, w = (16, 6) if self.level == 6 else (12, 4)
-            p1 = (self.x + math.cos(ang) * length, self.y + math.sin(ang) * length)
-            p2 = (self.x + math.cos(ang + 2.2) * w, self.y + math.sin(ang + 2.2) * w)
-            p3 = (self.x + math.cos(ang - 2.2) * w, self.y + math.sin(ang - 2.2) * w)
-            f1 = (self.x + math.cos(ang + 2.5) * (w + 4), self.y + math.sin(ang + 2.5) * (w + 4))
-            f2 = (self.x + math.cos(ang - 2.5) * (w + 4), self.y + math.sin(ang - 2.5) * (w + 4))
-            pygame.draw.polygon(surface, (100, 0, 150), [p1, f1, p2, p3, f2])
-            pygame.draw.polygon(surface, HOMING_COLOR, [p1, p2, p3])
-            pygame.draw.circle(surface, WHITE, (int(p1[0]), int(p1[1])), 2)
-        elif self.kind == "drone_laser":
-            pygame.draw.rect(surface, (200, 80, 0), (self.x - 8, self.y - 120, 16, 120), border_radius=4)
-            pygame.draw.rect(surface, NEON_ORANGE, (self.x - 4, self.y - 120, 8, 120), border_radius=2)
-            pygame.draw.rect(surface, WHITE, (self.x - 2, self.y - 120, 4, 120))
+        getattr(self, f"_draw_{self.kind}")(surface)
+
+    def _draw_plasma(self, surface: pygame.Surface) -> None:
+        big = self.level == 6
+        r = 9 if big else 6
+        for i, (tx, ty) in enumerate(self.trail):                 # vệt mờ dần phía sau
+            k = (i + 1) / (len(self.trail) + 1)
+            glow.add(surface, glow.orb(glow.scale(PLASMA_COLOR, 0.6 * k), max(2, int(r * k)), core=0.0), (tx, ty))
+        glow.add(surface, glow.orb(PLASMA_COLOR, r, core=0.5), (self.x, self.y))
+        if big:                                                   # cấp 6: tia điện lách tách quanh quả cầu
+            for _ in range(2):
+                end = (self.x + random.randint(-18, 18), self.y + random.randint(-18, 18))
+                pygame.draw.line(surface, (180, 230, 255), (self.x, self.y), end, 1)
+
+    def _draw_laser(self, surface: pygame.Surface) -> None:
+        if self.level == 6:
+            return          # tia cấp 6 do Player vẽ liền một dải từ mũi tàu (xem Player._draw_beam)
+        tex = glow.streak(LASER_COLOR, 34, 7 if self.level >= 3 else 5)
+        glow.add(surface, tex, (self.x, self.y))
+
+    def _draw_homing(self, surface: pygame.Surface) -> None:
+        big = self.level == 6
+        for i, (tx, ty) in enumerate(self.trail):                 # vệt khói sáng
+            k = (i + 1) / (len(self.trail) + 1)
+            glow.add(surface, glow.orb((int(110 * k), int(80 * k), int(150 * k)), 3 + int(3 * k), core=0.0, halo=0.6), (tx, ty))
+        ang = math.atan2(-self.vy, self.dx)
+        length, w = (16, 6) if big else (12, 4)
+        nose = (self.x + math.cos(ang) * length, self.y + math.sin(ang) * length)
+        left = (self.x + math.cos(ang + 2.4) * w, self.y + math.sin(ang + 2.4) * w)
+        right = (self.x + math.cos(ang - 2.4) * w, self.y + math.sin(ang - 2.4) * w)
+        tail = (self.x - math.cos(ang) * 4, self.y - math.sin(ang) * 4)
+        glow.add(surface, glow.orb((255, 140, 60), 4, core=0.6), tail)   # lửa đuôi
+        pygame.draw.polygon(surface, (60, 20, 90), [nose, left, right])
+        pygame.draw.polygon(surface, HOMING_COLOR, [nose, left, right], 2)
+        glow.add(surface, glow.orb(HOMING_COLOR, 2, core=1.0, halo=0.8), nose)
+
+    def _draw_drone_laser(self, surface: pygame.Surface) -> None:
+        glow.add(surface, glow.streak(NEON_ORANGE, 110, 5), (self.x, self.y - 60))
 
 
 class EnemyBullet:
@@ -164,25 +154,24 @@ class EnemyBullet:
         self.x += self.dx
         self.y += self.dy
 
+    # Đạn địch: VIỀN TỐI + lõi sáng -> nổi trên mọi nền, phân biệt rõ với đạn xanh/tím của mình
+    STYLE = {
+        "normal": ((70, 0, 0), (255, 60, 60), 8, 5),
+        "blue_bullet": ((60, 0, 40), (255, 70, 170), 9, 6),   # hồng: giữ mọi đạn địch ở tông nóng
+        "boss_homing": ((50, 0, 70), (210, 90, 255), 12, 8),
+    }
+
     def draw(self, surface: pygame.Surface) -> None:
-        x, y = int(self.x), int(self.y)
-        if self.kind == "normal":
-            pygame.draw.circle(surface, (150, 0, 0), (x, y), 8)
-            pygame.draw.circle(surface, NEON_RED, (x, y), 5)
-            pygame.draw.circle(surface, WHITE, (x, y), 2)
-        elif self.kind == "blue_bullet":
-            pygame.draw.circle(surface, (0, 100, 150), (x, y), 10)
-            pygame.draw.circle(surface, NEON_CYAN, (x, y), 6)
-            pygame.draw.circle(surface, WHITE, (x, y), 2)
-        elif self.kind == "boss_homing":
-            pygame.draw.circle(surface, (100, 0, 150), (x, y), 12)
-            pygame.draw.circle(surface, HOMING_COLOR, (x, y), 8)
-            pygame.draw.circle(surface, YELLOW, (x, y), 3)
-        else:
-            color = (200, 50, 255) if self.kind == "purple_laser" else NEON_ORANGE
-            tail = (self.x - self.dx * 4, self.y - self.dy * 4)
-            pygame.draw.line(surface, color, (self.x, self.y), tail, 10)
-            pygame.draw.line(surface, WHITE, (self.x, self.y), tail, 4)
+        if self.kind in self.STYLE:
+            dark, color, outer, inner = self.STYLE[self.kind]
+            pygame.draw.circle(surface, dark, (int(self.x), int(self.y)), outer)
+            glow.add(surface, glow.orb(color, inner, core=0.45, halo=0.7), (self.x, self.y))
+            if self.kind == "boss_homing" and self.track_time > 0:
+                pygame.draw.circle(surface, YELLOW, (int(self.x), int(self.y)), outer + 3, 1)
+            return
+        color = (200, 70, 255) if self.kind == "purple_laser" else NEON_ORANGE
+        tail = (self.x - self.dx * 4, self.y - self.dy * 4)
+        glow.glow_line(surface, color, (self.x, self.y), tail, 6)
 
 
 class NukeMissile:
