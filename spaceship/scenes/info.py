@@ -340,21 +340,27 @@ class AchievementsScene(Scene):
                 draw_lock(surface, (center[0] + 15, center[1] + 15), MUTED)
             tx = card.x + 60
             width = card.right - 12 - tx
-            name = fit_text(a, item.name, 15, TEXT if got else SECONDARY, width, role="ui")
-            surface.blit(name, (tx, card.y + 6))
-            how = fit_text(a, item.how, 12, SECONDARY if got else MUTED, width, role="body")
-            surface.blit(how, (tx, card.y + 27))
-            footer = ""
+            # Thẻ thấp (7 hàng): ngày đạt / tiến độ nằm bên phải dòng tên, thanh tiến độ sát đáy thẻ.
+            footer, progress = "", None
             if got:
-                footer = "Đạt " + ".".join(reversed(earned[item.key].split("-")))
+                y, m, d = (earned[item.key].split("-") + ["", "", ""])[:3]
+                footer = f"{d}.{m}.{y[2:]}"                    # ngày đạt (màu vàng = đã đạt), ngắn để tên đủ chỗ
             elif self._progress(item.key) is not None:
                 cur, goal = self._progress(item.key)
-                footer = f"{min(cur, goal)}/{goal}"
-                bar = pygame.Rect(tx + 58, card.bottom - 13, width - 58, 4)
-                pygame.draw.rect(surface, (30, 38, 50), bar)
-                pygame.draw.rect(surface, SECONDARY, (bar.x, bar.y, bar.w * min(1, cur / goal), bar.h))
+                footer, progress = f"{min(cur, goal)}/{goal}", min(1, cur / goal)
+            tag_w = 0
             if footer:
-                surface.blit(a.text(footer, 11, BADGE_COLOR if got else MUTED, role="label"), (tx, card.bottom - 18))
+                tag = a.text(footer, 10, BADGE_COLOR if got else MUTED, role="label")
+                tag_w = tag.get_width() + 6
+                surface.blit(tag, (card.right - 10 - tag.get_width(), card.y + 9))
+            name = fit_text(a, item.name, 15, TEXT if got else SECONDARY, width - tag_w, role="ui")
+            surface.blit(name, (tx, card.y + 5))
+            how = fit_text(a, item.how, 12, SECONDARY if got else MUTED, width, role="body")
+            surface.blit(how, (tx, card.y + 25))
+            if progress is not None:
+                bar = pygame.Rect(tx, card.bottom - 7, width, 3)
+                pygame.draw.rect(surface, (30, 38, 50), bar)
+                pygame.draw.rect(surface, SECONDARY, (bar.x, bar.y, bar.w * progress, bar.h))
 
     def _draw_board(self, surface, a) -> None:
         """5 ván điểm cao nhất của mỗi chế độ, mỗi chế độ một cột."""

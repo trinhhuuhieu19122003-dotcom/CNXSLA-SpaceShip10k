@@ -93,7 +93,7 @@ class AchievementGameTest(unittest.TestCase):
         scene.draw(self.game.screen)
         scene.menu.activate(0)
         self.assertEqual(scene.tab, 0)
-        self.assertEqual(len(achievements.ACHIEVEMENTS), 18)
+        self.assertEqual(len(achievements.ACHIEVEMENTS), 21)
 
     def test_new_game_wipes_progress_keeps_settings_and_backs_up(self):
         save = self.game.save
@@ -124,3 +124,22 @@ class AchievementGameTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PlayStyleBadgeTest(unittest.TestCase):
+    def test_combo_graze_cancel_badges(self):
+        save = SaveData(path=Path(tempfile.mkdtemp()) / "save.json")
+        run = RunStats(GameMode.ENDLESS, best_combo=29, grazes=99, best_cancel=29)
+        self.assertFalse({"combo30", "graze100", "cancel30"} & {a.key for a in evaluate(save, run)})
+        run.best_combo, run.grazes, run.best_cancel = 30, 100, 30
+        self.assertTrue({"combo30", "graze100", "cancel30"} <= {a.key for a in evaluate(save, run)})
+
+    def test_gameplay_feeds_play_style_stats(self):
+        game = Game(camera=False, seed=2)
+        play = GameplayScene(game, GameMode.ENDLESS)
+        game.change_scene(play)
+        game._apply_pending_scene()
+        w = play.world
+        w.best_combo, w.grazes, w.best_cancel = 31, 120, 40
+        play._sync_run()
+        self.assertEqual((play.run.best_combo, play.run.grazes, play.run.best_cancel), (31, 120, 40))

@@ -221,6 +221,7 @@ class GameplayScene(Scene):
         w, run = self.world, self.run
         run.time, run.kills, run.boss_kills = w.survival_time, w.kills, w.boss_kills
         run.skills, run.guard_blocks = w.skills_used, w.guard_blocks
+        run.best_combo, run.grazes, run.best_cancel = w.best_combo, w.grazes, w.best_cancel
 
     def _track_run(self, controls) -> None:
         run = self.run

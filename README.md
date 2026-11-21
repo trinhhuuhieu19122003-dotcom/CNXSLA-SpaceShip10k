@@ -46,8 +46,8 @@
 | **Hướng dẫn: súng bắn thử ngay trong thẻ** | **Sổ tay chiến đấu: mở dần khi gặp địch** |
 | ![Hướng dẫn](docs/screenshots/huong-dan.png) | ![Sổ tay chiến đấu](docs/screenshots/so-tay.png) |
 
-| **Thành tựu: 18 huy hiệu** | |
-| ![Thành tựu](docs/screenshots/thanh-tuu.png) | |
+| **Thành tựu: 21 huy hiệu** | **Bảng điểm: 5 ván cao nhất mỗi chế độ** |
+| ![Thành tựu](docs/screenshots/thanh-tuu.png) | ![Bảng điểm](docs/screenshots/bang-diem.png) |
 
 **Toàn màn hình 16:9:** chiến trường giữ nguyên ở giữa, thông tin trận và ô camera tay dời ra hai bảng bên.
 

@@ -62,6 +62,8 @@ class World:
     best_combo: int = 0
     #: số lần đạn địch sượt qua tàu (sát đạn)
     grazes: int = 0
+    #: số đạn hủy nhiều nhất trong một lần (huy hiệu)
+    best_cancel: int = 0
     banner: str = ""
     banner_ticks: int = 0
     #: chu kỳ Vượt ải (Vòng lặp tín hiệu); chế độ khác luôn 1
@@ -183,6 +185,7 @@ class World:
         for bullet in self.enemy_bullets:
             self.particles.append(Flash(bullet.x, bullet.y, (255, 220, 110), radius=9, life=12))
         self.enemy_bullets.clear()
+        self.best_cancel = max(self.best_cancel, count)
         if count:
             self.score += count * config.BULLET_CANCEL_SCORE
             self.play("bullet_cancel")

@@ -30,6 +30,9 @@ class RunStats:
     hand_ticks: int = 0
     keyboard_used: bool = False
     mother_by_lightning: bool = False
+    best_combo: int = 0             # chuỗi hạ dài nhất trong ván
+    grazes: int = 0                 # số lần sát đạn
+    best_cancel: int = 0            # số đạn hủy nhiều nhất trong một lần (hạ boss / boss đổi pha)
     recorded: bool = False          # True: kills/skills... đã cộng vào file lưu, không cộng lần nữa
 
 
@@ -106,6 +109,12 @@ ACHIEVEMENTS: tuple[Achievement, ...] = (
                 lambda s, r: r is not None and r.cleared and r.hand_ticks > 600 and not r.keyboard_used),
     Achievement("thunder", "SẤM SÉT CUỐI CÙNG", "Hạ Tàu Mẹ khi cầm Tia Sét", "bolt",
                 lambda s, r: r is not None and r.mother_by_lightning),
+    Achievement("combo30", "BẬC THẦY CHUỖI", "Đạt chuỗi hạ 30 (x4) trong một ván", "fist",
+                lambda s, r: r is not None and r.best_combo >= 30),
+    Achievement("graze100", "LUỒN LÁCH", "Sát đạn 100 lần trong một ván", "hand",
+                lambda s, r: r is not None and r.grazes >= 100),
+    Achievement("cancel30", "DỌN SẠCH BẦU TRỜI", "Hủy 30 viên đạn cùng lúc khi hạ boss", "star",
+                lambda s, r: r is not None and r.best_cancel >= 30),
 )
 BY_KEY = {a.key: a for a in ACHIEVEMENTS}
 
