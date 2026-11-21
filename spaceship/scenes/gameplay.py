@@ -7,6 +7,8 @@ from typing import Optional
 
 import pygame
 
+from spaceship.campaign import achievements
+from spaceship.campaign.achievements import RunStats
 from spaceship.campaign.bestiary import BESTIARY, BestiaryEntry
 from spaceship.campaign.levels import LEVEL_COUNT, default_loadout, get_level
 from spaceship.campaign.story import RADIO
@@ -19,7 +21,7 @@ from spaceship.systems import attacks, combat, weapons
 from spaceship.systems.spawning import create_director
 from spaceship.systems.world import World
 from spaceship.ui import sidebar
-from spaceship.ui.hud import ENCOUNTER_HEIGHT, draw_banner, draw_boss_bar, draw_encounter, draw_hud, draw_radio
+from spaceship.ui.hud import ENCOUNTER_HEIGHT, Toast, draw_banner, draw_boss_bar, draw_encounter, draw_hud, draw_radio
 
 DEFAULT_BACKGROUND = {GameMode.ENDLESS: "bg_act2", GameMode.INFERNO: "bg_act3"}
 BG_SCROLL = 0.6                     # px/tick
@@ -86,8 +88,12 @@ class GameplayScene(Scene):
         self.fog = Fog(game.rng) if self.level is not None and self.level.fog else None
         self.controls = None            # ControlState gần nhất (để HUD vẽ chỉ báo cử chỉ)
         self.finished = False
-        self._encounters: deque[BestiaryEntry] = deque()
+        self._encounters: deque = deque()          # thẻ góc phải: ĐỊCH MỚI / THÀNH TỰU MỚI
         self._encounter_ticks = 0
+        self.run = RunStats(mode, level=self.level_number if self.level is not None else None,
+                            preset=game.settings.difficulty)
+        self.new_achievements: list = []
+        self._run_ticks = 0
         # Âm thanh: nhạc theo hồi, đổi sang nhạc boss; tiếng báo Nộ đầy / boss đổi pha / bộ đàm
         self.music = self._base_music()
         self._boss_track: Optional[str] = None
@@ -148,6 +154,7 @@ class GameplayScene(Scene):
             return
 
         w.survival_time += TICK
+        self._track_run(controls)
         self.director.update(w)
         if w.outcome:
             return self._finish()
@@ -199,6 +206,45 @@ class GameplayScene(Scene):
             self._encounter_ticks -= 1
             if not self._encounter_ticks:
                 self._encounters.popleft()
+        if self._encounters and not self._encounter_ticks:
+            self._encounter_ticks = ENCOUNTER_TICKS
+
+    # --- Huy hiệu ------------------------------------------------------------------------
+    def _sync_run(self) -> None:
+        w, run = self.world, self.run
+        run.time, run.kills, run.boss_kills = w.survival_time, w.kills, w.boss_kills
+        run.skills, run.guard_blocks = w.skills_used, w.guard_blocks
+
+    def _track_run(self, controls) -> None:
+        run = self.run
+        if controls is not None:
+            if controls.source == "hand":
+                run.hand_ticks += 1
+            elif controls.move_x or controls.move_y:
+                run.keyboard_used = True
+        for boss in self.world.defeated_bosses:
+            if boss.kind == "mothership" and self.world.player.weapon == "lightning":
+                run.mother_by_lightning = True
+        self._run_ticks += 1
+        if self._run_ticks % TICK_RATE == 0:              # kiểm tra huy hiệu mỗi giây
+            self._sync_run()
+            self._announce_achievements(achievements.evaluate(self.game.save, run))
+
+    def _record_achievements(self, cleared: bool, stars: int) -> None:
+        """Cuối ván: cộng bộ đếm vào file lưu rồi xét huy hiệu lần cuối (màn kết quả sẽ liệt kê)."""
+        save, run = self.game.save, self.run
+        self._sync_run()
+        run.cleared, run.stars = cleared, stars
+        save.add_counters(skills=run.skills, guard_blocks=run.guard_blocks)
+        run.recorded = True
+        save.save()
+        self.new_achievements += achievements.evaluate(save, run)
+
+    def _announce_achievements(self, unlocked) -> None:
+        for achievement in unlocked:
+            self.new_achievements.append(achievement)
+            self._encounters.append(Toast("THÀNH TỰU MỚI", achievement.name, achievement.how))
+            self.world.play("level_up")
         if self._encounters and not self._encounter_ticks:
             self._encounter_ticks = ENCOUNTER_TICKS
 
@@ -290,12 +336,13 @@ class GameplayScene(Scene):
                             survival_time=w.survival_time, victory=victory)
         new_record = self.game.save.record(result)
         game = self.game
+        stars = self.stars if victory and self.level is not None else 0
+        cycle = game.save.cycle                                   # trước khi ghi (đoạn kết nói về chu kỳ vừa xong)
+        if victory and self.level is not None:
+            game.save.record_level(self.level_number, stars, LEVEL_COUNT)
+        self._record_achievements(victory and self.level is not None, stars)
         if self.level is None:
             return game.change_scene(ResultScene(game, self, result, new_record))
-        stars = self.stars if victory else 0
-        cycle = game.save.cycle                                   # trước khi ghi (đoạn kết nói về chu kỳ vừa xong)
-        if victory:
-            game.save.record_level(self.level_number, stars, LEVEL_COUNT)
 
         def result_scene(ending: bool = False):
             return ResultScene(game, self, result, new_record, level=self.level_number, stars=stars,

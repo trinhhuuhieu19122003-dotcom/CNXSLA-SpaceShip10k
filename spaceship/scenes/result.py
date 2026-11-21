@@ -6,7 +6,7 @@ from typing import List, Optional
 import pygame
 
 from spaceship.campaign.levels import LEVEL_COUNT
-from spaceship.config import HEIGHT, WIDTH
+from spaceship.config import HEIGHT, WIDTH, YELLOW
 from spaceship.core.scene import Scene
 from spaceship.core.storage import GameResult
 from spaceship.ui.hud import format_time
@@ -14,7 +14,7 @@ from spaceship.ui.menu_list import MenuList
 from spaceship.ui.widgets import ACCENT, DANGER, MUTED, SECONDARY, TEXT, Button, blit_center, dim, draw_panel, draw_star, fit_text
 
 INPUT_GRACE_TICKS = 45          # chặn click/phím vô tình ngay khi vừa thua
-PANEL = pygame.Rect(WIDTH // 2 - 260, HEIGHT // 2 - 230, 520, 480)
+PANEL = pygame.Rect(WIDTH // 2 - 260, HEIGHT // 2 - 245, 520, 510)
 
 
 class ResultScene(Scene):
@@ -132,6 +132,11 @@ class ResultScene(Scene):
             surface.blit(record, rect)
             draw_star(surface, (rect.left - 16, rect.centery), 7, True)
             draw_star(surface, (rect.right + 16, rect.centery), 7, True)
+        earned = getattr(self.gameplay, "new_achievements", [])
+        if earned:                                           # huy hiệu đạt trong ván này
+            names = " · ".join(x.name for x in earned)
+            label = fit_text(a, f"HUY HIỆU MỚI: {names}", 16, YELLOW, PANEL.width - 50, role="ui")
+            blit_center(surface, label, y + 26)
         for i, button in enumerate(self.buttons):
             button.draw(surface, a, i == self.menu.selected)
         self.menu.draw_progress(surface)

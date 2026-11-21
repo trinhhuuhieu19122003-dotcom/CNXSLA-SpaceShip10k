@@ -16,7 +16,7 @@ MENU_ITEMS = (
     ("VƯỢT ẢI", "10 ải · 3 hồi · có cốt truyện", GameMode.CAMPAIGN),
     ("VÔ TẬN", "Sống sót càng lâu càng tốt", GameMode.ENDLESS),
     ("HỎA NGỤC", "Mưa đạn · ít hồi máu · boss dồn dập", GameMode.INFERNO),
-    ("THÀNH TỰU", "Xem kỷ lục và thống kê các chế độ", "achievements"),
+    ("THÀNH TỰU", "Huy hiệu, kỷ lục và thống kê", "achievements"),
     ("HƯỚNG DẪN", "Cách điều khiển, vũ khí và vật phẩm", "how_to_play"),
     ("CÀI ĐẶT", "Tự động bắn và hiệu chỉnh tay", "options"),
     ("THOÁT", "Rời trò chơi", "quit"),

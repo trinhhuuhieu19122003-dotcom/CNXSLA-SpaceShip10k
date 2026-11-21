@@ -163,6 +163,7 @@ def update_guard(world: World) -> bool:
     world.sparks(target.x, target.y, (110, 225, 255), 4)
     world.play("shield_block")
     p.guard_cooldown = config.GUARD_COOLDOWN_TICKS
+    world.guard_blocks += 1
     return True
 
 
@@ -299,6 +300,7 @@ def trigger_skill(world: World) -> Optional[Skill]:
     if not p.rage_full:
         return None
     p.rage = 0
+    world.skills_used += 1
     skill = SKILLS[p.weapon](world)
     world.skills.append(skill)
     world.announce(config.SKILL_NAMES[p.weapon], 1.2)

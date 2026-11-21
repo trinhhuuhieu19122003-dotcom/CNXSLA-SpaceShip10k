@@ -6,13 +6,16 @@ import pygame
 from spaceship import config
 from spaceship.config import WIDTH, GameMode
 from spaceship.core.scene import Scene
-from spaceship.ui import guide
+from spaceship.campaign import achievements
+from spaceship.campaign.bestiary import BESTIARY
+from spaceship.campaign.levels import LEVEL_COUNT
+from spaceship.ui import glow, guide
 from spaceship.ui.guide_preview import WeaponPreview
 from spaceship.ui.hud import format_time
 from spaceship.ui.menu_list import MenuList
 from spaceship.ui.widgets import (
-    ACCENT, FRAME, MUTED, SECONDARY, SELECTED_FILL, TEXT, Button,
-    blit_center, dim, draw_back_hint, draw_panel, fit_text,
+    ACCENT, FRAME, LOCKED, MUTED, SECONDARY, SELECTED_FILL, TEXT, Button,
+    blit_center, dim, draw_back_hint, draw_lock, draw_panel, draw_star, fit_text,
 )
 
 PANEL = pygame.Rect(20, 50, WIDTH - 40, 600)
@@ -177,22 +180,190 @@ class HowToPlayScene(_InfoScene):
 
 
 
-class AchievementsScene(_InfoScene):
+def draw_badge_icon(surface: pygame.Surface, icon: str, center, color, r: int = 20) -> None:
+    """Biểu tượng huy hiệu vẽ bằng hình khối (không cần ảnh): vòng tròn + ký hiệu."""
+    x, y = center
+    pygame.draw.circle(surface, (12, 20, 30), center, r)
+    pygame.draw.circle(surface, color, center, r, 2)
+    k = r / 20
+    if icon == "star":
+        draw_star(surface, center, int(11 * k), True, color=color)
+    elif icon == "skull":
+        pygame.draw.circle(surface, color, (x, y - 2), int(9 * k), 2)
+        for dx in (-4, 4):
+            pygame.draw.circle(surface, color, (x + int(dx * k), y - 3), max(1, int(2 * k)))
+        pygame.draw.line(surface, color, (x - 5 * k, y + 8 * k), (x + 5 * k, y + 8 * k), 2)
+    elif icon == "bolt":
+        pygame.draw.polygon(surface, color, [(x + 3 * k, y - 12 * k), (x - 6 * k, y + 2 * k), (x - 1 * k, y + 2 * k),
+                                             (x - 3 * k, y + 12 * k), (x + 6 * k, y - 2 * k), (x + 1 * k, y - 2 * k)])
+    elif icon == "shield":
+        pygame.draw.polygon(surface, color, [(x, y - 11 * k), (x + 9 * k, y - 6 * k), (x + 7 * k, y + 5 * k),
+                                             (x, y + 11 * k), (x - 7 * k, y + 5 * k), (x - 9 * k, y - 6 * k)], 2)
+    elif icon == "clock":
+        pygame.draw.circle(surface, color, center, int(10 * k), 2)
+        pygame.draw.line(surface, color, center, (x, y - 7 * k), 2)
+        pygame.draw.line(surface, color, center, (x + 5 * k, y + 2 * k), 2)
+    elif icon == "book":
+        pygame.draw.rect(surface, color, (x - 10 * k, y - 8 * k, 9 * k, 16 * k), 2)
+        pygame.draw.rect(surface, color, (x + 1 * k, y - 8 * k, 9 * k, 16 * k), 2)
+    elif icon == "hand":
+        pygame.draw.circle(surface, color, (x, y + 4 * k), int(6 * k), 2)
+        for i, dx in enumerate((-6, -2, 2, 6)):
+            pygame.draw.line(surface, color, (x + dx * k, y), (x + dx * k * 1.2, y - (9 + (i % 3)) * k), 2)
+    elif icon == "loop":
+        pygame.draw.arc(surface, color, (x - 10 * k, y - 10 * k, 20 * k, 20 * k), 0.6, 5.6, 2)
+        pygame.draw.polygon(surface, color, [(x + 9 * k, y - 9 * k), (x + 11 * k, y - 1 * k), (x + 3 * k, y - 4 * k)])
+    elif icon == "flag":
+        pygame.draw.line(surface, color, (x - 7 * k, y - 11 * k), (x - 7 * k, y + 11 * k), 2)
+        pygame.draw.polygon(surface, color, [(x - 6 * k, y - 11 * k), (x + 9 * k, y - 6 * k), (x - 6 * k, y - 1 * k)])
+    else:  # fist
+        pygame.draw.rect(surface, color, (x - 8 * k, y - 7 * k, 16 * k, 14 * k), 2, border_radius=4)
+        for dx in (-4, 0, 4):
+            pygame.draw.line(surface, color, (x + dx * k, y - 7 * k), (x + dx * k, y - 1 * k), 1)
+
+
+ACH_TABS = ("HUY HIỆU", "THỐNG KÊ")
+ACH_BACK = pygame.Rect(WIDTH // 2 - 130, PANEL.bottom - 40, 260, 30)
+BADGE_AREA = pygame.Rect(PANEL.x + 20, PANEL.y + 122, PANEL.width - 40, 418)
+BADGE_COLOR = (255, 210, 90)
+
+
+class AchievementsScene(Scene):
+    """Thành tựu: thẻ HUY HIỆU (lưới huy hiệu, đạt/chưa đạt, cách đạt, ngày đạt, tiến độ) và thẻ THỐNG KÊ."""
+
+    music = "menu"
     COLUMNS = (("SỐ VÁN", 290), ("QUÁI", 390), ("BOSS", 480), ("ĐIỂM CAO", 585), ("LÂU NHẤT", 690))
 
+    def __init__(self, game) -> None:
+        super().__init__(game)
+        self.tab = 0
+        font = game.assets.font(18, role="ui")
+        widths = [font.size(self._tab_label(i))[0] + 40 for i in range(len(ACH_TABS))]
+        x = WIDTH // 2 - (sum(widths) + 12) // 2
+        self.tabs = []
+        for w in widths:
+            self.tabs.append(pygame.Rect(x, PANEL.y + 74, w, 34))
+            x += w + 12
+        self.menu = MenuList(game, (*self.tabs, ACH_BACK), self._activate)
+
+    def _tab_label(self, index: int) -> str:
+        if index == 0:
+            return f"HUY HIỆU {len(self.game.save.achievements)}/{len(achievements.ACHIEVEMENTS)}"
+        return ACH_TABS[index]
+
+    def _activate(self, index: int) -> None:
+        if index < len(self.tabs):
+            self.tab = index
+        else:
+            self._back()
+
+    def _back(self) -> None:
+        from spaceship.scenes.menu import MenuScene
+
+        self.game.audio.play("ui_back")
+        self.game.change_scene(MenuScene(self.game))
+
+    def handle_event(self, event) -> None:
+        if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+            self._back()
+        elif event.type == pygame.KEYDOWN and event.key in (pygame.K_LEFT, pygame.K_RIGHT, pygame.K_TAB):
+            self.tab = (self.tab + (-1 if event.key == pygame.K_LEFT else 1)) % len(self.tabs)
+            self.menu.select(self.tab)
+            self.game.audio.play("ui_move")
+        else:
+            self.menu.handle_event(event)
+
+    def update(self, controls) -> None:
+        self.game.starfield.update()
+        self.menu.update(controls)
+
+    # --- Vẽ -----------------------------------------------------------------------------
     def draw(self, surface: pygame.Surface) -> None:
         a = self.game.assets
-        self.draw_frame(surface, "BẢNG THÀNH TỰU")
+        surface.fill((0, 0, 0))
+        self.game.starfield.draw(surface)
+        draw_panel(surface, PANEL, header_height=64)
+        blit_center(surface, a.text("THÀNH TỰU", 36, TEXT, role="display"), PANEL.y + 8)
+        y = self.tabs[0].bottom
+        pygame.draw.line(surface, FRAME, (PANEL.x + 20, y), (PANEL.right - 20, y))
+        for i, rect in enumerate(self.tabs):
+            active, focused = i == self.tab, i == self.menu.selected
+            title = a.text(self._tab_label(i), 18, ACCENT if active or focused else MUTED, role="ui")
+            spot = title.get_rect(center=rect.center)
+            if focused and not active:
+                pygame.draw.rect(surface, SELECTED_FILL[:3], spot.inflate(16, 8), border_radius=3)
+            surface.blit(title, spot)
+            if active:
+                pygame.draw.line(surface, ACCENT, (spot.x, y - 2), (spot.right, y - 2), 3)
+        if self.tab == 0:
+            self._draw_badges(surface, a)
+        else:
+            self._draw_stats(surface, a)
+        back_focused = self.menu.selected == len(self.tabs)
+        label = a.text("ESC · VỀ MENU", 15, ACCENT if back_focused else MUTED, role="label")
+        surface.blit(label, label.get_rect(center=ACH_BACK.center))
+        self.menu.draw_progress(surface)
+
+    def _progress(self, key: str):
+        s = self.game.save
+        totals = {
+            "boss_hunter": (sum(r.total_boss_kills for r in s.modes.values()), 20),
+            "thousand": (sum(r.total_kills for r in s.modes.values()), 1000),
+            "rage": (s.counters.get("skills", 0), 25),
+            "guardian": (s.counters.get("guard_blocks", 0), 100),
+            "bestiary": (len(s.seen_enemies & set(BESTIARY)), len(BESTIARY)),
+            "all_stars": (s.total_stars, LEVEL_COUNT * 3),
+        }
+        return totals.get(key)
+
+    def _draw_badges(self, surface, a) -> None:
+        cols, gap = 3, 8
+        items = achievements.ACHIEVEMENTS
+        rows = (len(items) + cols - 1) // cols
+        w = (BADGE_AREA.width - gap * (cols - 1)) // cols
+        h = (BADGE_AREA.height - gap * (rows - 1)) // rows
+        earned = self.game.save.achievements
+        for i, item in enumerate(items):
+            row, col = divmod(i, cols)
+            card = pygame.Rect(BADGE_AREA.x + col * (w + gap), BADGE_AREA.y + row * (h + gap), w, h)
+            got = item.key in earned
+            draw_panel(surface, card, BADGE_COLOR if got else (40, 61, 76))
+            color = BADGE_COLOR if got else LOCKED
+            center = (card.x + 30, card.centery)
+            if got:
+                glow.add(surface, glow.orb(glow.scale(BADGE_COLOR, 0.45), 16, core=0.0), center)
+            draw_badge_icon(surface, item.icon, center, color)
+            if not got:
+                draw_lock(surface, (center[0] + 15, center[1] + 15), MUTED)
+            tx = card.x + 60
+            width = card.right - 12 - tx
+            name = fit_text(a, item.name, 15, TEXT if got else SECONDARY, width, role="ui")
+            surface.blit(name, (tx, card.y + 6))
+            how = fit_text(a, item.how, 12, SECONDARY if got else MUTED, width, role="body")
+            surface.blit(how, (tx, card.y + 27))
+            footer = ""
+            if got:
+                footer = "Đạt " + ".".join(reversed(earned[item.key].split("-")))
+            elif self._progress(item.key) is not None:
+                cur, goal = self._progress(item.key)
+                footer = f"{min(cur, goal)}/{goal}"
+                bar = pygame.Rect(tx + 58, card.bottom - 13, width - 58, 4)
+                pygame.draw.rect(surface, (30, 38, 50), bar)
+                pygame.draw.rect(surface, SECONDARY, (bar.x, bar.y, bar.w * min(1, cur / goal), bar.h))
+            if footer:
+                surface.blit(a.text(footer, 11, BADGE_COLOR if got else MUTED, role="label"), (tx, card.bottom - 18))
+
+    def _draw_stats(self, surface, a) -> None:
         save = self.game.save
         blit_center(surface, fit_text(a, f"KỶ LỤC CHUNG: {save.highscore}", 21, ACCENT, PANEL.width - 60, role="ui"),
-                    PANEL.y + 71)
-        header_y = PANEL.y + 110
+                    PANEL.y + 128)
+        header_y = PANEL.y + 166
         for label, cx in self.COLUMNS:
             text = a.text(label, 15, MUTED, role="label")
             surface.blit(text, (cx - text.get_width() // 2, header_y))
         for i, mode in enumerate(GameMode):
             rec = save.modes[mode]
-            row = pygame.Rect(PANEL.x + 20, header_y + 35 + i * 110, PANEL.width - 40, 95)
+            row = pygame.Rect(PANEL.x + 20, header_y + 30 + i * 100, PANEL.width - 40, 86)
             draw_panel(surface, row)
             name = fit_text(a, mode.label, 24, TEXT, 170, role="ui")
             surface.blit(name, name.get_rect(midleft=(row.x + 20, row.centery)))
@@ -200,5 +371,8 @@ class AchievementsScene(_InfoScene):
             for (label, cx), value in zip(self.COLUMNS, values):
                 text = fit_text(a, str(value), 22, ACCENT if label == "ĐIỂM CAO" else TEXT, 74, role="ui")
                 surface.blit(text, text.get_rect(center=(cx, row.centery)))
-        blit_center(surface, a.text("Số quái/boss là tổng cộng dồn qua mọi ván.", 14, MUTED, role="body"),
-                    PANEL.bottom - 62)
+        extra = (f"Chu kỳ đã phá đảo: {len(save.cycle_history)} · Kỹ năng Nộ đã dùng: {save.counters.get('skills', 0)}"
+                 f" · Đạn hộ vệ đã chặn: {save.counters.get('guard_blocks', 0)}")
+        blit_center(surface, fit_text(a, extra, 14, SECONDARY, PANEL.width - 50, role="body"), PANEL.bottom - 78)
+        blit_center(surface, a.text("Số quái/boss là tổng cộng dồn qua mọi ván.", 13, MUTED, role="body"),
+                    PANEL.bottom - 58)

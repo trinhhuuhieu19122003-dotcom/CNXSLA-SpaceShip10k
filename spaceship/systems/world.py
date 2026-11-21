@@ -55,6 +55,9 @@ class World:
     banner_ticks: int = 0
     #: chu kỳ Vượt ải (Vòng lặp tín hiệu); chế độ khác luôn 1
     cycle: int = 1
+    #: bộ đếm cho huy hiệu
+    skills_used: int = 0
+    guard_blocks: int = 0
     radio: List[RadioLine] = field(default_factory=list)
     #: âm thanh cần phát trong tick này (scene sẽ phát rồi xóa)
     sounds: List[str] = field(default_factory=list)

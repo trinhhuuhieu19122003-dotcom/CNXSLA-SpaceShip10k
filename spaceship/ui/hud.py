@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import math
+from dataclasses import dataclass
 
 import pygame
 
@@ -174,10 +175,21 @@ def draw_radio(surface, assets, world: World) -> None:
         surface.blit(assets.text(row, 14, TEXT, role="body"), (tx, box.y + 24 + i * 18))
 
 
+@dataclass(frozen=True)
+class Toast:
+    """Thẻ thông báo nhỏ góc phải trên (dùng chung với thẻ ĐỊCH MỚI)."""
+    title: str
+    name: str
+    tip: str
+    color: tuple = YELLOW
+
+
 def draw_encounter(surface: pygame.Surface, assets, entry, y: int) -> None:
+    """Thẻ góc phải: ĐỊCH MỚI (mục Sổ tay) hoặc THÀNH TỰU MỚI (Toast)."""
+    color = getattr(entry, "color", ACCENT)
     box = pygame.Rect(WIDTH - ENCOUNTER_WIDTH - 14, y, ENCOUNTER_WIDTH, ENCOUNTER_HEIGHT)
-    draw_panel(surface, box, ACCENT, header_height=27)
-    title = fit_text(assets, f"ĐỊCH MỚI · {entry.name}", 16, ACCENT, box.width - 24, role="ui")
+    draw_panel(surface, box, color, header_height=27)
+    title = fit_text(assets, f"{getattr(entry, 'title', 'ĐỊCH MỚI')} · {entry.name}", 16, color, box.width - 24, role="ui")
     tip = fit_text(assets, entry.tip, 14, TEXT, box.width - 24, role="body")
     surface.blit(title, (box.x + 12, box.y + 2))
     surface.blit(tip, (box.x + 12, box.y + 31))

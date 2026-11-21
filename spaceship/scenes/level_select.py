@@ -19,7 +19,8 @@ GRID_X = (WIDTH - (CARD_W * 5 + GAP * 4)) // 2
 GRID_Y = 150
 PANEL = pygame.Rect(14, 14, WIDTH - 28, 633)
 LOCKED_FILL = (10, 15, 23, 240)
-CONFIRM_TICKS = 240                    # nút CHU KỲ MỚI: chọn lần 2 trong 4 giây mới thực hiện
+CONFIRM_TICKS = 240                    # nút CHU KỲ MỚI / CHƠI MỚI: chọn lần 2 trong 4 giây mới thực hiện
+NOTICE_TICKS = 360
 
 
 def card_rect(index: int) -> pygame.Rect:
@@ -34,13 +35,15 @@ class LevelSelectScene(Scene):
         super().__init__(game)
         self.cards = [card_rect(i) for i in range(LEVEL_COUNT)]
         self.confirm = 0
+        self.confirm_action: str | None = None
+        self.notice, self.notice_ticks = "", 0
         self._build_buttons()
 
     def _build_buttons(self) -> None:
-        actions = ["difficulty", "menu"]
+        actions = ["difficulty", "new_game", "menu"]
         if self.game.save.cycle_complete:
             actions.insert(1, "new_cycle")
-        w, gap = (250, 20) if len(actions) == 2 else (236, 12)
+        w, gap = (236, 12) if len(actions) == 3 else (180, 10)
         x = WIDTH // 2 - (w * len(actions) + gap * (len(actions) - 1)) // 2
         self.buttons = [Button("", pygame.Rect(x + i * (w + gap), 600, w, 44), action, 18)
                         for i, action in enumerate(actions)]
@@ -49,21 +52,39 @@ class LevelSelectScene(Scene):
 
     def _refresh(self) -> None:
         label = config.DIFFICULTY_LABELS[self.game.settings.difficulty]
+        confirming = self.confirm_action if self.confirm else None
         texts = {"difficulty": f"ĐỘ KHÓ: {label}", "menu": "VỀ MENU",
-                 "new_cycle": "CHẮC CHẮN? CHỌN LẦN NỮA" if self.confirm else f"CHU KỲ {self.game.save.cycle + 1}"}
+                 "new_cycle": "CHẮC CHẮN?" if confirming == "new_cycle" else f"CHU KỲ {self.game.save.cycle + 1}",
+                 "new_game": "XÓA HẾT? CHỌN LẠI" if confirming == "new_game" else "CHƠI MỚI"}
         for button in self.buttons:
             button.text = texts[button.action]
 
-    def _new_cycle(self) -> None:
-        if not self.confirm:
-            self.confirm = CONFIRM_TICKS
+    def _confirmed(self, action: str) -> bool:
+        """Lần chọn đầu chỉ hỏi lại; chọn lần 2 (trong 4 giây, vẫn trên nút đó) mới trả về True."""
+        if not self.confirm or self.confirm_action != action:
+            self.confirm, self.confirm_action = CONFIRM_TICKS, action
+            self.game.audio.play("ui_back")
             self._refresh()
-            return
-        self.confirm = 0
-        if self.game.save.start_new_cycle():
+            return False
+        self.confirm, self.confirm_action = 0, None
+        return True
+
+    def _new_cycle(self) -> None:
+        if self._confirmed("new_cycle") and self.game.save.start_new_cycle():
             self.game.audio.play("level_up")
             self._build_buttons()
             self.menu.select(0)
+
+    def _new_game(self) -> None:
+        """CHƠI MỚI: xóa sạch tiến độ như mới cài game (có sao lưu file cũ). Cài đặt giữ nguyên."""
+        if not self._confirmed("new_game"):
+            return
+        backup = self.game.save.reset_all()
+        self.game.audio.play("wave_clear")
+        self.notice = "Đã xóa dữ liệu. Bắt đầu lại từ ải 1!" + (f" (sao lưu: {backup.name})" if backup else "")
+        self.notice_ticks = NOTICE_TICKS
+        self._build_buttons()
+        self.menu.select(0)
 
     def unlocked(self, number: int) -> bool:
         return number <= self.game.save.unlocked_level
@@ -90,6 +111,8 @@ class LevelSelectScene(Scene):
             self._refresh()
         elif self.buttons[index - LEVEL_COUNT].action == "new_cycle":
             self._new_cycle()
+        elif self.buttons[index - LEVEL_COUNT].action == "new_game":
+            self._new_game()
         else:
             self._back()
 
@@ -108,11 +131,13 @@ class LevelSelectScene(Scene):
     def update(self, controls) -> None:
         self.game.starfield.update()
         self.menu.update(controls)
+        self.notice_ticks = max(0, self.notice_ticks - 1)
         if self.confirm:
             on_button = (self.menu.selected >= LEVEL_COUNT
-                         and self.buttons[self.menu.selected - LEVEL_COUNT].action == "new_cycle")
+                         and self.buttons[self.menu.selected - LEVEL_COUNT].action == self.confirm_action)
             self.confirm = self.confirm - 1 if on_button else 0
             if not self.confirm:
+                self.confirm_action = None
                 self._refresh()
 
     def draw(self, surface: pygame.Surface) -> None:
@@ -131,11 +156,19 @@ class LevelSelectScene(Scene):
         blit_center(surface, a.text(acts, 14, MUTED, role="label"), 97)
         for i, level in enumerate(LEVELS):
             self._draw_card(surface, i, level)
-        if self.menu.selected < LEVEL_COUNT:
+        selected_action = (self.buttons[self.menu.selected - LEVEL_COUNT].action
+                           if self.menu.selected >= LEVEL_COUNT else None)
+        if self.notice_ticks:
+            blit_center(surface, fit_text(a, self.notice, 15, ACCENT, PANEL.width - 40, role="body"), 529)
+        elif self.menu.selected < LEVEL_COUNT:
             level = LEVELS[self.menu.selected]
             hint = level.hint if self.unlocked(level.number) else "Qua ải trước để mở khóa"
             blit_center(surface, a.text(hint, 16, SECONDARY, role="body"), 529)
-        elif self.buttons[self.menu.selected - LEVEL_COUNT].action == "new_cycle":
+        elif selected_action == "new_game":
+            hint = ("CHƠI MỚI: xóa sạch ải, sao, chu kỳ, Sổ tay, kỷ lục, thành tựu - như mới cài game. "
+                    "Cài đặt giữ nguyên; file cũ được sao lưu.")
+            blit_center(surface, fit_text(a, hint, 15, DANGER, PANEL.width - 40, role="body"), 529)
+        elif selected_action == "new_cycle":
             hint = (f"Vòng lặp tín hiệu: chơi lại từ ải 1, địch mạnh hơn (+{round(config.CYCLE_HP_STEP * 100)}% máu "
                     "mỗi chu kỳ). Giữ nguyên Sổ tay, kỷ lục, Hỏa ngục.")
             blit_center(surface, fit_text(a, hint, 15, ACCENT, PANEL.width - 40, role="body"), 529)

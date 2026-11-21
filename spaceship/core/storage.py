@@ -8,9 +8,11 @@ Khác bản cũ:
 """
 from __future__ import annotations
 
+import datetime
 import json
 import logging
 import os
+import shutil
 import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -20,7 +22,7 @@ from spaceship.config import PROJECT_DIR, GameMode
 
 log = logging.getLogger(__name__)
 
-SAVE_VERSION = 4
+SAVE_VERSION = 5
 APP_DIR_NAME = "SpaceShip10k"
 
 
@@ -71,6 +73,9 @@ class SaveData:
     cycle: int = 1
     cycle_complete: bool = False
     cycle_history: Dict[int, int] = field(default_factory=dict)
+    #: Huy hiệu đã đạt: khóa -> ngày đạt (YYYY-MM-DD). Bộ đếm cộng dồn cho huy hiệu (Nộ, chặn đạn...).
+    achievements: Dict[str, str] = field(default_factory=dict)
+    counters: Dict[str, int] = field(default_factory=dict)
 
     def mark_seen(self, key: str) -> bool:
         """Lưu mục Sổ tay mới; các lần gặp tiếp theo không ghi file."""
@@ -105,6 +110,41 @@ class SaveData:
     def total_stars(self) -> int:
         return sum(self.level_stars.values())
 
+    # --- Huy hiệu & bộ đếm ------------------------------------------------------------
+    def unlock(self, key: str) -> bool:
+        """Ghi huy hiệu mới kèm ngày đạt. True nếu lần đầu."""
+        if key in self.achievements:
+            return False
+        self.achievements[key] = datetime.date.today().isoformat()
+        self.save()
+        return True
+
+    def add_counters(self, **amounts: int) -> None:
+        for key, value in amounts.items():
+            if value:
+                self.counters[key] = self.counters.get(key, 0) + int(value)
+
+    # --- Chơi mới ---------------------------------------------------------------------
+    def reset_all(self) -> Optional[Path]:
+        """CHƠI MỚI: xóa sạch tiến độ (ải, sao, chu kỳ, Sổ tay, kỷ lục, thống kê, huy hiệu) như mới cài game.
+        Trước khi xóa, chép file lưu cũ sang ``save_backup_<ngày giờ>.json`` cạnh nó để lỡ tay còn khôi phục được.
+        Cài đặt (âm lượng, tay...) nằm ở settings.json nên không bị ảnh hưởng. Trả về đường dẫn bản sao lưu."""
+        backup = None
+        if self.path.exists():
+            stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+            backup = self.path.with_name(f"save_backup_{stamp}.json")
+            try:
+                shutil.copy2(self.path, backup)
+            except OSError as exc:
+                log.error("Không sao lưu được %s: %s", self.path, exc)
+                backup = None
+        fresh = type(self)(path=self.path)
+        for name in self.__dataclass_fields__:
+            if name != "path":
+                setattr(self, name, getattr(fresh, name))
+        self.save()
+        return backup
+
     # --- Ghi nhận ván chơi --------------------------------------------------------
     def record(self, result: GameResult) -> bool:
         """Cộng dồn kết quả một ván, lưu file. Trả về True nếu phá kỷ lục chung."""
@@ -135,6 +175,8 @@ class SaveData:
                 "cycle_complete": self.cycle_complete,
                 "cycle_history": {str(k): v for k, v in sorted(self.cycle_history.items())},
             },
+            "achievements": dict(sorted(self.achievements.items())),
+            "counters": dict(sorted(self.counters.items())),
         }
 
     def save(self) -> None:
@@ -168,6 +210,12 @@ class SaveData:
                 data.cycle_history = {int(k): int(v) for k, v in campaign.get("cycle_history", {}).items()}
                 if data.campaign_cleared and not data.cycle_history and data.cycle == 1:
                     data.cycle_history = {1: data.total_stars}
+                achievements = raw.get("achievements", {})
+                if isinstance(achievements, dict):
+                    data.achievements = {str(k): str(v) for k, v in achievements.items()}
+                counters = raw.get("counters", {})
+                if isinstance(counters, dict):
+                    data.counters = {str(k): int(v) for k, v in counters.items()}
                 seen = campaign.get("seen_enemies", [])
                 if isinstance(seen, list):
                     data.seen_enemies = {key for key in seen if isinstance(key, str)}

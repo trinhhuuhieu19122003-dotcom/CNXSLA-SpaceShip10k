@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.1.0-dev] – Huy hiệu thành tựu & Chơi mới
+- **18 huy hiệu** (`campaign/achievements.py`): qua ải, 3 sao, phá đảo, toàn sao, chu kỳ 2, đủ Sổ tay, boss ở độ khó
+  Khó, trụ 5/10 phút Vô tận, 3 phút Hỏa ngục, 20 boss, 1 000 địch, 25 lần Nộ, hộ vệ chặn 100 đạn, qua ải chỉ bằng tay,
+  hạ Tàu Mẹ bằng Tia Sét. Lưu kèm ngày đạt; bộ đếm cộng dồn (`counters`). Save v5.
+- Đạt trong trận: thẻ **"THÀNH TỰU MỚI"** góc phải (chung chỗ với "ĐỊCH MỚI"); màn kết quả liệt kê huy hiệu mới.
+- Màn **Thành tựu** chia 2 thẻ: **Huy hiệu** (đạt: sáng vàng + ngày; chưa đạt: khóa + cách đạt + thanh tiến độ cho
+  huy hiệu đếm số) và **Thống kê** (bảng cũ + chu kỳ, số lần Nộ, đạn hộ vệ chặn). Đổi thẻ bằng phím/chuột/tay.
+- **CHƠI MỚI** ở màn Chọn ải: chọn 2 lần, cảnh báo đỏ; xóa sạch tiến độ như mới cài game, giữ Cài đặt, tự sao lưu
+  file cũ thành `save_backup_<ngày giờ>.json`.
+- 6 test mới (`tests/test_achievements.py`), tổng 109.
+
 ## [2.1.0-dev] – Bản đồ hành trình (thay màn radar)
 - Đoạn hội thoại mở đầu **mọi ải** dùng **bản đồ hành trình** (`ui/journey_map.py`): 10 ải là 10 điểm sao chia
   3 cụm theo hồi; ải đã qua sáng xanh kèm sao, ải sắp chơi nhấp nháy đỏ, ải chưa tới mờ; dấu thoi đỏ ở ải có
