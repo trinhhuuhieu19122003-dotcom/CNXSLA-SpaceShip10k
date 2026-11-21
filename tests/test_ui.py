@@ -80,3 +80,31 @@ class TransitionTest(unittest.TestCase):
             game.render()
             self.assertEqual(game.window.get_at((30, 30)), visible)
             self.assertIs(game.scene, final)
+
+
+class MenuQuitConfirmTest(unittest.TestCase):
+    def test_quit_needs_two_selections(self):
+        from spaceship.app import Game
+        from spaceship.scenes.menu import MENU_ITEMS, MenuScene
+        from spaceship.input.controls import ControlState
+
+        game = Game(camera=False, seed=1)
+        menu = MenuScene(game)
+        game.change_scene(menu)
+        game._apply_pending_scene()
+        game.running = True
+        quit_index = len(MENU_ITEMS) - 1
+        menu.menu.select(quit_index)
+        menu.menu.activate(quit_index)
+        self.assertTrue(game.running)                      # lần 1 chỉ hỏi lại
+        menu.draw(game.screen)
+        menu.menu.activate(quit_index)
+        self.assertFalse(game.running)                     # lần 2 mới thoát
+        game.running = True
+        menu.quit_armed = 0
+        menu.menu.activate(quit_index)
+        for _ in range(200):                               # để quá 3 giây thì tự hủy
+            menu.update(ControlState())
+        self.assertEqual(menu.quit_armed, 0)
+        menu.menu.activate(quit_index)
+        self.assertTrue(game.running)

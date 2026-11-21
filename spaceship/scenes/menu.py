@@ -29,6 +29,9 @@ FOOTER_HEIGHT = 40
 SHIP_CENTER = (605, 465)
 SHIP_WIDTH, SHIP_ANGLE = 256, 9
 LOCK_FEEDBACK_TICKS = 16
+# THOÁT phải chọn 2 lần: tay thả lỏng đặt trên bàn hay trỏ vào mục cuối (THOÁT) và dễ bị đọc nhầm thành
+# "chụm tay", khiến game tự tắt sau vài giây.
+QUIT_CONFIRM_TICKS = 180
 
 
 def _fade_right(size, color, opacity: int) -> pygame.Surface:
@@ -63,6 +66,7 @@ class MenuScene(Scene):
         assets = game.assets
         self.ticks = 0
         self.lock_feedback = 0
+        self.quit_armed = 0             # > 0: đã chọn THOÁT một lần, chờ chọn lần nữa
         rows = [pygame.Rect(LEFT, ROW_TOP + i * ROW_STEP, ROW_WIDTH, ROW_HEIGHT) for i in range(len(MENU_ITEMS))]
         self.menu = MenuList(game, rows, self._activate)
         self._row_light = _fade_right((ROW_WIDTH, ROW_HEIGHT), ACCENT, 47)
@@ -113,7 +117,10 @@ class MenuScene(Scene):
         if isinstance(action, GameMode):
             self._start(action)
         elif action == "quit":
-            self.game.quit()
+            if self.quit_armed:
+                self.game.quit()
+            else:
+                self.quit_armed = QUIT_CONFIRM_TICKS
         else:
             scene = {"achievements": AchievementsScene, "how_to_play": HowToPlayScene, "options": OptionsScene}[action]
             self.game.change_scene(scene(self.game))
@@ -134,6 +141,9 @@ class MenuScene(Scene):
         self.ticks += 1
         self.lock_feedback = max(0, self.lock_feedback - 1)
         self.menu.update(controls)
+        if self.quit_armed and MENU_ITEMS[self.menu.selected][2] != "quit":
+            self.quit_armed = 0                       # rời khỏi mục THOÁT thì hủy
+        self.quit_armed = max(0, self.quit_armed - 1)
 
     def _draw_ship(self, surface: pygame.Surface) -> None:
         if self._player is None:
@@ -165,6 +175,8 @@ class MenuScene(Scene):
             offset = round(4 * math.sin(self.lock_feedback * 1.5) * self.lock_feedback / LOCK_FEEDBACK_TICKS) if locked else 0
             x = rect.x + 20 + offset
             color = LOCKED if locked else (ACCENT if selected else TEXT)
+            if action == "quit" and self.quit_armed:
+                text, description, color = "THOÁT?", "Chọn lần nữa để thoát (tự hủy sau 3 giây)", DANGER
             label = a.text(text, 25, color, role="ui")
             label_rect = label.get_rect(midleft=(x, rect.y + 16 if selected else rect.centery))
             surface.blit(label, label_rect)

@@ -13,6 +13,11 @@
 - Hai bài nhạc gốc được giảm âm lượng cho đều với nhạc mới; bỏ `laser.mp3`, `explosion.mp3` cũ (vẫn còn ở `main`).
 - Thêm `CREDITS.md`; 10 test mới (`tests/test_audio.py`), tổng 77.
 
+### Sửa lỗi khi chơi thử thật
+- Game tự tắt sau vài giây: tay đặt trên bàn trỏ vào mục THOÁT và bị đọc nhầm thành chụm tay. THOÁT giờ phải
+  chọn 2 lần (lần đầu hiện "THOÁT?", tự hủy sau 3 giây).
+- `requirements.txt` chỉ dùng ASCII: pip cũ trên Windows đọc theo cp1252 và báo `UnicodeDecodeError`.
+
 ## [2.1.0-dev] – Màn Hướng dẫn mới & Sổ tay chiến đấu
 - Màn Hướng dẫn chia **5 thẻ**: Điều khiển · Vũ khí · Vật phẩm · Kẻ địch · Chế độ chơi; đổi thẻ bằng ←/→,
   chuột hoặc di tay + chụm tay.
