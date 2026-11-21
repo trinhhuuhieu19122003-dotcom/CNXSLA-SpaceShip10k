@@ -108,3 +108,44 @@ class MenuQuitConfirmTest(unittest.TestCase):
         self.assertEqual(menu.quit_armed, 0)
         menu.menu.activate(quit_index)
         self.assertTrue(game.running)
+
+
+class FullscreenSettingTest(unittest.TestCase):
+    def test_fullscreen_choice_is_saved_and_reused(self):
+        from spaceship.app import Game
+        from spaceship.core.settings import Settings
+        from spaceship.scenes.options import OptionsScene
+
+        with TemporaryDirectory() as folder:
+            path = Path(folder) / "settings.json"
+            game = Game(camera=False, seed=1, settings=Settings(path=path))
+            self.assertFalse(game.fullscreen)
+            options = OptionsScene(game)
+            game.change_scene(options)
+            game._apply_pending_scene()
+            actions = [b.action for b in options.buttons]
+            options.menu.activate(actions.index("fullscreen"))
+            self.assertTrue(game.fullscreen)
+            self.assertIn("BẬT", options.buttons[actions.index("fullscreen")].text)
+            self.assertTrue(Settings.load(path).fullscreen)
+            game.set_fullscreen(False)
+            again = Game(camera=False, seed=1, settings=Settings.load(path))
+            self.assertFalse(again.fullscreen)
+            forced = Game(camera=False, seed=1, settings=Settings.load(path), fullscreen=True)
+            self.assertTrue(forced.fullscreen)                    # --fullscreen luôn thắng
+
+    def test_wide_window_fills_side_bars(self):
+        import pygame
+        from spaceship.app import Game
+
+        from spaceship.scenes.menu import MenuScene
+
+        game = Game(camera=False, seed=1)
+        game.change_scene(MenuScene(game))
+        game._apply_pending_scene()
+        game.window = pygame.display.set_mode((1280, 720))
+        game.render()
+        corner = game.window.get_at((5, 360))
+        self.assertIsNotNone(game._backdrop)
+        self.assertEqual(game._backdrop.get_size(), (1280, 720))
+        self.assertGreaterEqual(corner.a, 0)

@@ -25,6 +25,7 @@ class Settings:
     path: Optional[Path] = field(default=None, repr=False, compare=False)
     auto_fire: bool = True
     hand_menu: bool = True                               # di tay + chụm tay để chọn trong các màn menu
+    fullscreen: bool = False                             # mở game ở chế độ toàn màn hình
     sensitivity: str = "medium"
     hand_center: Optional[Tuple[float, float]] = None   # None = chưa hiệu chỉnh
     difficulty: str = "normal"                           # easy | normal | hard
@@ -66,6 +67,7 @@ class Settings:
                 raw = json.loads(path.read_text(encoding="utf-8"))
                 data.auto_fire = bool(raw.get("auto_fire", True))
                 data.hand_menu = bool(raw.get("hand_menu", True))
+                data.fullscreen = bool(raw.get("fullscreen", False))
                 if raw.get("sensitivity") in SENSITIVITY_ORDER:
                     data.sensitivity = raw["sensitivity"]
                 if raw.get("difficulty") in config.DIFFICULTIES:

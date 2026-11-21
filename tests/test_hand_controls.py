@@ -193,10 +193,11 @@ class HandScenesTest(unittest.TestCase):
         try:
             opts = self.go(OptionsScene(self.game))
             before = (opts.menu.selected, self.game.settings.auto_fire)
-            x, y = opts.buttons[0].rect.center
+            x, y = next(b for b in opts.buttons if b.action == "auto_fire").rect.center
             self.pinch(x, y)
             self.steps(int(config.PINCH_HOLD_SECONDS * config.TICK_RATE) * 3)
             self.assertEqual((opts.menu.selected, self.game.settings.auto_fire), before)
+            opts.menu.select([b.action for b in opts.buttons].index("auto_fire"))
             self.key(pygame.K_RETURN)                    # bàn phím vẫn dùng được
             self.assertNotEqual(self.game.settings.auto_fire, before[1])
         finally:
@@ -205,7 +206,7 @@ class HandScenesTest(unittest.TestCase):
 
     def test_pinch_in_options_activates_once_until_release(self):
         opts = self.go(OptionsScene(self.game))
-        x, y = opts.buttons[0].rect.center
+        x, y = next(b for b in opts.buttons if b.action == "auto_fire").rect.center
         hold = int(config.PINCH_HOLD_SECONDS * config.TICK_RATE)
         self.pinch(x, y)
         self.steps(hold - 1)

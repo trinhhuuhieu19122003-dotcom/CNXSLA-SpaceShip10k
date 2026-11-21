@@ -1,4 +1,4 @@
-"""Màn Cài đặt: tự động bắn, độ nhạy tay, điều khiển menu bằng tay, âm lượng, hiệu chỉnh lại tay."""
+"""Màn Cài đặt: toàn màn hình, tự động bắn, độ nhạy tay, điều khiển menu bằng tay, âm lượng, hiệu chỉnh lại tay."""
 from __future__ import annotations
 
 import pygame
@@ -7,21 +7,25 @@ from spaceship import config
 from spaceship.config import WIDTH
 from spaceship.core.scene import Scene
 from spaceship.ui.menu_list import MenuList
-from spaceship.ui.widgets import MUTED, SECONDARY, TEXT, Button, blit_center, draw_panel, fit_text
+from spaceship.ui.widgets import FRAME, MUTED, SECONDARY, TEXT, Button, blit_center, draw_panel, fit_text
 
 PANEL = pygame.Rect(60, 60, WIDTH - 120, 580)
-BTN_W, BTN_H = 420, 40
-BTN_TOP, BTN_STEP = 156, 68
+BTN_W, BTN_H = 440, 40
+BTN_TOP, BTN_STEP = 150, 50
 VOLUME_STEP = 0.1
 VOLUME_NOTE = "Phím trái/phải: chỉnh 10% · Enter / chụm tay: +10% (quá 100% về 0)."
-NOTES = (
-    "Tàu tự bắn liên tục, tay chỉ cần lái. Tắt: giơ 1 ngón trỏ / giữ Space để bắn.",
-    "Cao = nhích tay ít đã đi xa (đỡ mỏi). Thấp = chính xác hơn, phải vung rộng hơn.",
-    "Tắt: menu chỉ dùng phím / chuột (trong trận vẫn lái tàu bằng tay).",
-    VOLUME_NOTE,
-    VOLUME_NOTE,
-    "Đặt lại tư thế nghỉ của tay (chỗ ứng với giữa màn hình).",
+#: (chữ cố định, hành động, ghi chú hiện ở cuối khung khi mục được chọn)
+ROWS = (
+    ("", "fullscreen", "Phủ kín màn hình. Phím tắt: F11 hoặc Alt + Enter, dùng được ở mọi màn."),
+    ("", "auto_fire", "Tàu tự bắn liên tục, tay chỉ cần lái. Tắt: giơ 1 ngón trỏ / giữ Space để bắn."),
+    ("", "sensitivity", "Cao = nhích tay ít đã đi xa (đỡ mỏi). Thấp = chính xác hơn, phải vung rộng hơn."),
+    ("", "hand_menu", "Tắt: menu chỉ dùng phím / chuột (trong trận vẫn lái tàu bằng tay)."),
+    ("", "music", VOLUME_NOTE),
+    ("", "sfx", VOLUME_NOTE),
+    ("HIỆU CHỈNH LẠI TAY", "calibrate", "Đặt lại tư thế nghỉ của tay (chỗ ứng với giữa màn hình)."),
+    ("VỀ MENU", "menu", "Lưu tự động: mọi thay đổi có hiệu lực ngay."),
 )
+NOTE_Y = BTN_TOP + len(ROWS) * BTN_STEP + 8
 VOLUMES = {"music": "music_volume", "sfx": "sfx_volume"}
 
 
@@ -32,16 +36,15 @@ class OptionsScene(Scene):
     def __init__(self, game) -> None:
         super().__init__(game)
         x = WIDTH // 2 - BTN_W // 2
-        rows = (("", "auto_fire"), ("", "sensitivity"), ("", "hand_menu"), ("", "music"), ("", "sfx"),
-                ("HIỆU CHỈNH LẠI TAY", "calibrate"), ("VỀ MENU", "menu"))
         self.buttons = [Button(text, pygame.Rect(x, BTN_TOP + i * BTN_STEP, BTN_W, BTN_H), action)
-                        for i, (text, action) in enumerate(rows)]
+                        for i, (text, action, _note) in enumerate(ROWS)]
         self.menu = MenuList.for_buttons(game, self.buttons, self._do)
         self._refresh()
 
     def _refresh(self) -> None:
         s = self.game.settings
         texts = {
+            "fullscreen": f"TOÀN MÀN HÌNH: {'BẬT' if self.game.fullscreen else 'TẮT'}",
             "auto_fire": f"TỰ ĐỘNG BẮN: {'BẬT' if s.auto_fire else 'TẮT'}",
             "sensitivity": f"ĐỘ NHẠY TAY: {config.HAND_SENSITIVITY_LABELS[s.sensitivity]}",
             "hand_menu": f"CHỌN MENU BẰNG TAY: {'BẬT' if s.hand_menu else 'TẮT'}",
@@ -76,6 +79,10 @@ class OptionsScene(Scene):
         from spaceship.scenes.menu import MenuScene
 
         s = self.game.settings
+        if action == "fullscreen":
+            self.game.toggle_fullscreen()
+            self._refresh()
+            return
         if action == "auto_fire":
             s.auto_fire = not s.auto_fire
         elif action == "sensitivity":
@@ -97,6 +104,7 @@ class OptionsScene(Scene):
 
     def update(self, controls) -> None:
         self.game.starfield.update()
+        self._refresh()                      # F11 / Alt+Enter có thể đổi toàn màn hình từ bên ngoài
         self.menu.update(controls)
 
     def draw(self, surface: pygame.Surface) -> None:
@@ -107,11 +115,11 @@ class OptionsScene(Scene):
         blit_center(surface, a.text("CÀI ĐẶT", 36, TEXT, role="display"), PANEL.y + 8)
         for i, button in enumerate(self.buttons):
             button.draw(surface, a, i == self.menu.selected)
-            if i < len(NOTES):
-                note = fit_text(a, NOTES[i], 15, SECONDARY, PANEL.width - 48, role="body")
-                blit_center(surface, note, button.rect.bottom + 7)
         self.menu.draw_progress(surface)
+        pygame.draw.line(surface, FRAME, (PANEL.x + 24, NOTE_Y - 4), (PANEL.right - 24, NOTE_Y - 4))
+        note = fit_text(a, ROWS[self.menu.selected][2], 15, SECONDARY, PANEL.width - 48, role="body")
+        blit_center(surface, note, NOTE_Y + 8)
         if not self.game.hand_available:
             note = "(Không có camera - các mục về tay sẽ có tác dụng khi bật camera)"
-            blit_center(surface, a.text(note, 14, MUTED, role="body"), PANEL.y + 75)
+            blit_center(surface, a.text(note, 14, MUTED, role="body"), NOTE_Y + 36)
         blit_center(surface, a.text("ESC: VỀ MENU", 14, MUTED, role="label"), PANEL.bottom + 14)

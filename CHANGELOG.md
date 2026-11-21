@@ -18,6 +18,11 @@
   chọn 2 lần (lần đầu hiện "THOÁT?", tự hủy sau 3 giây).
 - Cài đặt thêm **Chọn menu bằng tay: Bật/Tắt** (lưu `hand_menu` trong `settings.json`). Tắt thì menu chỉ dùng
   phím/chuột, trong trận vẫn lái tàu bằng tay.
+- **Toàn màn hình** thành một mục trong Cài đặt (lưu `fullscreen`), thêm phím tắt Alt + Enter bên cạnh F11.
+  Màn hình rộng hơn khung 800x700 thì hai bên được phủ bằng chính khung hình làm mờ thay cho dải đen.
+- Windows: bật DPI awareness để màn hình phóng to 125%/150% không kéo giãn cửa sổ làm nhòe chữ; cửa sổ thường
+  tự chọn cỡ ~85% chiều cao màn hình.
+- Cài đặt gọn lại: chỉ hiện ghi chú của mục đang chọn.
 - `requirements.txt` chỉ dùng ASCII: pip cũ trên Windows đọc theo cp1252 và báo `UnicodeDecodeError`.
 
 ## [2.1.0-dev] – Màn Hướng dẫn mới & Sổ tay chiến đấu

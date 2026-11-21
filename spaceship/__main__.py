@@ -24,7 +24,7 @@ def main(argv=None) -> None:
     logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     from spaceship.app import Game
 
-    Game(camera=not args.no_camera, camera_index=args.camera, fullscreen=args.fullscreen,
+    Game(camera=not args.no_camera, camera_index=args.camera, fullscreen=True if args.fullscreen else None,
          fps=max(30, args.fps), seed=args.seed).run()
 
 
