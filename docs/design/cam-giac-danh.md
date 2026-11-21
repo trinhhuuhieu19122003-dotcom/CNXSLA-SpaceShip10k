@@ -57,6 +57,8 @@ chỉ nhịp đập là đứng yên khi `TẮT`. Hướng dẫn trợ năng c�
 
 ## 6. Lính cảm tử báo trước khi lao (telegraph)
 
+![Trái: lính cảm tử đang khóa mục tiêu · Phải: hủy đạn khi hạ boss](../screenshots/kamikaze-huy-dan.png)
+
 **Trước:** lính cảm tử còn dưới 40% máu là lập tức bám theo tàu, tốc độ 8 px/tick, bẻ lái tức thời. Muốn sống
 thì chỉ có cách hạ nó; né thì không được.
 

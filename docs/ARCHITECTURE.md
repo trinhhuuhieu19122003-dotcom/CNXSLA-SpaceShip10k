@@ -82,7 +82,19 @@ bước/giây (mô hình *fixed timestep*) nên tốc độ game giống nhau tr
 6. `combat.apply_burn`, `combat.resolve_body_collisions`
 7. `combat.reap_dead` — **mọi** cái chết của địch đi qua `kill_enemy` (điểm, rơi đồ, hiệu ứng)
 8. Vật phẩm rơi + nhặt, hiệu ứng, `combat.cleanup` (xóa thứ ra khỏi màn hình, đủ 4 mép)
-9. Có kết quả thắng/thua → lưu `SaveData` → chuyển `ResultScene`
+9. `World.tick_combo` (chuỗi hạ hết hạn) + `World.tick_feel` (rung, chớp, viền đỏ giảm dần)
+10. Có kết quả thắng/thua → lưu `SaveData` → chuyển `ResultScene`
+
+Riêng **khựng hình** (`World.hitstop > 0`, khi trúng đạn / hạ boss): cả tick chỉ chạy chữ thông báo, âm thanh
+và giảm hiệu ứng, không có gì di chuyển. Chi tiết "cảm giác đánh": `docs/design/cam-giac-danh.md`.
+
+## 3b. Vẽ lên màn hình
+
+1. Scene vẽ lên tấm **800x700** (`Game.screen`). Màn rộng thì 2 bảng bên vẽ lên tấm riêng (`Game._canvas`).
+2. `Game.render` phóng tấm đó vừa cửa sổ (`upscale`: bội số nguyên thì nhân điểm ảnh, lẻ thì làm mượt).
+3. Phóng lẻ (vd. 1,54 lần ở 1080p) thì chữ sẽ nhòe, nên 2 tấm trên là `CrispSurface` (`ui/crisp.py`): chữ được
+   ghi lại thay vì vẽ ngay, rồi vẽ lại bằng font cỡ lớn trên ảnh đã phóng. Xem `docs/design/chu-sac-net.md`.
+4. Lớp phủ trong trận (viền đỏ, chớp sáng) ở `ui/feel.py`.
 
 ## 4. Muốn sửa X thì mở file nào?
 
@@ -99,6 +111,8 @@ bước/giây (mô hình *fixed timestep*) nên tốc độ game giống nhau tr
 | Thêm loại vật phẩm | `entities/items.py` (hình) + `systems/combat.collect_items` (tác dụng) |
 | Thêm cử chỉ tay | `input/gestures.classify` + `input/controls.ControlHub.poll` |
 | Thêm màn hình mới | tạo `scenes/ten_man.py` kế thừa `Scene`, gọi `game.change_scene(...)` |
+| Chỉnh rung, khựng hình, bất tử sau khi trúng, chuỗi hạ, sát đạn | các hằng số cuối `config.py` + `systems/world.py` |
+| Chữ vẫn nhòe ở một màn nào đó | chữ phải `blit` thẳng lên tấm vẽ chính (không qua tấm phụ / `transform`), xem `ui/crisp.py` |
 
 ## 5. Tham khảo từ các dự án tương tự
 
@@ -120,3 +134,5 @@ bước/giây (mô hình *fixed timestep*) nên tốc độ game giống nhau tr
 - `test_gameplay_rules.py` – khiên boss, mạng sống, thiêu đốt, đạn rò rỉ, drone, nâng cấp, rơi đồ, cả 10 ải qua được, phần thưởng boss
 - `test_hand_controls.py` – chụm ngón, nắm tay, tự bắn, hiệu chỉnh, tự tạm dừng khi bỏ tay (dùng `FakeTracker` thay webcam)
 - `test_smoke.py` – chạy thật mọi scene + "bot" tự chơi hết 10 ải tới đoạn kết, Vô tận, Hỏa ngục
+- `test_game_feel.py` – rung, khựng hình, bất tử ngắn, viền đỏ, kamikaze báo trước, hủy đạn, chuỗi hạ, sát đạn
+- `test_crisp.py` – chữ sắc nét: ghi lại, vẽ lại, giữ thứ tự khi bị vật khác đè
