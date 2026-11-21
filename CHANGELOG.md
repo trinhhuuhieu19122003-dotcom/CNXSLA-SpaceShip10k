@@ -12,7 +12,8 @@
   mỗi hình (~20 → ~45 FPS); chữ vẫn vẽ lại sắc nét.
 - **Kamikaze báo trước**: khựng 0,5 giây "khóa mục tiêu" (thân rung, vòng đỏ co lại, vạch ngắm, tiếng bíp), rồi lao;
   chỉ bẻ lái 1°/tick trong 20 tick đầu rồi bay thẳng. Đứng yên vẫn bị đâm, né ngang kịp thì trượt.
-- **Hủy đạn**: hạ boss hoặc boss sang pha mới → đạn địch trên màn thành tia sáng vàng, +5 điểm mỗi viên.
+- **Hủy đạn**: hạ boss hoặc boss sang pha mới → đạn địch trên màn thành tia sáng vàng, +5 điểm mỗi viên. Boss đổi
+  pha có thêm sóng xung kích vàng + rung nhẹ.
 - **Chuỗi hạ địch**: hạ liên tiếp (cách nhau < 2,5 giây), mỗi 10 lần +1 bậc nhân điểm, tối đa x4; bị trúng đạn mất
   chuỗi. Hiện "CHUỖI xN" trên tàu, trên dải điểm, ở bảng trái màn rộng; màn Kết quả ghi chuỗi dài nhất.
 - **Bất tử sau khi trúng đạn rút còn 0,25 giây** (trước: 0,5): bot né đạn chạy 6 ván mỗi cấu hình cho thấy 0,5 giây
@@ -29,8 +30,8 @@
 - **Tiếng mới** (tổng hợp bằng numpy): `lock_on`, `heartbeat` (khớp nhịp viền đỏ khi máu thấp), `bullet_cancel`,
   `graze`.
 - 27 test mới (`tests/test_crisp.py`, thêm vào `tests/test_game_feel.py`, `tests/test_storage.py`,
-  `tests/test_achievements.py`), tổng 154. Chạy thử ngẫu nhiên dài
-  (10 ải + Vô tận + Hỏa ngục, 1 phút mỗi chế độ, 6 cỡ cửa sổ) không lỗi.
+  `tests/test_achievements.py`), tổng 154. Chạy thử ngẫu nhiên dài 8 lần (10 ải + Vô tận + Hỏa ngục, 1 phút mỗi
+  chế độ, đổi qua 9 cỡ cửa sổ từ 800x700 tới 4K) không lỗi; vòng lặp thật `Game.run` giữ 60 FPS ở 1080p.
 
 ## [2.1.0-dev] – Cảm giác đánh
 - **Rung kiểu trauma** (`World.shake` / `tick_feel`): mỗi cú cộng trauma 0..1, độ lệch = 12 px × trauma², giảm dần.
