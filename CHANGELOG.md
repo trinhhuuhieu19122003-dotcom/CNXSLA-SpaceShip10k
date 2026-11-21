@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.1.0-dev] – Màn Hướng dẫn mới & Sổ tay chiến đấu
+- Màn Hướng dẫn chia **5 thẻ**: Điều khiển · Vũ khí · Vật phẩm · Kẻ địch · Chế độ chơi; đổi thẻ bằng ←/→,
+  chuột hoặc di tay + chụm tay.
+- Thẻ Điều khiển vẽ **bàn tay 21 điểm có chuyển động** (lái, nắm tay né chậm, chụm tay tung Nộ, bỏ tay để nghỉ).
+- Thẻ Vũ khí có **khung bắn thử** cho từng súng; số liệu lấy thẳng từ `config` nên không lệch khi cân bằng lại.
+- Thẻ Vật phẩm minh họa luật cảnh báo đổi súng (hộp nháy đỏ + "!").
+- **Sổ tay chiến đấu** (`campaign/bestiary.py`, 15 mục): chưa gặp thì hiện bóng đen "???", gặp lần đầu trong
+  trận thì mở khóa, lưu vào `save.json` (`seen_enemies`) và hiện thẻ **"ĐỊCH MỚI"** 3 giây, không dừng game.
+- 9 test mới (`tests/test_guide.py`, `tests/test_storage.py`), tổng 67. Thực hiện bởi Codex, Claude rà soát.
+
 ## [2.1.0-dev] – Giao diện mới
 - Đóng gói font **Chakra Petch** (tiêu đề, nút, nhãn) và **Exo 2** (chữ mô tả, lời thoại), giấy phép SIL OFL;
   `Assets.font(role=...)` theo vai trò, thiếu file thì lùi về font hệ thống.

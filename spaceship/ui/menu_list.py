@@ -14,12 +14,16 @@ HAND_DEADBAND = 8
 class MenuList:
     def __init__(self, game, rects, activate) -> None:
         self.game = game
-        self.rects = tuple(rects)
         self.activate = activate
-        self.selected = 0
         self.progress = 0.0
         self._pinching = False
         self._hand_position = None
+        self.set_rects(rects)
+
+    def set_rects(self, rects, *, selected: int = 0) -> None:
+        """Cập nhật bố cục mà vẫn giữ trạng thái tay đang điều khiển."""
+        self.rects = tuple(rects)
+        self.selected = selected
         rows: dict[int, list[int]] = {}
         for i, rect in enumerate(self.rects):
             rows.setdefault(rect.centery, []).append(i)

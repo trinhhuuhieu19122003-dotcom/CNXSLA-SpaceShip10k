@@ -1,8 +1,4 @@
-"""Hai màn thông tin tĩnh: Hướng dẫn chơi và Thành tựu.
-
-Bản cũ vẽ panel rộng 840px và 860px trên màn hình 800px nên bị cắt mép;
-giờ panel rộng 760px, nội dung lấy từ ``config`` để không bao giờ lệch với game.
-"""
+"""Hướng dẫn chơi theo thẻ và bảng Thành tựu."""
 from __future__ import annotations
 
 import pygame
@@ -10,13 +6,21 @@ import pygame
 from spaceship import config
 from spaceship.config import WIDTH, GameMode
 from spaceship.core.scene import Scene
-from spaceship.entities.items import draw_item_icon
+from spaceship.ui import guide
+from spaceship.ui.guide_preview import WeaponPreview
 from spaceship.ui.hud import format_time
 from spaceship.ui.menu_list import MenuList
-from spaceship.ui.widgets import ACCENT, FRAME, MUTED, SECONDARY, TEXT, blit_center, draw_back_hint, draw_panel, fit_text
+from spaceship.ui.widgets import (
+    ACCENT, FRAME, MUTED, SECONDARY, SELECTED_FILL, TEXT, Button,
+    blit_center, dim, draw_back_hint, draw_panel, fit_text,
+)
 
 PANEL = pygame.Rect(20, 50, WIDTH - 40, 600)
 BACK = pygame.Rect(WIDTH // 2 - 160, PANEL.bottom - 36, 320, 26)
+GUIDE_BODY = pygame.Rect(40, 135, WIDTH - 80, 509)
+GUIDE_BACK = pygame.Rect(GUIDE_BODY.right - 126, 667, 126, 27)
+TAB_NAMES = ("ĐIỀU KHIỂN", "VŨ KHÍ", "VẬT PHẨM", "KẺ ĐỊCH", "CHẾ ĐỘ CHƠI")
+CONTROLS, WEAPONS, ITEMS, ENEMIES = range(4)
 
 
 class _InfoScene(Scene):
@@ -52,61 +56,123 @@ class _InfoScene(Scene):
 
 
 class HowToPlayScene(_InfoScene):
+    def __init__(self, game) -> None:
+        super().__init__(game)
+        self.tab = CONTROLS
+        self.ticks = 0
+        self.book = guide.BestiaryView(GUIDE_BODY)
+        self.previews = {weapon: WeaponPreview(weapon) for weapon in guide.WEAPON_CARDS}
+        self._background = game.assets.image("bg_act1", WIDTH)
+        self.back = Button("ESC · VỀ MENU", GUIDE_BACK, "back", 14)
+
+        x = GUIDE_BODY.x
+        font = game.assets.font(17, role="ui")
+        self.tabs = []
+        for label in TAB_NAMES:
+            w = font.size(label)[0] + 29
+            self.tabs.append(pygame.Rect(x, 75, w, 37))
+            x += w + 4
+        self.menu = MenuList(game, self._navigation_rects(), self._activate)
+
+    def _navigation_rects(self) -> tuple[pygame.Rect, ...]:
+        cards = self.book.cards if self.tab == ENEMIES else ()
+        return (*self.tabs, *cards, GUIDE_BACK)
+
+    def _activate(self, index: int) -> None:
+        if index < len(TAB_NAMES):
+            change_rows = (self.tab == ENEMIES) != (index == ENEMIES)
+            self.tab = index
+            if change_rows:
+                self.menu.set_rects(self._navigation_rects(), selected=index)
+        elif index < len(self.menu.rects) - 1:
+            self.book.selected = index - len(TAB_NAMES)
+        else:
+            self._back()
+
+    def handle_event(self, event) -> None:
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                self._back()
+                return
+            if event.key in (pygame.K_LEFT, pygame.K_RIGHT):
+                step = 1 if event.key == pygame.K_RIGHT else -1
+                index = (self.tab + step) % len(TAB_NAMES)
+                self.menu.select(index)
+                self._activate(index)
+                return
+            if self.tab == ENEMIES and event.key in (pygame.K_UP, pygame.K_DOWN):
+                # ↑ ↓ duyệt hết lưới; ← → vẫn dành riêng cho đổi thẻ.
+                entries = (self.tab, *range(len(TAB_NAMES), len(self.menu.rects)))
+                selected = self.menu.selected if self.menu.selected in entries else self.tab
+                step = 1 if event.key == pygame.K_DOWN else -1
+                self.menu.select(entries[(entries.index(selected) + step) % len(entries)])
+                return
+        self.menu.handle_event(event)
+
+    def _book_focused(self) -> bool:
+        return self.tab == ENEMIES and len(TAB_NAMES) <= self.menu.selected < len(self.menu.rects) - 1
+
+    def update(self, controls) -> None:
+        self.ticks += 1
+        if self.tab == WEAPONS:
+            for preview in self.previews.values():
+                preview.update()
+        super().update(controls)
+
     def draw(self, surface: pygame.Surface) -> None:
         a = self.game.assets
-        self.draw_frame(surface, "HƯỚNG DẪN CHI TIẾT")
-        left, right, top = PANEL.x + 25, PANEL.x + 400, PANEL.y + 80
-        column_width = PANEL.right - right - 18
-        pygame.draw.line(surface, FRAME, (WIDTH // 2, top), (WIDTH // 2, PANEL.bottom - 68))
+        surface.fill((5, 9, 16))
+        if self._background is not None:
+            surface.blit(self._background, self._background.get_rect(center=surface.get_rect().center))
+            dim(surface, 75)
+        surface.blit(a.text("HƯỚNG DẪN", 31, TEXT, role="display"), (GUIDE_BODY.x, 24))
+        self._draw_tabs(surface, a)
+        seconds = self.ticks * config.TICK
+        if self.tab == CONTROLS:
+            guide.draw_controls(surface, a, GUIDE_BODY, seconds)
+        elif self.tab == WEAPONS:
+            guide.draw_weapons(surface, a, GUIDE_BODY, self.previews)
+        elif self.tab == ITEMS:
+            guide.draw_items(surface, a, GUIDE_BODY, seconds)
+        elif self.tab == ENEMIES:
+            focus = self.menu.selected - len(TAB_NAMES) if self._book_focused() else -1
+            self.book.draw(surface, a, self.game.save.seen_enemies, focus)
+        else:
+            guide.draw_modes(surface, a, GUIDE_BODY, self.game.save.campaign_cleared)
+        self._draw_footer(surface, a)
+        rect = self.menu.rects[self.menu.selected]
+        progress_center = (rect.right - 10, rect.top + 13) if self._book_focused() else (rect.right - 11, rect.centery)
+        if self.menu.selected == len(self.menu.rects) - 1:
+            progress_center = (rect.right + 13, rect.centery)
+        self.menu.draw_progress(surface, progress_center)
 
-        surface.blit(a.text("ĐIỀU KHIỂN", 18, ACCENT, role="ui"), (left, top))
-        controls = [
-            ("Lòng bàn tay", "Lái tàu, tì khuỷu tay lên bàn"),
-            ("Tự động bắn", "Tàu tự bắn (tắt trong Cài đặt)"),
-            ("Chụm cái + trỏ", "Giữ 0,5 giây: kỹ năng Nộ"),
-            ("Nắm tay", "Né chậm, hiện điểm va chạm"),
-            ("Bỏ tay xuống", "Tự tạm dừng để nghỉ tay"),
-            ("Phím", "WASD · J bắn · K Nộ · Shift né"),
-            ("ESC · F11 · C", "Dừng · toàn màn hình · camera"),
-        ]
-        for i, (key, desc) in enumerate(controls):
-            y = top + 32 + i * 27
-            surface.blit(fit_text(a, key, 15, SECONDARY, 120, role="label"), (left, y))
-            surface.blit(fit_text(a, desc, 14, TEXT, WIDTH // 2 - left - 145, role="body"), (left + 130, y))
+    def _draw_tabs(self, surface, assets) -> None:
+        y = self.tabs[0].bottom
+        pygame.draw.line(surface, FRAME, (GUIDE_BODY.x, y), (GUIDE_BODY.right, y))
+        for index, (label, rect) in enumerate(zip(TAB_NAMES, self.tabs)):
+            active = self.tab == index
+            focused = self.menu.selected == index
+            if focused and not active:
+                pygame.draw.rect(surface, SELECTED_FILL[:3], rect.inflate(0, -7))
+            title = assets.text(label, 17, ACCENT if active or focused else MUTED, role="ui")
+            surface.blit(title, title.get_rect(midleft=(rect.x, rect.centery)))
+            if active:
+                pygame.draw.line(surface, ACCENT, (rect.x, y - 2), (rect.x + title.get_width(), y - 2), 3)
 
-        mode_y = top + 265
-        surface.blit(a.text("CHẾ ĐỘ CHƠI", 18, ACCENT, role="ui"), (left, mode_y))
-        modes = [
-            ("VƯỢT ẢI", "10 ải, 3 hồi, có cốt truyện."),
-            ("VÔ TẬN", f"Sống sót. Boss mỗi {config.ENDLESS_BOSS_INTERVAL:.0f}s."),
-            ("HỎA NGỤC", "Mở khóa khi phá đảo Vượt ải."),
-        ]
-        for i, (name, desc) in enumerate(modes):
-            y = mode_y + 32 + i * 27
-            surface.blit(a.text(name, 15, SECONDARY, role="label"), (left, y))
-            surface.blit(fit_text(a, desc, 15, TEXT, WIDTH // 2 - left - 142, role="body"), (left + 125, y))
+    def _draw_footer(self, surface, assets) -> None:
+        y = GUIDE_BACK.centery
+        pygame.draw.rect(surface, (8, 13, 21), (0, 660, WIDTH, 40))
+        pygame.draw.line(surface, FRAME, (0, 660), (WIDTH, 660))
+        hint = "← → / DI TAY: ĐỔI THẺ · CHỤM TAY: CHỌN"
+        if self.tab == ENEMIES:
+            hint = "← →: ĐỔI THẺ · ↑ ↓: CHỌN Ô · ENTER / CHỤM TAY: XEM"
+        text = assets.text(hint, 13, MUTED, role="label")
+        surface.blit(text, text.get_rect(midleft=(GUIDE_BODY.x, y)))
+        page = assets.text(f"trang {self.tab + 1} / {len(TAB_NAMES)}", 14, SECONDARY, role="label")
+        surface.blit(page, page.get_rect(midright=(GUIDE_BACK.x - 20, y)))
+        self.back.draw(surface, assets, self.menu.selected == len(self.menu.rects) - 1)
 
-        surface.blit(a.text("VẬT PHẨM", 18, ACCENT, role="ui"), (right, top))
-        dmg = config.WEAPON_BASE_DAMAGE
-        heal = config.HEAL_AMOUNT[GameMode.CAMPAIGN]
-        shield = config.SHIELD_TICKS[GameMode.CAMPAIGN] / config.TICK_RATE
-        items = [
-            ("heal", f"Hồi {heal} máu"),
-            ("shield", f"Khiên bảo vệ {shield:.0f} giây"),
-            ("upgrade_plasma", f"Plasma {dmg['plasma']} · tỏa rộng · Nộ: Vòng Plasma"),
-            ("upgrade_laser", f"Laser {dmg['laser']} · diệt boss · Nộ: Đại Pháo"),
-            ("upgrade_homing", f"Homing {dmg['homing']} · tự đuổi · Nộ: Mưa Tên Lửa"),
-            ("upgrade_lightning", f"Tia Sét {dmg['lightning']} · nhảy dây · Nộ: Bão Sét"),
-            ("upgrade_universal", "Nâng cấp súng đang dùng"),
-            ("upgrade_drone", "Drone (boss ải 3 · ải 9: drone 2)"),
-            ("upgrade_burn", f"Đạn thiêu đốt {config.BURN_DAMAGE_PER_SECOND} HP/s (boss ải 7)"),
-        ]
-        for i, (kind, desc) in enumerate(items):
-            y = top + 32 + i * 34
-            draw_item_icon(surface, a, kind, right + 12, y + 12, size=0.8)
-            surface.blit(fit_text(a, desc, 14, TEXT, column_width - 32, role="body"), (right + 32, y + 4))
-        note = "Nhặt cùng loại súng: lên cấp (tối đa 6) · Khác loại: đổi súng"
-        surface.blit(fit_text(a, note, 14, MUTED, column_width, role="body"), (right, top + 32 + len(items) * 34 + 6))
+
 
 
 class AchievementsScene(_InfoScene):

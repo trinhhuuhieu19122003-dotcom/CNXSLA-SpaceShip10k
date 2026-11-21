@@ -65,6 +65,15 @@ class SaveData:
     unlocked_level: int = 1
     level_stars: Dict[int, int] = field(default_factory=dict)
     campaign_cleared: bool = False
+    seen_enemies: set[str] = field(default_factory=set)
+
+    def mark_seen(self, key: str) -> bool:
+        """Lưu mục Sổ tay mới; các lần gặp tiếp theo không ghi file."""
+        if key in self.seen_enemies:
+            return False
+        self.seen_enemies.add(key)
+        self.save()
+        return True
 
     def record_level(self, number: int, stars: int, last_level: int) -> None:
         """Qua ải: lưu số sao (giữ số cao nhất), mở ải tiếp theo / đánh dấu phá đảo."""
@@ -103,6 +112,7 @@ class SaveData:
                 "unlocked_level": self.unlocked_level,
                 "level_stars": {str(k): v for k, v in sorted(self.level_stars.items())},
                 "cleared": self.campaign_cleared,
+                "seen_enemies": sorted(self.seen_enemies),
             },
         }
 
@@ -131,6 +141,9 @@ class SaveData:
                 data.unlocked_level = max(1, int(campaign.get("unlocked_level", 1)))
                 data.level_stars = {int(k): int(v) for k, v in campaign.get("level_stars", {}).items()}
                 data.campaign_cleared = bool(campaign.get("cleared", False))
+                seen = campaign.get("seen_enemies", [])
+                if isinstance(seen, list):
+                    data.seen_enemies = {key for key in seen if isinstance(key, str)}
             except (ValueError, TypeError, AttributeError) as exc:
                 backup = path.with_suffix(".bak")
                 log.error("File lưu bị hỏng (%s) - sao lưu sang %s và bắt đầu lại", exc, backup)

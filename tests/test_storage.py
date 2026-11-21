@@ -2,6 +2,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from tests import helpers  # noqa: F401
 from spaceship.config import GameMode
@@ -30,6 +31,23 @@ class StorageTest(unittest.TestCase):
         data = self.load()
         self.assertTrue(data.record(GameResult(GameMode.CAMPAIGN, 10, 1, 0, 5)))
         self.assertFalse(data.record(GameResult(GameMode.CAMPAIGN, 5, 1, 0, 5)))
+
+    def test_first_sighting_writes_once_and_round_trips(self):
+        data = self.load()
+        with patch.object(data, "save", wraps=data.save) as write:
+            self.assertTrue(data.mark_seen("parasite"))
+            self.assertFalse(data.mark_seen("parasite"))
+            write.assert_called_once()
+        self.assertEqual(json.loads(self.path.read_text(encoding="utf-8"))["campaign"]["seen_enemies"], ["parasite"])
+        again = self.load()
+        self.assertEqual(again.seen_enemies, {"parasite"})
+        self.assertFalse(again.mark_seen("parasite"))
+
+    def test_older_campaign_save_has_empty_bestiary(self):
+        self.path.write_text(json.dumps({"highscore": 100, "campaign": {"unlocked_level": 4, "level_stars": {"1": 3}}}))
+        data = self.load()
+        self.assertEqual(data.seen_enemies, set())
+        self.assertEqual((data.highscore, data.unlocked_level, data.total_stars), (100, 4, 3))
 
     def test_corrupt_file_is_backed_up(self):
         self.path.write_text("{not json", encoding="utf-8")

@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/Python-3.10–3.13-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python">
   <img src="https://img.shields.io/badge/pygame-2.5+-2b9348?style=flat-square" alt="pygame">
   <img src="https://img.shields.io/badge/MediaPipe-Hands-4285F4?style=flat-square&logo=google&logoColor=white" alt="MediaPipe">
-  <img src="https://img.shields.io/badge/test-58_passed-success?style=flat-square" alt="Test">
+  <img src="https://img.shields.io/badge/test-67_passed-success?style=flat-square" alt="Test">
 </p>
 
 <p align="center">
@@ -43,6 +43,8 @@
 | ![Chọn ải](docs/screenshots/chon-ai.png) | ![Hội thoại](docs/screenshots/hoi-thoai.png) |
 | **Trong trận: kỹ năng Vòng Plasma, pháo tháp cảnh báo** | **Boss cuối: Tàu Mẹ Hy Vọng** |
 | ![Trong trận](docs/screenshots/gameplay.png) | ![Boss cuối](docs/screenshots/boss.png) |
+| **Hướng dẫn: súng bắn thử ngay trong thẻ** | **Sổ tay chiến đấu: mở dần khi gặp địch** |
+| ![Hướng dẫn](docs/screenshots/huong-dan.png) | ![Sổ tay chiến đấu](docs/screenshots/so-tay.png) |
 
 ## Điểm nổi bật
 
@@ -54,7 +56,7 @@
 | **Chiến dịch có cốt truyện** | 10 ải chia 3 hồi, hội thoại có chân dung nhân vật, thoại ngay trong trận, đoạn kết riêng. |
 | **Đồ họa phát sáng** | Đạn neon, vụ nổ có sóng xung kích, địch nháy khi trúng đạn, nền cuộn theo từng hồi. |
 | **Có chiều sâu** | 4 súng, mỗi súng một dạng tối thượng ở cấp 6 và một kỹ năng Nộ riêng; 3 mức độ khó; chấm 1–3 sao mỗi ải. |
-| **Mã nguồn sạch, có test** | Chia module rõ ràng, dữ liệu ải tách khỏi logic, 58 test tự động, có bot tự chơi hết chiến dịch. |
+| **Mã nguồn sạch, có test** | Chia module rõ ràng, dữ liệu ải tách khỏi logic, 67 test tự động, có bot tự chơi hết chiến dịch. |
 
 ## Cốt truyện
 
@@ -199,7 +201,7 @@ hết 10 ải tới đoạn kết** cùng hai chế độ Vô tận và Hỏa ng
 - [x] Hiệu ứng phát sáng, HUD mới
 - [x] Vũ khí mới, kỹ năng Nộ, 10 ải, cốt truyện, chọn ải, độ khó
 - [x] Giao diện mới: font riêng (Chakra Petch, Exo 2), menu điều khiển được bằng tay, đồng bộ phong cách các màn hình
-- [ ] Màn Hướng dẫn chia thẻ + Sổ tay chiến đấu
+- [x] Màn Hướng dẫn chia thẻ + Sổ tay chiến đấu
 - [ ] Âm thanh: tiếng riêng cho từng sự kiện, nhạc theo từng hồi, chỉnh âm lượng
 - [ ] Cân bằng độ khó theo phản hồi chơi thử thực tế
 

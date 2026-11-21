@@ -2,23 +2,40 @@
 còn quy tắc cụ thể ở ``systems/`` và hình vẽ ở ``entities/``."""
 from __future__ import annotations
 
+from collections import deque
 from typing import Optional
 
 import pygame
 
+from spaceship.campaign.bestiary import BESTIARY, BestiaryEntry
 from spaceship.campaign.levels import LEVEL_COUNT, default_loadout, get_level
 from spaceship.campaign.story import RADIO
-from spaceship.config import TICK, WHITE, WIDTH, GameMode
+from spaceship.config import HEIGHT, TICK, TICK_RATE, WHITE, WIDTH, GameMode
 from spaceship.core.scene import Scene
 from spaceship.core.storage import GameResult
+from spaceship.entities.enemies import Boss, Breeder, Enemy, InfectedAlly, Meteor, Parasite, ShieldBug, Turret, Wreck
+from spaceship.input.hand_tracker import PREVIEW_SIZE
 from spaceship.systems import attacks, combat, weapons
 from spaceship.systems.spawning import create_director
 from spaceship.systems.world import World
-from spaceship.ui.hud import draw_banner, draw_hud, draw_radio
+from spaceship.ui.hud import ENCOUNTER_HEIGHT, draw_banner, draw_encounter, draw_hud, draw_radio
 
 DEFAULT_BACKGROUND = {GameMode.ENDLESS: "bg_act2", GameMode.INFERNO: "bg_act3"}
 BG_SCROLL = 0.6                     # px/tick
 FOG_BAND = 470                      # sương mù chỉ phủ phần trên màn hình (chỗ địch đứng)
+ENCOUNTER_TICKS = 3 * TICK_RATE
+ENEMY_KEYS = {
+    Parasite: "parasite", ShieldBug: "shield", Breeder: "breeder", Turret: "turret",
+    InfectedAlly: "ally", Meteor: "meteor", Wreck: "wreck",
+}
+
+
+def enemy_key(enemy) -> Optional[str]:
+    if isinstance(enemy, Boss):
+        return enemy.kind
+    if isinstance(enemy, Enemy):
+        return "kamikaze" if enemy.kamikaze else "grunt"
+    return ENEMY_KEYS.get(type(enemy))
 
 
 class Fog:
@@ -67,6 +84,8 @@ class GameplayScene(Scene):
         self.fog = Fog(game.rng) if self.level is not None and self.level.fog else None
         self.controls = None            # ControlState gần nhất (để HUD vẽ chỉ báo cử chỉ)
         self.finished = False
+        self._encounters: deque[BestiaryEntry] = deque()
+        self._encounter_ticks = 0
         game.controls.reset_hand_mode()
 
     def _apply_loadout(self, loadout: dict) -> None:
@@ -109,11 +128,13 @@ class GameplayScene(Scene):
         if self.fog is not None:
             self.fog.update()
         w.tick_messages()
+        self._tick_encounter_notice()
 
         if self.director.paused:                      # tên ải đang hiện: chỉ cho lái tàu
             self.director.update(w)
             p.move(controls)
             p.tick_timers()
+            self._discover_enemies()
             return
 
         w.survival_time += TICK
@@ -137,9 +158,11 @@ class GameplayScene(Scene):
             bullet.update(p)
         combat.resolve_enemy_bullets(w)
         attacks.run_enemy_ai(w)
+        self._discover_enemies()                 # kể cả địch bị hạ ngay khi vừa lọt vào màn
         combat.apply_burn(w)
         combat.resolve_body_collisions(w)
         combat.reap_dead(w)
+        self._discover_enemies()                 # Ký Sinh nở khi Kẻ Đẻ Trứng bị hạ
         for item in w.items:
             item.update(p)
         combat.collect_items(w)
@@ -154,6 +177,38 @@ class GameplayScene(Scene):
         self._flush_sounds()
         if w.outcome:
             self._finish()
+
+    @property
+    def encounter(self) -> Optional[BestiaryEntry]:
+        return self._encounters[0] if self._encounters else None
+
+    def _tick_encounter_notice(self) -> None:
+        if self._encounter_ticks:
+            self._encounter_ticks -= 1
+            if not self._encounter_ticks:
+                self._encounters.popleft()
+        if self._encounters and not self._encounter_ticks:
+            self._encounter_ticks = ENCOUNTER_TICKS
+
+    def _discover_enemies(self) -> None:
+        save = self.game.save
+        if not BESTIARY.keys() <= save.seen_enemies:
+            for enemy in self.world.enemies:
+                if enemy.y <= 0:
+                    continue
+                key = enemy_key(enemy)
+                if key is not None and key in BESTIARY and save.mark_seen(key):
+                    self._encounters.append(BESTIARY[key])
+        if self._encounters and not self._encounter_ticks:
+            self._encounter_ticks = ENCOUNTER_TICKS
+
+    def _encounter_y(self) -> int:
+        y = 195 if self.world.radio else 113
+        if self.game.tracker is not None and self.game.show_camera:
+            below_preview = self.game.to_virtual((0, PREVIEW_SIZE[1] + 32))
+            if below_preview is not None:
+                y = max(y, below_preview[1])
+        return min(y, HEIGHT - ENCOUNTER_HEIGHT - 14)
 
     def _flush_sounds(self) -> None:
         for sound in self.world.sounds:
@@ -234,5 +289,7 @@ class GameplayScene(Scene):
         draw_hud(surface, assets, w, self.controls, self.director)
         draw_radio(surface, assets, w)
         draw_banner(surface, assets, w, self.director)
+        if self.encounter is not None:
+            draw_encounter(surface, assets, self.encounter, self._encounter_y())
         if w.flash > 0:
             surface.fill(WHITE)

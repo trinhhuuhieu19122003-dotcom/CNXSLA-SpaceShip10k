@@ -20,6 +20,7 @@ GESTURE_LABELS = {
 
 BAR_W, BAR_H = 200, 15
 HUD_FILL = (8, 15, 25, 194)
+ENCOUNTER_WIDTH, ENCOUNTER_HEIGHT = 380, 56
 
 
 def format_time(seconds: float) -> str:
@@ -164,6 +165,15 @@ def draw_radio(surface, assets, world: World) -> None:
     surface.blit(assets.text(line.speaker.upper(), 13, color, role="label"), (tx, box.y + 3))
     for i, row in enumerate(wrap_text(assets, line.text, 14, box.right - tx - 8)[:2]):
         surface.blit(assets.text(row, 14, TEXT, role="body"), (tx, box.y + 24 + i * 18))
+
+
+def draw_encounter(surface: pygame.Surface, assets, entry, y: int) -> None:
+    box = pygame.Rect(WIDTH - ENCOUNTER_WIDTH - 14, y, ENCOUNTER_WIDTH, ENCOUNTER_HEIGHT)
+    draw_panel(surface, box, ACCENT, header_height=27)
+    title = fit_text(assets, f"ĐỊCH MỚI · {entry.name}", 16, ACCENT, box.width - 24, role="ui")
+    tip = fit_text(assets, entry.tip, 14, TEXT, box.width - 24, role="body")
+    surface.blit(title, (box.x + 12, box.y + 2))
+    surface.blit(tip, (box.x + 12, box.y + 31))
 
 
 def draw_hand_indicator(surface: pygame.Surface, assets, controls, rage_full: bool) -> None:
