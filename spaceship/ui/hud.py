@@ -103,6 +103,10 @@ def draw_hud(surface: pygame.Surface, assets, world: World, controls=None, direc
     surface.blit(_top_strip(WIDTH), (0, 0))
     line = fit_text(assets, _status_line(world, director), 18, TEXT, WIDTH - 40, role="ui")
     surface.blit(line, (14, 7))
+    if world.combo >= 2:                                   # thời gian còn lại để giữ chuỗi: vạch vàng ngắn dần
+        left = world.combo_timer / config.COMBO_WINDOW_TICKS
+        pygame.draw.rect(surface, (60, 52, 20), (14, STRIP_H - 3, 160, 2))
+        pygame.draw.rect(surface, YELLOW, (14, STRIP_H - 3, int(160 * left), 2))
     screen, surface = surface, _corner_layer(surface)    # 2 ô góc vẽ lên lớp riêng để làm mờ khi tàu bay sát
 
     # --- Góc dưới trái: mạng + cử chỉ tay, máu, Nộ ---------------------------------------------
