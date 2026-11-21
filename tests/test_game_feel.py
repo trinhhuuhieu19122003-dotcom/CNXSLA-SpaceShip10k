@@ -157,8 +157,6 @@ if __name__ == "__main__":
 
 class KamikazeTelegraphTest(unittest.TestCase):
     def make(self):
-        from spaceship.entities.player import Player
-
         w = world()
         e = Enemy(1, stage=2, rng=random.Random(1), kamikaze_chance=1)
         e.x, e.y, e.reached_target = 400, 150, True
@@ -270,6 +268,11 @@ class ComboTest(unittest.TestCase):
         combat.damage_player(w, 10)
         self.assertEqual(w.combo, 0)
         self.assertEqual(w.best_combo, 5)
+        self.assertFalse(any("MẤT CHUỖI" in getattr(d, "text", "") for d in w.damage_numbers))   # chuỗi ngắn: im lặng
+        w.combo = 12
+        w.player.invincible_timer = 0
+        combat.damage_player(w, 10)
+        self.assertTrue(any(getattr(d, "text", "") == "MẤT CHUỖI 12" for d in w.damage_numbers))
 
     def test_combo_shows_in_sidebar_and_hud(self):
         import pygame
@@ -311,3 +314,17 @@ class GrazeTest(unittest.TestCase):
         w.enemy_bullets.append(EnemyBullet(p.x + config.PLAYER_HITBOX + 8, p.y, 90))
         combat.resolve_enemy_bullets(w)
         self.assertEqual(w.grazes, 0)
+
+
+class SidebarFeelTest(unittest.TestCase):
+    def test_campaign_sidebar_with_everything_fits(self):
+        import pygame
+        from spaceship.campaign.levels import get_level
+        from spaceship.core.assets import Assets
+        from spaceship.ui import sidebar
+
+        w = World(mode=GameMode.CAMPAIGN, rng=random.Random(0), level=get_level(9))
+        w.combo, w.combo_timer, w.grazes = 34, 80, 57
+        w.player.drones, w.player.burn_unlocked, w.player.shield_timer = 2, True, 200
+        surface = pygame.Surface((280, 700))
+        sidebar.draw_status_panel(surface, Assets(), pygame.Rect(0, 0, 280, 700), w)

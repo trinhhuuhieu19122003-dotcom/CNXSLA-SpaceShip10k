@@ -130,6 +130,9 @@ class World:
             self.play("level_up")
 
     def break_combo(self) -> None:
+        if self.combo >= config.COMBO_STEP:           # mất chuỗi đang nhân điểm: báo cho "cay"
+            p = self.player
+            self.damage_numbers.append(FloatText(p.x, p.y - 60, f"MẤT CHUỖI {self.combo}", (255, 90, 90), size=20))
         self.combo = self.combo_timer = 0
 
     def tick_combo(self) -> None:

@@ -108,6 +108,9 @@ def draw_status_panel(surface: pygame.Surface, assets, rect: pygame.Rect, world,
         pygame.draw.rect(surface, (30, 34, 42), (col.x, col.y, col.width, 3))
         pygame.draw.rect(surface, YELLOW, (col.x, col.y, int(col.width * left), 3))
         col.y += 3
+    if world.grazes:
+        col.gap(4)
+        col.value(f"SÁT ĐẠN {world.grazes}", 13, SECONDARY, role="label")
     col.gap(4)
     col.label("THỜI GIAN")
     col.value(format_time(t), 18)
