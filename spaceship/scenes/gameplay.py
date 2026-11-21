@@ -197,6 +197,7 @@ class GameplayScene(Scene):
             fx.update()
         combat.cleanup(w)
 
+        w.tick_combo()
         w.tick_feel()
         self._update_audio()
         self._flush_sounds()

@@ -234,3 +234,51 @@ class BulletCancelTest(unittest.TestCase):
         attacks.boss_attack(w, boss)
         self.assertEqual(boss.phase, 2)
         self.assertFalse(any(b.y == 300 and b.x == 300 for b in w.enemy_bullets))
+
+
+class ComboTest(unittest.TestCase):
+    def kill(self, w):
+        e = Enemy(1, rng=w.rng, kamikaze_chance=0)
+        w.enemies.append(e)
+        combat.kill_enemy(w, e)
+        return e
+
+    def test_chain_multiplies_score_and_announces(self):
+        w = world()
+        for _ in range(config.COMBO_STEP):
+            self.kill(w)
+        self.assertEqual(w.combo_mult, 2)
+        self.assertTrue(any(getattr(d, "text", "") == "CHUỖI x2" for d in w.damage_numbers))
+        score = w.score
+        e = self.kill(w)
+        self.assertEqual(w.score - score, e.score * 2)
+
+    def test_multiplier_is_capped(self):
+        w = world()
+        w.combo = 999
+        self.assertEqual(w.combo_mult, config.COMBO_MAX_MULT)
+
+    def test_chain_expires_and_breaks_when_hit(self):
+        w = world()
+        for _ in range(5):
+            self.kill(w)
+        for _ in range(config.COMBO_WINDOW_TICKS):
+            w.tick_combo()
+        self.assertEqual(w.combo, 0)
+        for _ in range(5):
+            self.kill(w)
+        combat.damage_player(w, 10)
+        self.assertEqual(w.combo, 0)
+        self.assertEqual(w.best_combo, 5)
+
+    def test_combo_shows_in_sidebar_and_hud(self):
+        import pygame
+        from spaceship.core.assets import Assets
+        from spaceship.ui import sidebar
+        from spaceship.ui.hud import _status_line
+
+        w = world()
+        w.combo, w.combo_timer = 23, 60
+        self.assertIn("x3", _status_line(w, None))
+        surface = pygame.Surface((560, 700))
+        sidebar.draw_status_panel(surface, Assets(), pygame.Rect(0, 0, 280, 700), w)

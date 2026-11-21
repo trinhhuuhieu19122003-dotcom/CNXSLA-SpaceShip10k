@@ -206,3 +206,8 @@ KAMIKAZE_TURN_DEG = 1.0
 KAMIKAZE_HOMING_TICKS = 20
 #: Hạ boss / boss chuyển pha: đạn địch trên màn biến thành điểm thưởng ("hủy đạn" kiểu game bắn tàu Nhật).
 BULLET_CANCEL_SCORE = 5
+#: Chuỗi hạ địch: hạ liên tiếp (mỗi lần cách nhau < 2,5 giây) thì nhân điểm; cứ 10 lần hạ +1 bậc, tối đa x4.
+#: Bị trúng đạn là mất chuỗi.
+COMBO_WINDOW_TICKS = 150
+COMBO_STEP = 10
+COMBO_MAX_MULT = 4

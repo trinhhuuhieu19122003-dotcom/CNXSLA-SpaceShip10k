@@ -53,6 +53,7 @@ def damage_enemy(world: World, enemy: EnemyBase, amount: float, *, crit: bool = 
 def damage_player(world: World, amount: float) -> None:
     player = world.player
     player.hp -= amount
+    world.break_combo()
     world.shake(10)
     world.hurt_timer = config.HURT_VIGNETTE_TICKS
     if player.hp > 0:
@@ -77,7 +78,9 @@ def kill_enemy(world: World, enemy: EnemyBase) -> None:
     """Điểm, hiệu ứng, rơi đồ cho MỌI cái chết của địch."""
     if enemy in world.enemies:
         world.enemies.remove(enemy)
-    world.score += enemy.score
+    world.score += enemy.score * world.combo_mult
+    if enemy.counts_as_kill or enemy.is_boss:
+        world.add_combo()
     if enemy.is_boss:
         world.play("explode_boss")
         for dx, dy, size in ((0, 0, 3.0), (-50, -20, 1.6), (55, 15, 1.6), (-20, 40, 1.2), (30, -40, 1.2)):

@@ -148,7 +148,11 @@ class ResultScene(Scene):
                     draw_star(surface, center, 17, False)
             y += 42
         f = min(1.0, self.ticks / COUNT_TICKS)                     # số liệu đếm tăng dần
-        rows = [("ĐIỂM", f"{round(r.score * f):,}".replace(",", " "), ACCENT), ("QUÁI DIỆT", str(round(r.kills * f)), TEXT),
+        kills = str(round(r.kills * f))
+        best = getattr(getattr(self.gameplay, "world", None), "best_combo", 0)
+        if best >= 2:
+            kills += f" · chuỗi {best}"                           # chuỗi hạ liên tiếp dài nhất
+        rows = [("ĐIỂM", f"{round(r.score * f):,}".replace(",", " "), ACCENT), ("QUÁI DIỆT", kills, TEXT),
                 ("BOSS DIỆT", str(round(r.boss_kills * f)), TEXT), ("THỜI GIAN", format_time(r.survival_time * f), TEXT)]
         for i, (label, value, c) in enumerate(rows):
             ry = y + i * 26

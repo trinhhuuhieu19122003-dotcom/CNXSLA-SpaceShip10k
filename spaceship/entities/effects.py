@@ -195,3 +195,27 @@ class DamageNumber:
         txt = assets.text(f"-{self.damage}", 20, self.color, italic=True)
         txt.set_alpha(int(self.life / self.MAX_LIFE * 255))
         surface.blit(txt, (self.x, self.y))
+
+
+class FloatText:
+    """Chữ nổi lên rồi mờ dần (vd. "CHUỖI x3"). Nằm chung danh sách với số sát thương."""
+    MAX_LIFE = 50
+
+    def __init__(self, x, y, text: str, color, size: int = 22) -> None:
+        self.x, self.y, self.text, self.color, self.size = x, y, text, color, size
+        self.life = self.MAX_LIFE
+
+    @property
+    def alive(self) -> bool:
+        return self.life > 0
+
+    def update(self) -> None:
+        self.y -= 1
+        self.life -= 1
+
+    def draw(self, surface: pygame.Surface, assets) -> None:
+        if self.life <= 0:
+            return
+        txt = assets.text(self.text, self.size, self.color, role="display")
+        txt.set_alpha(int(min(1.0, self.life / 20) * 255))
+        surface.blit(txt, (int(self.x - txt.get_width() / 2), int(self.y)))

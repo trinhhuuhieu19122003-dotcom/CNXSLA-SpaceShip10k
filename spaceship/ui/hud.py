@@ -64,6 +64,8 @@ def _top_strip(width: int) -> pygame.Surface:
 def _status_line(world: World, director) -> str:
     progress = director.progress_text if director is not None else ""
     score = f"ĐIỂM {world.score:,}".replace(",", " ")
+    if world.combo_mult > 1:
+        score += f" x{world.combo_mult}"
     if world.level is not None:
         cycle = f"CHU KỲ {world.cycle} · " if world.cycle > 1 else ""
         parts = [score, f"{cycle}ẢI {world.level.number}", progress]

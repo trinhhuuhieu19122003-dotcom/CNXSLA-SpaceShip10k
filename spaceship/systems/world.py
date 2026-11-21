@@ -7,7 +7,7 @@ from typing import Any, List, Optional
 
 from spaceship import config
 from spaceship.config import GameMode
-from spaceship.entities.effects import DamageNumber, Flash, Particle, Shockwave, Spark
+from spaceship.entities.effects import DamageNumber, Flash, FloatText, Particle, Shockwave, Spark
 from spaceship.entities.enemies import Boss, EnemyBase
 from spaceship.entities.items import Item
 from spaceship.entities.player import Player
@@ -56,6 +56,10 @@ class World:
     hitstop: int = 0
     #: > 0: viền đỏ quanh màn hình vì vừa trúng đạn
     hurt_timer: int = 0
+    #: chuỗi hạ địch liên tiếp (nhân điểm), xem ``config.COMBO_*``
+    combo: int = 0
+    combo_timer: int = 0
+    best_combo: int = 0
     banner: str = ""
     banner_ticks: int = 0
     #: chu kỳ Vượt ải (Vòng lặp tín hiệu); chế độ khác luôn 1
@@ -108,6 +112,29 @@ class World:
     def shake(self, amount: int) -> None:
         """Cộng trauma: 4 = rung nhẹ, 10 = trúng đạn, 20 = hạ boss (tối đa)."""
         self.trauma = min(1.0, self.trauma + amount / 20)
+
+    @property
+    def combo_mult(self) -> int:
+        return min(config.COMBO_MAX_MULT, 1 + self.combo // config.COMBO_STEP)
+
+    def add_combo(self) -> None:
+        before = self.combo_mult
+        self.combo += 1
+        self.combo_timer = config.COMBO_WINDOW_TICKS
+        self.best_combo = max(self.best_combo, self.combo)
+        if self.combo_mult > before:
+            p = self.player
+            self.damage_numbers.append(FloatText(p.x, p.y - 60, f"CHUỖI x{self.combo_mult}", (255, 210, 80)))
+            self.play("level_up")
+
+    def break_combo(self) -> None:
+        self.combo = self.combo_timer = 0
+
+    def tick_combo(self) -> None:
+        if self.combo_timer > 0:
+            self.combo_timer -= 1
+            if self.combo_timer == 0:
+                self.combo = 0
 
     def freeze(self, ticks: int) -> None:
         """Hitstop: lấy giá trị lớn nhất, không cộng dồn (nổ cả loạt địch vẫn chỉ khựng một lần)."""

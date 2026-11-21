@@ -101,6 +101,13 @@ def draw_status_panel(surface: pygame.Surface, assets, rect: pygame.Rect, world,
 
     col.label("ĐIỂM")
     col.value(f"{world.score:,}".replace(",", " "), 30, ACCENT, role="display")
+    if world.combo >= 2:
+        left = world.combo_timer / config.COMBO_WINDOW_TICKS
+        col.value(f"CHUỖI {world.combo} · x{world.combo_mult}", 15, YELLOW if world.combo_mult > 1 else SECONDARY,
+                  role="label")
+        pygame.draw.rect(surface, (30, 34, 42), (col.x, col.y, col.width, 3))
+        pygame.draw.rect(surface, YELLOW, (col.x, col.y, int(col.width * left), 3))
+        col.y += 3
     col.gap(4)
     col.label("THỜI GIAN")
     col.value(format_time(t), 18)
