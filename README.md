@@ -122,7 +122,7 @@ Dữ liệu của bản gốc (`highscore.txt`, `stats.json`) được tự nh�
 | Kỹ năng Nộ (khi đầy thanh) | **Chụm đầu ngón cái + ngón trỏ**, giữ 0,5 giây | K / N |
 | Né chậm, hiện điểm va chạm | **Nắm tay** | Shift |
 | Tạm dừng | **Bỏ tay xuống** ~1,5 giây (đưa tay lên lại sẽ tự đếm 3‑2‑1) | Esc / P |
-| Toàn màn hình · ẩn/hiện camera | — | F11 · C |
+| Toàn màn hình · ẩn/hiện camera | — | F11 hoặc Alt + Enter · C |
 
 Lần đầu chơi mỗi khi mở game, màn **Hiệu chỉnh tay** ghi nhận tư thế nghỉ của bạn làm tâm màn hình.
 Độ nhạy tay (Thấp / Vừa / Cao) và hiệu chỉnh lại nằm trong **Cài đặt**. Tay trái hay tay phải đều được.
