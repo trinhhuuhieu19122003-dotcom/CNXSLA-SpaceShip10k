@@ -1,4 +1,4 @@
-"""Màn Cài đặt: toàn màn hình, tự động bắn, độ nhạy tay, điều khiển menu bằng tay, âm lượng, hiệu chỉnh lại tay."""
+"""Màn Cài đặt: toàn màn hình, rung & nháy màn hình, tự động bắn, độ nhạy tay, điều khiển menu bằng tay, âm lượng, hiệu chỉnh lại tay."""
 from __future__ import annotations
 
 import pygame
@@ -12,11 +12,12 @@ from spaceship.ui.widgets import FRAME, MUTED, SECONDARY, TEXT, Button, blit_cen
 
 PANEL = pygame.Rect(60, 60, WIDTH - 120, 580)
 BTN_W, BTN_H = 440, 40
-BTN_TOP, BTN_STEP = 150, 50
+BTN_TOP, BTN_STEP = 146, 46
 VOLUME_NOTE = "Kéo thanh bằng chuột · phím trái/phải: ±5% · chụm tay rồi di ngang để kéo."
 #: (chữ cố định, hành động, ghi chú hiện ở cuối khung khi mục được chọn)
 ROWS = (
     ("", "fullscreen", "Phủ kín màn hình. Phím tắt: F11 hoặc Alt + Enter, dùng được ở mọi màn."),
+    ("", "screen_fx", "Rung màn hình, khựng hình khi trúng đòn, chớp sáng. NHẸ / TẮT nếu thấy chóng mặt."),
     ("", "auto_fire", "Tàu tự bắn liên tục, tay chỉ cần lái. Tắt: giơ 1 ngón trỏ / giữ Space để bắn."),
     ("", "sensitivity", "Cao = nhích tay ít đã đi xa (đỡ mỏi). Thấp = chính xác hơn, phải vung rộng hơn."),
     ("", "hand_menu", "Tắt: menu chỉ dùng phím / chuột (trong trận vẫn lái tàu bằng tay)."),
@@ -51,6 +52,7 @@ class OptionsScene(Scene):
         s = self.game.settings
         texts = {
             "fullscreen": f"TOÀN MÀN HÌNH: {'BẬT' if self.game.fullscreen else 'TẮT'}",
+            "screen_fx": f"RUNG & NHÁY MÀN HÌNH: {config.SCREEN_FX_LABELS.get(s.screen_fx, 'ĐẦY ĐỦ')}",
             "auto_fire": f"TỰ ĐỘNG BẮN: {'BẬT' if s.auto_fire else 'TẮT'}",
             "sensitivity": f"ĐỘ NHẠY TAY: {config.HAND_SENSITIVITY_LABELS[s.sensitivity]}",
             "hand_menu": f"CHỌN MENU BẰNG TAY: {'BẬT' if s.hand_menu else 'TẮT'}",
@@ -82,7 +84,9 @@ class OptionsScene(Scene):
             self.game.toggle_fullscreen()
             self._refresh()
             return
-        if action == "auto_fire":
+        if action == "screen_fx":
+            s.cycle_screen_fx()
+        elif action == "auto_fire":
             s.auto_fire = not s.auto_fire
         elif action == "sensitivity":
             s.cycle_sensitivity()

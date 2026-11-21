@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.1.0-dev] – Cảm giác đánh
+- **Rung kiểu trauma** (`World.shake` / `tick_feel`): mỗi cú cộng trauma 0..1, độ lệch = 12 px × trauma², giảm dần.
+  Cú nhẹ chỉ hơi nhích, hạ boss giật mạnh; thay cho rung ±8 px cố định.
+- **Khựng hình (hitstop)** `World.freeze`: trúng đạn 4 tick, mất mạng 10, hạ địch to 3, hạ boss 12. Không cộng dồn;
+  chữ thông báo vẫn chạy trong lúc khựng.
+- **Bất tử ngắn sau khi trúng đạn** (`MERCY_TICKS` = 0,5 giây): chùm đạn sát nhau chỉ trừ máu một lần. Lúc bất tử tàu
+  chỉ ẩn 1/4 thời gian (trước là 1/2) nên vẫn thấy rõ để né; vòng vàng chỉ còn sau khi hồi sinh.
+- **Viền đỏ** (`ui/feel.py`): loé khi trúng đạn, đập theo nhịp tim khi máu ≤ 30%. Vẽ trước HUD.
+- **Chớp sáng mờ dần** (tối đa alpha 150) thay cho trắng xóa cả màn.
+- Cài đặt mới **RUNG & NHÁY MÀN HÌNH: ĐẦY ĐỦ / NHẸ / TẮT** (`settings.screen_fx`).
+- 12 test mới (`tests/test_game_feel.py`), tổng 124.
+
 ## [2.1.0-dev] – Đánh bóng giao diện
 - **HUD trong trận gọn 4 góc** (cửa sổ thường): dải mảnh trên cùng "ĐIỂM · ẢI · WAVE"; góc dưới trái mạng + cử chỉ
   tay + máu + Nộ (gợi ý kỹ năng khi đầy); góc dưới phải vũ khí + tăng cường. Hai ô góc **tự mờ khi tàu bay sát**.

@@ -177,3 +177,25 @@ WAVE_BREATH_TICKS = 110
 WAVE_LONG_BREATH_TICKS = 200
 #: Trần đạn của lính thường (đạn boss không bị giới hạn): quá thì lính tạm ngừng bắn.
 ENEMY_BULLET_CAP = {GameMode.CAMPAIGN: 45, GameMode.ENDLESS: 55, GameMode.INFERNO: 100}
+
+# --- Cảm giác đánh (game feel), xem docs/design/cam-giac-danh.md -------------------------
+#: Rung màn hình kiểu "trauma": mỗi cú va chạm cộng trauma (0..1), độ lệch = MAX * trauma².
+#: Bình phương làm cú nhẹ chỉ hơi rung, cú nặng (hạ boss) rung mạnh; trauma tự giảm dần mỗi tick.
+SHAKE_MAX_OFFSET = 12
+TRAUMA_DECAY = 0.035
+#: Đóng băng khung hình (hitstop) vài tick để cú đánh "có trọng lượng". 1 tick = 1/60 giây.
+HITSTOP_HURT = 4                 # bị trúng đạn
+HITSTOP_LIFE_LOST = 10           # mất một mạng
+HITSTOP_ELITE = 3                # hạ địch to (Lính Khiên, Đẻ Trứng, Pháo tháp)
+HITSTOP_BOSS = 12                # hạ boss
+#: Sau khi trúng đạn được bất tử ngắn (nửa giây): một chùm đạn không rút sạch máu trong 3 tick.
+MERCY_TICKS = 30
+#: Viền đỏ quanh màn hình khi bị trúng đạn / khi máu thấp.
+HURT_VIGNETTE_TICKS = 24
+LOW_HP_RATIO = 0.3
+#: Chớp sáng toàn màn (kỹ năng Nộ): lớp phủ mờ dần, không còn trắng xóa cả màn.
+FLASH_MAX_ALPHA = 150
+#: Cài đặt "Rung & nháy màn hình": hệ số nhân cho rung + chớp sáng.
+SCREEN_FX_LEVELS = ("full", "reduced", "off")
+SCREEN_FX_LABELS = {"full": "ĐẦY ĐỦ", "reduced": "NHẸ", "off": "TẮT"}
+SCREEN_FX_SCALE = {"full": 1.0, "reduced": 0.4, "off": 0.0}

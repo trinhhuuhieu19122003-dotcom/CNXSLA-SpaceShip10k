@@ -31,6 +31,7 @@ class Settings:
     difficulty: str = "normal"                           # easy | normal | hard
     music_volume: float = 0.7                            # 0..1
     sfx_volume: float = 0.8                              # 0..1
+    screen_fx: str = "full"                              # rung & nháy màn hình: full | reduced | off
 
     @staticmethod
     def step_volume(value: float, step: float, wrap: bool = False) -> float:
@@ -39,6 +40,11 @@ class Settings:
         if wrap and new > 1.0:
             return 0.0
         return min(1.0, max(0.0, new))
+
+    def cycle_screen_fx(self) -> None:
+        order = config.SCREEN_FX_LEVELS
+        i = order.index(self.screen_fx) if self.screen_fx in order else 0
+        self.screen_fx = order[(i + 1) % len(order)]
 
     def cycle_difficulty(self) -> None:
         order = config.DIFFICULTIES
@@ -70,6 +76,8 @@ class Settings:
                 data.fullscreen = bool(raw.get("fullscreen", False))
                 if raw.get("sensitivity") in SENSITIVITY_ORDER:
                     data.sensitivity = raw["sensitivity"]
+                if raw.get("screen_fx") in config.SCREEN_FX_LEVELS:
+                    data.screen_fx = raw["screen_fx"]
                 if raw.get("difficulty") in config.DIFFICULTIES:
                     data.difficulty = raw["difficulty"]
                 for key in ("music_volume", "sfx_volume"):

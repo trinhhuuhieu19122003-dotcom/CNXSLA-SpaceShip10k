@@ -54,10 +54,15 @@ def damage_player(world: World, amount: float) -> None:
     player = world.player
     player.hp -= amount
     world.shake(10)
+    world.hurt_timer = config.HURT_VIGNETTE_TICKS
     if player.hp > 0:
         world.play("player_hurt")
+        world.freeze(config.HITSTOP_HURT)
+        # bất tử ngắn: một chùm đạn sát nhau không rút sạch máu trong vài tick
+        player.invincible_timer = max(player.invincible_timer, config.MERCY_TICKS)
         return
     world.lives_lost += 1
+    world.freeze(config.HITSTOP_LIFE_LOST)
     if player.lives > 1:
         player.lives -= 1
         player.respawn()
@@ -79,10 +84,14 @@ def kill_enemy(world: World, enemy: EnemyBase) -> None:
             world.explode(enemy.x + dx, enemy.y + dy, size)
         world.boss_kills += 1
         world.shake(20)
+        world.freeze(config.HITSTOP_BOSS)
         world.defeated_bosses.append(enemy)
         return
     big = enemy.is_meteor or enemy.is_obstacle or enemy.radius >= 28   # Lính Khiên, Kẻ Đẻ Trứng, Pháo tháp...
     world.play("explode_big" if big else "explode_small")
+    if big and not enemy.is_meteor and not enemy.is_obstacle:
+        world.freeze(config.HITSTOP_ELITE)
+        world.shake(4)
     world.explode(enemy.x, enemy.y, 1.5 if enemy.is_meteor else (0.6 if enemy.radius < 14 else 1.0))
     if hasattr(enemy, "offspring"):                # Kẻ Đẻ Trứng vỡ ra Ký Sinh
         world.enemies.extend(enemy.offspring(world.rng))

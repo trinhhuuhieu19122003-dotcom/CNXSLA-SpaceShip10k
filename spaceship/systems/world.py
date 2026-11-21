@@ -49,8 +49,13 @@ class World:
     #: ải đang chơi (chế độ Vượt ải), xem campaign/levels.py
     level: Any = None
 
-    screen_shake: int = 0
+    #: rung màn hình kiểu trauma (0..1), giảm dần mỗi tick; xem ``shake``
+    trauma: float = 0.0
     flash: int = 0
+    #: > 0: đóng băng mô phỏng vài tick (hitstop) cho cú đánh có trọng lượng
+    hitstop: int = 0
+    #: > 0: viền đỏ quanh màn hình vì vừa trúng đạn
+    hurt_timer: int = 0
     banner: str = ""
     banner_ticks: int = 0
     #: chu kỳ Vượt ải (Vòng lặp tín hiệu); chế độ khác luôn 1
@@ -101,7 +106,20 @@ class World:
         self.particles.append(Particle(x, y, color, rng=self.rng))
 
     def shake(self, amount: int) -> None:
-        self.screen_shake = max(self.screen_shake, amount)
+        """Cộng trauma: 4 = rung nhẹ, 10 = trúng đạn, 20 = hạ boss (tối đa)."""
+        self.trauma = min(1.0, self.trauma + amount / 20)
+
+    def freeze(self, ticks: int) -> None:
+        """Hitstop: lấy giá trị lớn nhất, không cộng dồn (nổ cả loạt địch vẫn chỉ khựng một lần)."""
+        self.hitstop = max(self.hitstop, ticks)
+
+    def tick_feel(self) -> None:
+        """Giảm dần rung / chớp / viền đỏ. Chạy cả trong lúc hitstop để hiệu ứng vẫn tắt dần."""
+        self.trauma = max(0.0, self.trauma - config.TRAUMA_DECAY)
+        if self.flash > 0:
+            self.flash -= 1
+        if self.hurt_timer > 0:
+            self.hurt_timer -= 1
 
     def drop(self, x: float, y: float, kind: Optional[str], magnet: bool = False) -> None:
         if kind:

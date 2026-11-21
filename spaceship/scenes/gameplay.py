@@ -12,7 +12,8 @@ from spaceship.campaign.achievements import RunStats
 from spaceship.campaign.bestiary import BESTIARY, BestiaryEntry
 from spaceship.campaign.levels import LEVEL_COUNT, default_loadout, get_level
 from spaceship.campaign.story import RADIO
-from spaceship.config import HEIGHT, TICK, TICK_RATE, WHITE, WIDTH, GameMode
+from spaceship import config
+from spaceship.config import HEIGHT, TICK, TICK_RATE, WIDTH, GameMode
 from spaceship.core.scene import Scene
 from spaceship.core.storage import GameResult
 from spaceship.entities.enemies import Boss, Breeder, Enemy, InfectedAlly, Meteor, Parasite, ShieldBug, Turret, Wreck
@@ -20,7 +21,7 @@ from spaceship.input.hand_tracker import PREVIEW_SIZE
 from spaceship.systems import attacks, combat, weapons
 from spaceship.systems.spawning import create_director
 from spaceship.systems.world import World
-from spaceship.ui import sidebar
+from spaceship.ui import feel, sidebar
 from spaceship.ui.hud import ENCOUNTER_HEIGHT, Toast, draw_banner, draw_boss_bar, draw_encounter, draw_hud, draw_radio
 
 DEFAULT_BACKGROUND = {GameMode.ENDLESS: "bg_act2", GameMode.INFERNO: "bg_act3"}
@@ -143,11 +144,18 @@ class GameplayScene(Scene):
             self.fog.update()
         w.tick_messages()
         self._tick_encounter_notice()
+        if w.hitstop > 0:          # khựng hình: địch, đạn, tàu đứng yên vài tick; chữ thông báo vẫn chạy
+            w.hitstop -= 1
+            w.tick_feel()
+            self._update_audio()
+            self._flush_sounds()
+            return
 
         if self.director.paused:                      # tên ải đang hiện: chỉ cho lái tàu
             self.director.update(w)
             p.move(controls)
             p.tick_timers()
+            w.tick_feel()
             self._discover_enemies()
             self._update_audio()
             self._flush_sounds()
@@ -188,10 +196,7 @@ class GameplayScene(Scene):
             fx.update()
         combat.cleanup(w)
 
-        if w.screen_shake > 0:
-            w.screen_shake -= 1
-        if w.flash > 0:
-            w.flash -= 1
+        w.tick_feel()
         self._update_audio()
         self._flush_sounds()
         if w.outcome:
@@ -358,10 +363,18 @@ class GameplayScene(Scene):
             game.change_scene(result_scene())
 
     # --- Vẽ -----------------------------------------------------------------------------
+    @property
+    def fx_scale(self) -> float:
+        """Cài đặt "Rung & nháy màn hình": 1 = đầy đủ, 0,4 = nhẹ, 0 = tắt."""
+        return config.SCREEN_FX_SCALE.get(getattr(self.game.settings, "screen_fx", "full"), 1.0)
+
     def screen_offset(self):
-        if self.world.screen_shake > 0:
-            return self.game.rng.randint(-8, 8), self.game.rng.randint(-8, 8)
-        return 0, 0
+        """Rung kiểu trauma: độ lệch = MAX * trauma² (cú nhẹ hơi nhích, cú nặng giật mạnh)."""
+        amount = config.SHAKE_MAX_OFFSET * self.world.trauma ** 2 * self.fx_scale
+        if amount < 0.5:
+            return 0, 0
+        rng = self.game.rng
+        return round(rng.uniform(-amount, amount)), round(rng.uniform(-amount, amount))
 
     def _draw_background(self, surface: pygame.Surface) -> None:
         bg = self._dark_background()
@@ -405,6 +418,7 @@ class GameplayScene(Scene):
             number.draw(surface, assets)
         if not self.finished or w.outcome == "victory":
             w.player.draw(surface, assets)
+        feel.draw_vignette(surface, w, self.fx_scale)   # trước HUD: chữ trên HUD không bị nhuộm đỏ
         if self.game.wide_layout:                    # HUD nằm ở 2 bảng bên; chiến trường chỉ giữ thanh boss
             draw_boss_bar(surface, assets, w, y=30)
         else:
@@ -413,5 +427,4 @@ class GameplayScene(Scene):
         draw_banner(surface, assets, w, self.director)
         if self.encounter is not None:
             draw_encounter(surface, assets, self.encounter, self._encounter_y())
-        if w.flash > 0:
-            surface.fill(WHITE)
+        feel.draw_flash(surface, w, self.fx_scale)

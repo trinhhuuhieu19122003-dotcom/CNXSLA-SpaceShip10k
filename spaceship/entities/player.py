@@ -184,9 +184,11 @@ class Player:
     # --- Vẽ ----------------------------------------------------------------------------
     def draw(self, surface: pygame.Surface, assets) -> None:
         if self.invincible_timer > 0:
-            if self.invincible_timer % 10 < 5:
+            # nhấp nháy nhưng ẩn ít (1/4 thời gian): đang bất tử vẫn phải thấy rõ tàu ở đâu để né
+            if self.invincible_timer % 8 < 2:
                 return
-            pygame.draw.circle(surface, YELLOW, (int(self.x), int(self.y)), 55, 2)
+            if self.invincible_timer > config.MERCY_TICKS:          # vòng vàng: bất tử dài sau khi hồi sinh
+                pygame.draw.circle(surface, YELLOW, (int(self.x), int(self.y)), 55, 2)
         if self.beam > 0:
             self._draw_beam(surface)
         if self.shield_active:
