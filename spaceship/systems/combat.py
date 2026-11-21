@@ -240,4 +240,4 @@ def cleanup(world: World) -> None:
     world.items[:] = [i for i in world.items if i.on_screen]
     world.particles[:] = [p for p in world.particles if p.alive]
     world.damage_numbers[:] = [d for d in world.damage_numbers if d.alive]
-    world.enemies[:] = [e for e in world.enemies if e.is_boss or e.y <= HEIGHT + e.ry + 40]
+    world.enemies[:] = [e for e in world.enemies if e.is_boss or (e.y <= HEIGHT + e.ry + 40 and not e.gone)]

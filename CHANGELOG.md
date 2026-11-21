@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.1.0-dev] – Nhịp sóng: thả địch có nhịp, hết "ồ ạt"
+- Lính trong đội hình **bay vào lần lượt** (Galaga), nhanh rồi chậm dần; **không bắn khi đang bay vào** và chờ
+  0,75 giây sau khi tới chỗ. Đội hình nhiều hàng được nén vào trong màn hình.
+- **Ngân sách đe dọa** (`THREAT_CAP` theo hồi, +1 mỗi chu kỳ): đủ thì địch tiếp theo xếp hàng chờ.
+- **Nghỉ giữa wave** 1,8 giây, sau mỗi 2 wave nghỉ 3,3 giây.
+- **Trần đạn** của lính; boss chỉ gọi thêm lính khi xung quanh còn ít.
+- Lính **trôi xuống tối đa tới giữa màn**, đứng quá 14 giây thì **rút lui** lên trên (không còn kẹt vì vài con sót).
+- **Vô tận / Hỏa ngục** viết lại theo nhịp *dồn lên -> cao trào -> thả lỏng* (AI Director của Left 4 Dead):
+  thả từng tốp có hình dạng, ngân sách tăng theo phút có trần; mất nhiều máu thì được nghỉ sớm; hạ boss được nghỉ.
+- Ải 4: wave Ký Sinh dày nhất giảm từ 28 xuống 20 con, thả so le.
+- Đo bằng bot: Vô tận trung bình 46 -> 7 địch trên màn; Hỏa ngục tối đa 255 -> 17 địch. Chi tiết, nguồn tham khảo
+  và cách chỉnh số: `docs/design/nhip-song.md`. 8 test mới (`tests/test_pacing.py`), tổng 101.
+
 ## [2.1.0-dev] – Vòng lặp tín hiệu & thanh trượt âm lượng
 - **Chu kỳ mới (New Game+)**: phá đảo xong, màn Chọn ải có nút "CHU KỲ 2" (chọn 2 lần để xác nhận). Ải về 1, sao
   của chu kỳ mới tính lại từ 0; Sổ tay, kỷ lục, thống kê và Hỏa ngục được giữ. Mỗi chu kỳ địch +25% máu, bắn

@@ -37,6 +37,8 @@ class EnemyBase:
     is_boss = False
     is_meteor = False
     is_obstacle = False          # xác tàu: chặn đạn địch
+    threat = 1.0                 # trọng số trong "ngân sách đe dọa" (config.THREAT_CAP)
+    gone = False                 # đã rời màn hình theo lối khác ngoài mép dưới (vd. lính rút lui)
     front_shield = False         # Lính Khiên
     ai: Optional[str] = None     # khóa trong systems/attacks.py
     sprite: Optional[str] = None
@@ -123,6 +125,7 @@ class Enemy(EnemyBase):
         self.y = rng.randint(-100, -40)
         self.target_y = rng.randint(100, 250)
         self.reached_target = False
+        self.arrived_at = 0
         self.shoot_timer = rng.randint(60, 120)
         self.kamikaze = False
         chance = kamikaze_chance if kamikaze_chance is not None else (0.3 if stage >= 2 else 0.0)
@@ -134,17 +137,36 @@ class Enemy(EnemyBase):
     def enraged(self) -> bool:
         return self.kamikaze and self.hp < self.max_hp * 0.4
 
+    @property
+    def retreating(self) -> bool:
+        return self.reached_target and not self.enraged and self.age - self.arrived_at >= config.RETREAT_AFTER_TICKS
+
+    @property
+    def gone(self) -> bool:
+        return self.retreating and self.y < -60
+
+    @property
+    def armed(self) -> bool:
+        """Chỉ bắn khi đã vào vị trí được một lúc (không bắn lúc đang bay vào, không bắn khi rút lui)."""
+        return (self.reached_target and not self.retreating
+                and self.age - self.arrived_at >= config.ARRIVAL_GRACE_TICKS)
+
     def update(self, player=None) -> None:
         self.age += 1
         if self.enraged and player is not None:
             ang = math.atan2(player.y - self.y, player.x - self.x)
             self.x += math.cos(ang) * config.KAMIKAZE_SPEED
             self.y += math.sin(ang) * config.KAMIKAZE_SPEED
+        elif self.retreating:
+            self.y -= 4                                    # rút lui: bay ngược lên khỏi màn hình
         elif not self.reached_target and self.y < self.target_y:
-            self.y += 15                                   # bay vào đội hình
+            # bay vào đội hình: nhanh rồi chậm dần khi gần tới chỗ (dễ nhìn, dễ bắn hạ giữa đường)
+            self.y += max(3.0, min(11.0, (self.target_y - self.y) * 0.09))
         else:
-            self.reached_target = True
-            self.y += 0.5
+            if not self.reached_target:
+                self.reached_target, self.arrived_at = True, self.age
+            if self.y < config.FORMATION_FLOOR:              # trôi xuống chậm, không lấn nửa dưới màn hình
+                self.y += 0.5
             self.x += self.dx
             if self.x < self.radius or self.x > WIDTH - self.radius:
                 self.dx *= -1
@@ -156,6 +178,7 @@ class Enemy(EnemyBase):
 
 # --- Ký Sinh ------------------------------------------------------------------------------
 class Parasite(EnemyBase):
+    threat = 0.75
     sprite = "parasite"
     sprite_width = 44
     score = 5
@@ -178,6 +201,7 @@ class Parasite(EnemyBase):
 # --- Lính Khiên ---------------------------------------------------------------------------
 class ShieldBug(EnemyBase):
     ai = "shield"
+    threat = 2.0
     sprite = "shield_enemy"
     sprite_width = 92
     front_shield = True
@@ -208,6 +232,7 @@ class ShieldBug(EnemyBase):
 # --- Kẻ Đẻ Trứng ---------------------------------------------------------------------------
 class Breeder(EnemyBase):
     ai = "breeder"
+    threat = 3.0
     sprite = "breeder"
     sprite_width = 84
     score = 30
@@ -237,6 +262,7 @@ class Breeder(EnemyBase):
 # --- Pháo tháp -------------------------------------------------------------------------------
 class Turret(EnemyBase):
     ai = "turret"
+    threat = 2.0
     sprite = "turret_base"
     sprite_width = 80
     score = 30
@@ -277,6 +303,7 @@ class Turret(EnemyBase):
 # --- Tàu đồng minh bị nhiễm -----------------------------------------------------------------
 class InfectedAlly(EnemyBase):
     ai = "ally"
+    threat = 2.0
     sprite = "infected_ally"
     sprite_width = 90
     score = 20

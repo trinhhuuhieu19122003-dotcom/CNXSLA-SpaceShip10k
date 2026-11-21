@@ -152,3 +152,22 @@ HAND_LANDMARKER_URL = (
 #: mỗi chu kỳ sau: địch thêm 25% máu và bắn nhanh hơn 12% (chu kỳ 2 = x1.25 / x1.12, chu kỳ 3 = x1.5 / x1.24...)
 CYCLE_HP_STEP = 0.25
 CYCLE_FIRE_STEP = 0.12
+
+# --- Nhịp sóng (pacing): tránh cảnh địch "ồ ạt" ----------------------------------------------------
+#: Lính trong một đội hình bay vào lần lượt (Galaga), cách nhau chừng này tick.
+ENTRY_STAGGER_TICKS = 7
+#: Tới vị trí rồi phải chờ chừng này tick mới được bắn: không bị bắn ngay khi địch vừa xuất hiện.
+ARRIVAL_GRACE_TICKS = 45
+#: Lính trôi xuống chậm nhưng dừng ở đây: nửa dưới màn hình là chỗ của người chơi.
+FORMATION_FLOOR = 360
+#: Lính ở đội hình quá lâu mà chưa bị hạ thì rút lui (bay lên khỏi màn): trận không bị "kẹt" vì vài con sót.
+RETREAT_AFTER_TICKS = 840
+#: "Ngân sách đe dọa" cùng lúc trên màn (lính = 1, Ký Sinh = 0,75, Lính Khiên/Pháo/Tàu nhiễm = 2, Đẻ Trứng = 3).
+#: Đủ ngân sách thì địch tiếp theo xếp hàng chờ. Theo hồi; mỗi chu kỳ Vòng lặp +1.
+THREAT_CAP = {1: 9, 2: 12, 3: 14}
+THREAT_CAP_PER_CYCLE = 1
+#: Nghỉ giữa các wave; sau mỗi 2 wave nghỉ dài hơn.
+WAVE_BREATH_TICKS = 110
+WAVE_LONG_BREATH_TICKS = 200
+#: Trần đạn của lính thường (đạn boss không bị giới hạn): quá thì lính tạm ngừng bắn.
+ENEMY_BULLET_CAP = {GameMode.CAMPAIGN: 45, GameMode.ENDLESS: 55, GameMode.INFERNO: 100}

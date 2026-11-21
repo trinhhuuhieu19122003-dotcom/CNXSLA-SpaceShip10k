@@ -22,28 +22,39 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Callable, List, Optional, Tuple
 
+from spaceship import config
 from spaceship.config import WIDTH
 from spaceship.entities.enemies import Breeder, Enemy, InfectedAlly, Meteor, Parasite, ShieldBug, Turret, Wreck
-from spaceship.systems.spawning import FORMATION_Y, formation
+from spaceship.systems.spawning import formation
 
 Event = Tuple[int, Callable]
+FRONT_Y, BACK_Y = 200, 50            # vị trí dọc của hàng trước / hàng sau cùng trong đội hình lính
 Wave = List[Event]
 
 
 # --- "Ngôn ngữ" mô tả wave ---------------------------------------------------------------------
 def grunts(stage: int, wave: int, at: int = 0, kamikaze: float = 0.0, style: str = "single") -> List[Event]:
-    """Đội hình lính thường lấy từ bảng đội hình gốc của game (formation)."""
-    def spawn(world):
-        positions, dx = formation(stage, wave)
-        for px, py in positions:
+    """Đội hình lính thường lấy từ bảng đội hình gốc của game (formation).
+
+    Lính bay vào LẦN LƯỢT (hàng trước trước, từ giữa ra hai bên), cách nhau ``ENTRY_STAGGER_TICKS``,
+    thay vì cả đội hình hiện ra cùng một lúc."""
+    positions, dx = formation(stage, wave)
+    order = sorted(positions, key=lambda p: (-p[1], abs(p[0]), p[0]))
+    # Hàng trước ở y=FRONT_Y, các hàng sau nén vào trong màn hình (đội hình 5 hàng không nằm ngoài mép trên)
+    depth = max(1, -min(py for _px, py in positions))
+    squeeze = min(1.0, (FRONT_Y - BACK_Y) / depth)
+    events = []
+    for i, (px, py) in enumerate(order):
+        def spawn(world, px=px, py=py):
             e = Enemy(world.hp_mult, stage=stage, rng=world.rng, kamikaze_chance=kamikaze)
             e.style = style
             e.x = max(30, min(WIDTH - 30, WIDTH // 2 + px))
-            e.y = -150 + py * 1.5 - abs(px)
-            e.target_y = FORMATION_Y + py
+            e.y = -40
+            e.target_y = FRONT_Y + py * squeeze
             e.dx = dx * world.rng.choice([-1, 1]) if dx else e.dx
             world.enemies.append(e)
-    return [(at, spawn)]
+        events.append((at + i * config.ENTRY_STAGGER_TICKS, spawn))
+    return events
 
 
 def swarm(count: int, at: int = 0, every: int = 10, side: Optional[str] = None) -> List[Event]:
@@ -144,7 +155,7 @@ LEVELS: Tuple[Level, ...] = (
         wave(swarm(10, every=14), wreck(250, 1, at=30)),
         wave(grunts(2, 1, kamikaze=0.2), swarm(6, at=90, every=16, side="left")),
         wave(wreck(400, 1, carries="upgrade_lightning"), grunts(1, 3, at=60), swarm(8, at=200, every=12)),
-        wave(swarm(14, every=9, side="left"), swarm(14, every=9, side="right"), wreck(560, 2, at=40)),
+        wave(swarm(10, every=12, side="left"), swarm(10, at=60, every=12, side="right"), wreck(560, 2, at=40)),
         wave(grunts(2, 4, kamikaze=0.25, style="pink"), swarm(8, at=150, every=12)),
     ), wreck_every=520, hint="Ký Sinh, xác tàu, súng Tia Sét"),
     Level(5, 2, "TINH VÂN ĐỎ", "bg_act2", 1.3, (

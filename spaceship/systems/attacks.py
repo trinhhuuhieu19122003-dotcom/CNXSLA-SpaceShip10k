@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import math
 
+from spaceship import config
 from spaceship.config import GameMode
 from spaceship.entities.enemies import Boss, Enemy, InfectedAlly, Parasite
 from spaceship.entities.projectiles import EnemyBullet
@@ -32,10 +33,20 @@ def _on_screen(enemy) -> bool:
     return enemy.y > 0
 
 
+def _hold_fire(world: World, enemy) -> bool:
+    """Trần đạn: màn hình đã đủ đạn của lính thì lính chờ một chút rồi mới bắn (đạn boss không tính trần)."""
+    if len(world.enemy_bullets) >= config.ENEMY_BULLET_CAP[world.mode]:
+        enemy.shoot_timer = 20
+        return True
+    return False
+
+
 # --- Lính các loại ---------------------------------------------------------------------------
 def grunt_fire(world: World, enemy: Enemy) -> None:
+    if not enemy.armed:                            # đang bay vào / vừa tới chỗ: chưa bắn
+        return
     enemy.shoot_timer -= 1
-    if enemy.shoot_timer > 0 or not _on_screen(enemy):
+    if enemy.shoot_timer > 0 or not _on_screen(enemy) or _hold_fire(world, enemy):
         return
     shots = world.enemy_bullets
     a = aim(enemy, world.player)
@@ -58,7 +69,7 @@ def grunt_fire(world: World, enemy: Enemy) -> None:
 
 def shield_fire(world: World, enemy) -> None:
     enemy.shoot_timer -= 1
-    if enemy.shoot_timer > 0 or not _on_screen(enemy):
+    if enemy.shoot_timer > 0 or not _on_screen(enemy) or _hold_fire(world, enemy):
         return
     a = aim(enemy, world.player)
     world.enemy_bullets += [EnemyBullet(enemy.x, enemy.y + 20, a + off, "blue_bullet") for off in (-20, 0, 20)]
@@ -67,7 +78,7 @@ def shield_fire(world: World, enemy) -> None:
 
 def ally_fire(world: World, enemy) -> None:
     enemy.shoot_timer -= 1
-    if enemy.shoot_timer > 0 or not _on_screen(enemy):
+    if enemy.shoot_timer > 0 or not _on_screen(enemy) or _hold_fire(world, enemy):
         return
     a = aim(enemy, world.player)
     world.enemy_bullets += [EnemyBullet(enemy.x + dx, enemy.y + 15, a, "normal") for dx in (-14, 14)]
@@ -96,7 +107,7 @@ def turret_fire(world: World, enemy) -> None:
             enemy.shoot_timer = _cooldown(world, world.rng.randint(140, 200))
         return
     enemy.shoot_timer -= 1
-    if enemy.shoot_timer <= 0 and _on_screen(enemy):
+    if enemy.shoot_timer <= 0 and _on_screen(enemy) and not _hold_fire(world, enemy):
         enemy.warning = enemy.WARN_TICKS
 
 
@@ -109,7 +120,17 @@ def _phase_for(ratio: float) -> int:
     return 3 if ratio <= 0.33 else (2 if ratio <= 0.66 else 1)
 
 
+#: Boss gọi lính: chỉ gọi khi lính quanh boss còn ít (tránh boss + 20 lính như bản cũ)
+BOSS_MINION_THREAT = 6
+
+
+def _minion_threat(world: World) -> float:
+    return sum(e.threat for e in world.enemies if not (e.is_boss or e.is_meteor or e.is_obstacle))
+
+
 def _summon(world: World, boss: Boss, stage: int, spread: int = 0) -> None:
+    if _minion_threat(world) >= BOSS_MINION_THREAT:
+        return
     minion = Enemy(world.hp_mult, stage=stage, rng=world.rng)
     minion.x = boss.x + (world.rng.randint(-spread, spread) if spread else 0)
     minion.y = boss.y
