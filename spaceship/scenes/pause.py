@@ -26,6 +26,7 @@ HAND_BACK_TICKS = int(0.3 * config.TICK_RATE)    # tay phải xuất hiện ổn
 
 class PauseScene(Scene):
     shows_camera = True
+    sidebars = True                  # màn rộng: giữ 2 bảng bên của trận đang dừng
 
     def __init__(self, game, gameplay, reason: str = "manual") -> None:
         super().__init__(game)
@@ -100,6 +101,9 @@ class PauseScene(Scene):
                 self.game.change_scene(self.gameplay)
 
     # --- Vẽ -----------------------------------------------------------------------------
+    def draw_sidebars(self, surface, left, right) -> None:
+        self.gameplay.draw_sidebars(surface, left, right)
+
     def draw(self, surface: pygame.Surface) -> None:
         a = self.game.assets
         self.gameplay.draw(surface)

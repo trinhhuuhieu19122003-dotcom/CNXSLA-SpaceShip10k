@@ -20,6 +20,8 @@ class Scene:
     music: Optional[str] = None
     #: Có hiện ô xem trước camera ở góc màn hình không.
     shows_camera: bool = False
+    #: Màn hình rộng: có vẽ 2 bảng thông tin hai bên khung 800x700 không (xem ``draw_sidebars``).
+    sidebars: bool = False
 
     def __init__(self, game: "Game") -> None:
         self.game = game
@@ -35,6 +37,9 @@ class Scene:
 
     def draw(self, surface: pygame.Surface) -> None:
         """Vẽ lên màn hình ảo kích thước WIDTH x HEIGHT."""
+
+    def draw_sidebars(self, surface: pygame.Surface, left: pygame.Rect, right: pygame.Rect) -> None:
+        """Vẽ 2 bảng bên (chỉ gọi khi ``sidebars`` và cửa sổ đủ rộng; lúc đó ``game.wide_layout`` = True)."""
 
     def screen_offset(self) -> Tuple[int, int]:
         """Độ lệch khi đưa màn hình ảo ra cửa sổ (dùng cho hiệu ứng rung)."""

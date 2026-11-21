@@ -112,9 +112,15 @@ def draw_hud(surface: pygame.Surface, assets, world: World, controls=None, direc
         draw_hand_indicator(surface, assets, controls, p.rage_full)
 
 
-def _boss_bar(surface, assets, boss) -> None:
+def draw_boss_bar(surface, assets, world: World, y: int = 92) -> None:
+    boss = next((e for e in world.enemies if e.is_boss), None)
+    if boss is not None:
+        _boss_bar(surface, assets, boss, y)
+
+
+def _boss_bar(surface, assets, boss, y: int = 92) -> None:
     """Thanh máu boss lớn ở giữa trên màn hình, kèm tên và khiên."""
-    w, x, y = 360, WIDTH // 2 - 180, 92
+    w, x = 360, WIDTH // 2 - 180
     name = assets.text(boss.title, 14, NEON_RED, role="label")
     surface.blit(name, (WIDTH // 2 - name.get_width() // 2, y - 18))
     pygame.draw.rect(surface, (40, 10, 14), (x, y, w, 10))

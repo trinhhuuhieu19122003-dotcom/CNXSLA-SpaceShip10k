@@ -149,3 +149,59 @@ class FullscreenSettingTest(unittest.TestCase):
         self.assertIsNotNone(game._backdrop)
         self.assertEqual(game._backdrop.get_size(), (1280, 720))
         self.assertGreaterEqual(corner.a, 0)
+
+
+class WideLayoutTest(unittest.TestCase):
+    def make(self, size, scene_factory):
+        import pygame
+        from spaceship.app import Game
+
+        game = Game(camera=False, seed=1)
+        scene = scene_factory(game)
+        game.change_scene(scene)
+        game._apply_pending_scene()
+        game.window = pygame.display.set_mode(size)
+        return game, scene
+
+    def test_gameplay_fills_16_9_with_side_panels(self):
+        from spaceship.config import GameMode
+        from spaceship.scenes.gameplay import GameplayScene
+
+        game, _ = self.make((1920, 1080), lambda g: GameplayScene(g, GameMode.CAMPAIGN, 1))
+        scale, ox, oy, side = game._layout()
+        self.assertEqual((ox, oy), (0, 0))                       # phủ kín, không viền đen
+        self.assertGreaterEqual(side, 200)
+        self.assertEqual(game.to_virtual((960, 540)), (400, 350))  # giữa màn = giữa chiến trường
+        game.render()
+        self.assertTrue(game.wide_layout)
+        self.assertIsNotNone(game._side_images)
+
+    def test_pause_keeps_panels_and_menus_do_not(self):
+        from spaceship.config import GameMode
+        from spaceship.scenes.gameplay import GameplayScene
+        from spaceship.scenes.menu import MenuScene
+        from spaceship.scenes.pause import PauseScene
+
+        game, play = self.make((1920, 1080), lambda g: GameplayScene(g, GameMode.ENDLESS))
+        game.change_scene(PauseScene(game, play))
+        game._apply_pending_scene()
+        self.assertGreater(game._layout()[3], 0)
+        game.render()
+        game.change_scene(MenuScene(game))
+        game._apply_pending_scene()
+        self.assertEqual(game._layout()[3], 0)
+        game.render()
+        self.assertFalse(game.wide_layout)
+
+    def test_narrow_and_ultrawide_windows(self):
+        from spaceship.app import SIDEBAR_MAX
+        from spaceship.config import GameMode
+        from spaceship.scenes.gameplay import GameplayScene
+
+        game, _ = self.make((800, 700), lambda g: GameplayScene(g, GameMode.ENDLESS))
+        self.assertEqual(game._layout()[3], 0)                    # cửa sổ thường: như cũ
+        game, _ = self.make((2560, 1080), lambda g: GameplayScene(g, GameMode.ENDLESS))
+        scale, ox, _oy, side = game._layout()
+        self.assertEqual(side, SIDEBAR_MAX)
+        self.assertGreater(ox, 0)                                 # màn siêu rộng: phần dư hai mép
+        game.render()

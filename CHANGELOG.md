@@ -22,6 +22,10 @@
   Màn hình rộng hơn khung 800x700 thì hai bên được phủ bằng chính khung hình làm mờ thay cho dải đen.
 - Windows: bật DPI awareness để màn hình phóng to 125%/150% không kéo giãn cửa sổ làm nhòe chữ; cửa sổ thường
   tự chọn cỡ ~85% chiều cao màn hình.
+- **Màn rộng phủ kín** (toàn màn hình 16:9, cửa sổ phóng to): trong trận, khung = bảng trái + chiến trường 800x700
+  + bảng phải. Bảng trái: ải, điểm, thời gian, máu, Nộ, vũ khí, tăng cường, mạng. Bảng phải: ô camera tay, cử chỉ,
+  lời thoại kèm chân dung. Chiến trường chỉ còn thanh boss nên thoáng hẳn; tầm vung tay và cân bằng không đổi.
+  Hai bảng vẽ lại 30 lần/giây để tiết kiệm. Các màn menu giữ khung giữa + nền mờ.
 - Cài đặt gọn lại: chỉ hiện ghi chú của mục đang chọn.
 - **Chơi bằng icon**: `Tao loi tat.bat` tạo lối tắt SpaceShip 10K (icon riêng) trên Desktop + Start menu, chạy bằng
   `pythonw` nên không hiện cửa sổ dòng lệnh; log ghi vào `spaceship.log`, lỗi hiện hộp thoại. Cửa sổ game có icon; App ID riêng (`IamSoftware.SpaceShip10K`, gắn cả vào lối tắt) để

@@ -18,7 +18,8 @@ from spaceship.input.hand_tracker import PREVIEW_SIZE
 from spaceship.systems import attacks, combat, weapons
 from spaceship.systems.spawning import create_director
 from spaceship.systems.world import World
-from spaceship.ui.hud import ENCOUNTER_HEIGHT, draw_banner, draw_encounter, draw_hud, draw_radio
+from spaceship.ui import sidebar
+from spaceship.ui.hud import ENCOUNTER_HEIGHT, draw_banner, draw_boss_bar, draw_encounter, draw_hud, draw_radio
 
 DEFAULT_BACKGROUND = {GameMode.ENDLESS: "bg_act2", GameMode.INFERNO: "bg_act3"}
 BG_SCROLL = 0.6                     # px/tick
@@ -64,6 +65,7 @@ class Fog:
 
 class GameplayScene(Scene):
     shows_camera = True
+    sidebars = True
 
     def __init__(self, game, mode: GameMode, level_number: Optional[int] = None, loadout: Optional[dict] = None) -> None:
         super().__init__(game)
@@ -210,7 +212,14 @@ class GameplayScene(Scene):
         if self._encounters and not self._encounter_ticks:
             self._encounter_ticks = ENCOUNTER_TICKS
 
+    def draw_sidebars(self, surface: pygame.Surface, left: pygame.Rect, right: pygame.Rect) -> None:
+        assets = self.game.assets
+        sidebar.draw_status_panel(surface, assets, left, self.world, self.director)
+        sidebar.draw_control_panel(surface, assets, right, self.game, self.world, self.controls)
+
     def _encounter_y(self) -> int:
+        if self.game.wide_layout:
+            return 60 if any(e.is_boss for e in self.world.enemies) else 14
         y = 195 if self.world.radio else 113
         if self.game.tracker is not None and self.game.show_camera:
             below_preview = self.game.to_virtual((0, PREVIEW_SIZE[1] + 32))
@@ -332,8 +341,11 @@ class GameplayScene(Scene):
             number.draw(surface, assets)
         if not self.finished or w.outcome == "victory":
             w.player.draw(surface, assets)
-        draw_hud(surface, assets, w, self.controls, self.director)
-        draw_radio(surface, assets, w)
+        if self.game.wide_layout:                    # HUD nằm ở 2 bảng bên; chiến trường chỉ giữ thanh boss
+            draw_boss_bar(surface, assets, w, y=30)
+        else:
+            draw_hud(surface, assets, w, self.controls, self.director)
+            draw_radio(surface, assets, w)
         draw_banner(surface, assets, w, self.director)
         if self.encounter is not None:
             draw_encounter(surface, assets, self.encounter, self._encounter_y())

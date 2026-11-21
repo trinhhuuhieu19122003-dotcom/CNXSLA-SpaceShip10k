@@ -58,6 +58,9 @@ def prepare_windows() -> None:
 
 
 MOUSE_EVENTS = (pygame.MOUSEBUTTONDOWN, pygame.MOUSEBUTTONUP, pygame.MOUSEMOTION)
+#: Bề rộng mỗi bảng bên khi màn hình rộng (đơn vị màn hình ảo). Hẹp hơn mức tối thiểu thì không dùng bảng.
+SIDEBAR_MIN, SIDEBAR_MAX = 150, 280
+SIDEBAR_BG = (7, 11, 18)
 SCENE_FADE_SECONDS = 0.25
 
 
@@ -79,6 +82,9 @@ class Game:
         self.window = self._create_window()
         self._backdrop: Optional[pygame.Surface] = None     # ảnh mờ lấp 2 bên khi màn hình rộng
         self._backdrop_frame = 0
+        self._canvas: Optional[pygame.Surface] = None       # nơi vẽ 2 bảng bên (màn rộng)
+        self._side_images: Optional[tuple] = None           # 2 bảng bên đã phóng to, dùng lại giữa các hình
+        self.wide_layout = False                            # đang vẽ 2 bảng bên (HUD dời khỏi chiến trường)
         self.screen = pygame.Surface((config.WIDTH, config.HEIGHT)).convert()
         self.clock = pygame.time.Clock()
         self.fps = fps
@@ -133,11 +139,26 @@ class Game:
             self.settings.fullscreen = on
             self.settings.save()
 
-    def _viewport(self) -> Tuple[float, int, int]:
-        """(tỉ lệ, lề trái, lề trên) để đặt màn hình ảo 800x700 giữa cửa sổ (letterbox)."""
+    def _layout(self) -> Tuple[float, int, int, int]:
+        """(tỉ lệ, lề trái, lề trên, bề rộng mỗi bảng bên) của khung đặt giữa cửa sổ.
+
+        Cửa sổ đủ rộng (toàn màn hình 16:9, cửa sổ phóng to) và scene hỗ trợ: khung = bảng trái + chiến trường
+        800x700 + bảng phải, rộng theo tỉ lệ cửa sổ nên phủ kín màn hình. Ngược lại khung chỉ là chiến trường.
+        """
         ww, wh = self.window.get_size()
-        scale = min(ww / config.WIDTH, wh / config.HEIGHT)
-        return scale, (ww - int(config.WIDTH * scale)) // 2, (wh - int(config.HEIGHT * scale)) // 2
+        side = 0
+        if self.scene is not None and self.scene.sidebars and wh > 0:
+            side = int(min(SIDEBAR_MAX, (config.HEIGHT * ww / wh - config.WIDTH) / 2))
+            if side < SIDEBAR_MIN:
+                side = 0
+        width = config.WIDTH + 2 * side
+        scale = min(ww / width, wh / config.HEIGHT)
+        return scale, (ww - int(width * scale)) // 2, (wh - int(config.HEIGHT * scale)) // 2, side
+
+    def _viewport(self) -> Tuple[float, int, int]:
+        """(tỉ lệ, vị trí trái, vị trí trên) của chiến trường 800x700 trong cửa sổ."""
+        scale, ox, oy, side = self._layout()
+        return scale, ox + int(side * scale), oy
 
     def to_virtual(self, pos) -> Optional[Tuple[int, int]]:
         scale, ox, oy = self._viewport()
@@ -221,8 +242,13 @@ class Game:
         self.audio.update()
 
     def render(self) -> None:
+        scale, ox, oy, side = self._layout()
+        self.wide_layout = side > 0
         self.scene.draw(self.screen)
         source, darkness = self._transition_frame()
+        if side:
+            self._render_wide(source, darkness, scale, ox, oy, side)
+            return
         scale, ox, oy = self._viewport()
         dx, dy = self.scene.screen_offset() if source is self.screen else (0, 0)
         size = (int(config.WIDTH * scale), int(config.HEIGHT * scale))
@@ -233,6 +259,45 @@ class Game:
             pygame.draw.rect(self.window, (40, 61, 76), (ox - 1, oy - 1, size[0] + 2, size[1] + 2), 1)
         if self.scene.shows_camera and source is self.screen:
             self._draw_camera_overlay()
+        self._darken(self.window, darkness)
+        self._presented = source, darkness
+        pygame.display.flip()
+
+    def _render_wide(self, source, darkness, scale, ox, oy, side) -> None:
+        """Màn rộng: bảng trái + chiến trường + bảng phải. Chiến trường phóng to mỗi hình; hai bảng bên ít đổi
+        nên chỉ vẽ + phóng lại cách 1 hình (30 lần/giây, bằng tốc độ camera) để tiết kiệm."""
+        height = int(config.HEIGHT * scale)
+        field_x = ox + round(side * scale)
+        right_x = ox + round((side + config.WIDTH) * scale)
+        field_w, side_w = right_x - field_x, field_x - ox
+        ww, wh = self.window.get_size()
+        self._wide_frame = getattr(self, "_wide_frame", 0) + 1
+        key = (side, side_w, height)
+        if source is not self.screen:
+            self._side_images = None
+        elif getattr(self, "_side_key", None) != key or self._side_images is None or self._wide_frame % 2 == 0:
+            if self._canvas is None or self._canvas.get_size() != (side * 2, config.HEIGHT):
+                self._canvas = pygame.Surface((side * 2, config.HEIGHT)).convert()
+            canvas = self._canvas
+            canvas.fill(SIDEBAR_BG)
+            left, right = pygame.Rect(0, 0, side, config.HEIGHT), pygame.Rect(side, 0, side, config.HEIGHT)
+            self.scene.draw_sidebars(canvas, left, right)
+            self._side_images = tuple(pygame.transform.smoothscale(canvas.subsurface(r), (side_w, height))
+                                      for r in (left, right))
+            self._side_key = key
+        if oy > 0 or ox > 0:
+            self.window.fill((0, 0, 0))
+        if self._side_images is not None:
+            self.window.blit(self._side_images[0], (ox, oy))
+            self.window.blit(self._side_images[1], (right_x, oy))
+        else:
+            self.window.fill(SIDEBAR_BG, (ox, oy, side_w, height))
+            self.window.fill(SIDEBAR_BG, (right_x, oy, ww - right_x - ox, height))
+        dx, dy = self.scene.screen_offset() if source is self.screen else (0, 0)
+        frame = pygame.transform.smoothscale(source, (field_w, height))
+        self.window.set_clip(pygame.Rect(field_x, oy, field_w, height))   # rung màn không lấn sang bảng bên
+        self.window.blit(frame, (field_x + int(dx * scale), oy + int(dy * scale)))
+        self.window.set_clip(None)
         self._darken(self.window, darkness)
         self._presented = source, darkness
         pygame.display.flip()
