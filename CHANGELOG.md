@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.1.0-dev] – Vòng lặp tín hiệu & thanh trượt âm lượng
+- **Chu kỳ mới (New Game+)**: phá đảo xong, màn Chọn ải có nút "CHU KỲ 2" (chọn 2 lần để xác nhận). Ải về 1, sao
+  của chu kỳ mới tính lại từ 0; Sổ tay, kỷ lục, thống kê và Hỏa ngục được giữ. Mỗi chu kỳ địch +25% máu, bắn
+  nhanh hơn 12%. Save v4 (`cycle`, `cycle_complete`, `cycle_history`); save cũ đã phá đảo được mở chu kỳ 2 ngay.
+- Cốt truyện: đoạn kết thêm đuôi "tín hiệu tàu mẹ lại vang lên"; từ chu kỳ 2, mở đầu ải 1 có thoại KX-17 nhận ra
+  mọi thứ đang lặp lại. Số chu kỳ hiện ở menu, màn Chọn ải, hội thoại, bảng bên và HUD.
+- Cài đặt: **Nhạc nền / Hiệu ứng thành thanh trượt** - bấm-kéo chuột, phím trái/phải ±5%, chụm tay rồi di ngang.
+- 5 test mới (`tests/test_cycle.py`, thanh trượt bằng tay), tổng 93.
+
 ## [2.1.0-dev] – Âm thanh
 - Viết lại `core/audio.py`: 25 hiệu ứng CC0 (Kenney, SRG774) thay cho 2 tiếng cũ; giới hạn số tiếng phát chồng và
   khoảng nghỉ tối thiểu cho từng tiếng; tiếng lặp nhiều có 3 cao độ ngẫu nhiên (RNG riêng, không làm lệch trận).

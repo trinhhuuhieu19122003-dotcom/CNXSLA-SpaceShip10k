@@ -75,6 +75,7 @@ class GameplayScene(Scene):
         self.world = World(mode=mode, rng=game.rng, preset=game.settings.difficulty, level=self.level)
         if self.level is not None:
             self.world.difficulty = self.level.difficulty
+            self.world.cycle = game.save.cycle
             self._apply_loadout(loadout or default_loadout(self.level_number))
         elif mode is GameMode.INFERNO:
             self.world.difficulty = 2.0
@@ -276,7 +277,8 @@ class GameplayScene(Scene):
         return 3 if lost == 0 else (2 if lost <= 1 else 1)
 
     def _finish(self) -> None:
-        from spaceship.scenes.cutscene import ENDING_SCRIPT, CutsceneScene
+        from spaceship.campaign import story
+        from spaceship.scenes.cutscene import ENDING_SCRIPT, CutsceneScene, make_script
         from spaceship.scenes.result import ResultScene
 
         self.finished = True
@@ -290,6 +292,7 @@ class GameplayScene(Scene):
         if self.level is None:
             return game.change_scene(ResultScene(game, self, result, new_record))
         stars = self.stars if victory else 0
+        cycle = game.save.cycle                                   # trước khi ghi (đoạn kết nói về chu kỳ vừa xong)
         if victory:
             game.save.record_level(self.level_number, stars, LEVEL_COUNT)
 
@@ -298,7 +301,8 @@ class GameplayScene(Scene):
                                loadout=self.loadout(), ending=ending)
 
         if victory and self.level_number == LEVEL_COUNT:          # phá đảo -> đoạn kết
-            game.change_scene(CutsceneScene(game, ENDING_SCRIPT, lambda: result_scene(ending=True),
+            script = list(ENDING_SCRIPT) + make_script(story.cycle_teaser(cycle))
+            game.change_scene(CutsceneScene(game, script, lambda: result_scene(ending=True),
                                             backdrop="ending", title="KẾT THÚC",
                                             music="ending"))
         else:

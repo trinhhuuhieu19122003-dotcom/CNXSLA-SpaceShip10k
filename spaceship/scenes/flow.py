@@ -26,8 +26,12 @@ def start_level(game, number: int, loadout: Optional[dict] = None) -> None:
 
     def intro():
         backdrop = "radar" if number == 1 else level.background
-        return CutsceneScene(game, story.INTROS[number], play, backdrop=backdrop,
-                             title=level.title, subtitle=story.ACTS[level.act])
+        cycle = game.save.cycle
+        script = list(story.INTROS[number])
+        if number == 1 and cycle > 1:
+            script = story.cycle_intro(cycle) + script
+        subtitle = story.ACTS[level.act] + (f" · {story.cycle_label(cycle)}" if cycle > 1 else "")
+        return CutsceneScene(game, script, play, backdrop=backdrop, title=level.title, subtitle=subtitle)
 
     _with_calibration(game, intro)
 

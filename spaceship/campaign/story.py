@@ -118,3 +118,25 @@ ENDING = [
     (KX, "Vậy thì từ giờ... tôi là tàu mẹ."),
     (ARIA, "...Đã ghi nhận, Chỉ huy."),
 ]
+
+# --- Vòng lặp tín hiệu (chu kỳ mới sau khi phá đảo) -----------------------------------------------
+#: Đuôi của đoạn kết: tín hiệu tàu mẹ lại vang lên -> mở ra chu kỳ tiếp theo.
+def cycle_teaser(cycle: int) -> list:
+    return [
+        (ARIA, "...Khoan. Có một tín hiệu mới vừa xuất hiện."),
+        (ARIA, "Mã định danh: tàu mẹ Hy Vọng. Lại là nó.", "glitch"),
+        (KX, f"Vòng lặp thứ {cycle + 1}... Được thôi. Chiến tiếp."),
+    ]
+
+
+#: Chèn trước đoạn mở đầu ải 1 từ chu kỳ 2 trở đi: KX-17 nhận ra mọi thứ đang lặp lại.
+def cycle_intro(cycle: int) -> list:
+    return [
+        (KX, "Tín hiệu này... mình đã nghe nó rồi."),
+        (ARIA, f"Nhật ký bay ghi nhận vòng lặp thứ {cycle}. Mọi thứ đang lặp lại, KX-17.", "glitch"),
+        (KX, "Lần này chúng mạnh hơn. Nhưng mình cũng nhớ đường hơn."),
+    ]
+
+
+def cycle_label(cycle: int) -> str:
+    return f"CHU KỲ {cycle}" if cycle > 1 else ""

@@ -53,6 +53,8 @@ class World:
     flash: int = 0
     banner: str = ""
     banner_ticks: int = 0
+    #: chu kỳ Vượt ải (Vòng lặp tín hiệu); chế độ khác luôn 1
+    cycle: int = 1
     radio: List[RadioLine] = field(default_factory=list)
     #: âm thanh cần phát trong tick này (scene sẽ phát rồi xóa)
     sounds: List[str] = field(default_factory=list)
@@ -64,11 +66,11 @@ class World:
     # --- Độ khó ----------------------------------------------------------------------------
     @property
     def hp_mult(self) -> float:
-        return self.difficulty * config.DIFFICULTY_HP[self.preset]
+        return self.difficulty * config.DIFFICULTY_HP[self.preset] * (1 + config.CYCLE_HP_STEP * (self.cycle - 1))
 
     @property
     def fire_mult(self) -> float:
-        return config.DIFFICULTY_FIRE[self.preset]
+        return config.DIFFICULTY_FIRE[self.preset] * (1 + config.CYCLE_FIRE_STEP * (self.cycle - 1))
 
     @property
     def drop_mult(self) -> float:

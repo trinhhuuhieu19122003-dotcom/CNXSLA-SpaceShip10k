@@ -175,6 +175,12 @@ class MenuScene(Scene):
             offset = round(4 * math.sin(self.lock_feedback * 1.5) * self.lock_feedback / LOCK_FEEDBACK_TICKS) if locked else 0
             x = rect.x + 20 + offset
             color = LOCKED if locked else (ACCENT if selected else TEXT)
+            if action is GameMode.CAMPAIGN:
+                save = self.game.save
+                if save.cycle_complete:
+                    description = f"Đã phá đảo · mở được chu kỳ {save.cycle + 1}"
+                elif save.cycle > 1:
+                    description = f"10 ải · 3 hồi · chu kỳ {save.cycle}"
             if action == "quit" and self.quit_armed:
                 text, description, color = "THOÁT?", "Chọn lần nữa để thoát (tự hủy sau 3 giây)", DANGER
             label = a.text(text, 25, color, role="ui")

@@ -88,7 +88,8 @@ def draw_status_panel(surface: pygame.Surface, assets, rect: pygame.Rect, world,
     if world.level is not None:
         from spaceship.campaign.story import ACTS
 
-        col.label(ACTS.get(world.level.act, "").upper())
+        act = ACTS.get(world.level.act, "").upper()
+        col.label(f"{act} · CHU KỲ {world.cycle}" if world.cycle > 1 else act)
         for line in wrap_text(assets, world.level.title, 17, col.width, role="ui")[:2]:
             col.value(line, 17)
     else:

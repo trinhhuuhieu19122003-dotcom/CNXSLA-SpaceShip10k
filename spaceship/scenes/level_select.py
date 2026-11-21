@@ -1,4 +1,4 @@
-"""Chọn ải: 10 ải chia 3 hồi, sao đã đạt, ải bị khóa, chọn độ khó."""
+"""Chọn ải: 10 ải chia 3 hồi, sao đã đạt, ải bị khóa, chọn độ khó, bắt đầu chu kỳ mới sau khi phá đảo."""
 from __future__ import annotations
 
 import pygame
@@ -11,7 +11,7 @@ from spaceship.core.scene import Scene
 from spaceship.ui.menu_list import MenuList
 from spaceship.ui.widgets import (
     ACCENT, CORNER, DANGER, LOCKED, MUTED, PANEL_FILL, SECONDARY, SELECTED_FILL, TEXT,
-    Button, blit_center, draw_lock, draw_panel, draw_star, wrap_text,
+    Button, blit_center, draw_lock, draw_panel, draw_star, fit_text, wrap_text,
 )
 
 CARD_W, CARD_H, GAP = 140, 150, 12
@@ -19,6 +19,7 @@ GRID_X = (WIDTH - (CARD_W * 5 + GAP * 4)) // 2
 GRID_Y = 150
 PANEL = pygame.Rect(14, 14, WIDTH - 28, 633)
 LOCKED_FILL = (10, 15, 23, 240)
+CONFIRM_TICKS = 240                    # nút CHU KỲ MỚI: chọn lần 2 trong 4 giây mới thực hiện
 
 
 def card_rect(index: int) -> pygame.Rect:
@@ -31,17 +32,38 @@ class LevelSelectScene(Scene):
 
     def __init__(self, game) -> None:
         super().__init__(game)
-        self.buttons = [
-            Button("", pygame.Rect(WIDTH // 2 - 260, 600, 250, 44), "difficulty", 18),
-            Button("VỀ MENU", pygame.Rect(WIDTH // 2 + 10, 600, 250, 44), "menu", 18),
-        ]
         self.cards = [card_rect(i) for i in range(LEVEL_COUNT)]
-        self.menu = MenuList(game, self.cards + [b.rect for b in self.buttons], self._activate)
+        self.confirm = 0
+        self._build_buttons()
+
+    def _build_buttons(self) -> None:
+        actions = ["difficulty", "menu"]
+        if self.game.save.cycle_complete:
+            actions.insert(1, "new_cycle")
+        w, gap = (250, 20) if len(actions) == 2 else (236, 12)
+        x = WIDTH // 2 - (w * len(actions) + gap * (len(actions) - 1)) // 2
+        self.buttons = [Button("", pygame.Rect(x + i * (w + gap), 600, w, 44), action, 18)
+                        for i, action in enumerate(actions)]
+        self.menu = MenuList(self.game, self.cards + [b.rect for b in self.buttons], self._activate)
         self._refresh()
 
     def _refresh(self) -> None:
         label = config.DIFFICULTY_LABELS[self.game.settings.difficulty]
-        self.buttons[0].text = f"ĐỘ KHÓ: {label}"
+        texts = {"difficulty": f"ĐỘ KHÓ: {label}", "menu": "VỀ MENU",
+                 "new_cycle": "CHẮC CHẮN? CHỌN LẦN NỮA" if self.confirm else f"CHU KỲ {self.game.save.cycle + 1}"}
+        for button in self.buttons:
+            button.text = texts[button.action]
+
+    def _new_cycle(self) -> None:
+        if not self.confirm:
+            self.confirm = CONFIRM_TICKS
+            self._refresh()
+            return
+        self.confirm = 0
+        if self.game.save.start_new_cycle():
+            self.game.audio.play("level_up")
+            self._build_buttons()
+            self.menu.select(0)
 
     def unlocked(self, number: int) -> bool:
         return number <= self.game.save.unlocked_level
@@ -66,6 +88,8 @@ class LevelSelectScene(Scene):
             self.game.settings.cycle_difficulty()
             self.game.settings.save()
             self._refresh()
+        elif self.buttons[index - LEVEL_COUNT].action == "new_cycle":
+            self._new_cycle()
         else:
             self._back()
 
@@ -84,14 +108,22 @@ class LevelSelectScene(Scene):
     def update(self, controls) -> None:
         self.game.starfield.update()
         self.menu.update(controls)
+        if self.confirm:
+            on_button = (self.menu.selected >= LEVEL_COUNT
+                         and self.buttons[self.menu.selected - LEVEL_COUNT].action == "new_cycle")
+            self.confirm = self.confirm - 1 if on_button else 0
+            if not self.confirm:
+                self._refresh()
 
     def draw(self, surface: pygame.Surface) -> None:
         a = self.game.assets
         surface.fill((0, 0, 0))
         self.game.starfield.draw(surface)
         draw_panel(surface, PANEL, header_height=109)
+        save = self.game.save
         blit_center(surface, a.text("CHẾ ĐỘ VƯỢT ẢI", 34, TEXT, role="display"), 20)
-        stars = a.text(f"{self.game.save.total_stars} / {LEVEL_COUNT * 3}", 18, ACCENT, role="label")
+        cycle = f"   ·   CHU KỲ {save.cycle}" if save.cycle > 1 else ""
+        stars = a.text(f"{save.total_stars} / {LEVEL_COUNT * 3}{cycle}", 18, ACCENT, role="label")
         star_rect = stars.get_rect(center=(WIDTH // 2 + 9, 79))
         surface.blit(stars, star_rect)
         draw_star(surface, (star_rect.x - 13, star_rect.centery), 8, True)
@@ -103,6 +135,10 @@ class LevelSelectScene(Scene):
             level = LEVELS[self.menu.selected]
             hint = level.hint if self.unlocked(level.number) else "Qua ải trước để mở khóa"
             blit_center(surface, a.text(hint, 16, SECONDARY, role="body"), 529)
+        elif self.buttons[self.menu.selected - LEVEL_COUNT].action == "new_cycle":
+            hint = (f"Vòng lặp tín hiệu: chơi lại từ ải 1, địch mạnh hơn (+{round(config.CYCLE_HP_STEP * 100)}% máu "
+                    "mỗi chu kỳ). Giữ nguyên Sổ tay, kỷ lục, Hỏa ngục.")
+            blit_center(surface, fit_text(a, hint, 15, ACCENT, PANEL.width - 40, role="body"), 529)
         criteria = "1 sao: qua ải · 2 sao: mất tối đa 1 mạng · 3 sao: không mất mạng nào"
         blit_center(surface, a.text(criteria, 14, MUTED, role="body"), 559)
         for i, button in enumerate(self.buttons, LEVEL_COUNT):

@@ -123,7 +123,9 @@ class ResultScene(Scene):
             surface.blit(val, (PANEL.right - 70 - val.get_width(), ry))
         y += len(rows) * 26 + 6
         if self.ending:
-            blit_center(surface, a.text("Đã mở khóa chế độ Hỏa ngục", 18, ACCENT, role="body"), y)
+            unlock = "Đã mở Hỏa ngục · " if self.game.save.cycle == 1 else ""
+            text = f"{unlock}Chu kỳ {self.game.save.cycle + 1} đã mở ở màn Chọn ải"
+            blit_center(surface, fit_text(a, text, 17, ACCENT, PANEL.width - 40, role="body"), y)
         elif self.new_record:
             record = a.text("KỶ LỤC MỚI!", 18, ACCENT, role="ui")
             rect = record.get_rect(midtop=(WIDTH // 2, y))

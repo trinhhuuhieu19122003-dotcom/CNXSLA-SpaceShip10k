@@ -78,7 +78,8 @@ def draw_hud(surface: pygame.Surface, assets, world: World, controls=None, direc
     p = world.player
     progress = director.progress_text if director is not None else ""
     if world.level is not None:
-        info = f"ĐIỂM: {world.score} | ẢI {world.level.number} - {progress}"
+        cycle = f"CK{world.cycle} · " if world.cycle > 1 else ""
+        info = f"ĐIỂM: {world.score} | {cycle}ẢI {world.level.number} - {progress}"
     else:
         info = f"ĐIỂM: {world.score} | THỜI GIAN: {format_time(world.survival_time)}"
         if progress:

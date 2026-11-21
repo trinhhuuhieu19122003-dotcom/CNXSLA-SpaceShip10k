@@ -147,3 +147,8 @@ HAND_LANDMARKER_URL = (
     "https://storage.googleapis.com/mediapipe-models/hand_landmarker/"
     "hand_landmarker/float16/latest/hand_landmarker.task"
 )
+
+# --- Vòng lặp tín hiệu (chu kỳ mới sau khi phá đảo) ---------------------------------------------
+#: mỗi chu kỳ sau: địch thêm 25% máu và bắn nhanh hơn 12% (chu kỳ 2 = x1.25 / x1.12, chu kỳ 3 = x1.5 / x1.24...)
+CYCLE_HP_STEP = 0.25
+CYCLE_FIRE_STEP = 0.12

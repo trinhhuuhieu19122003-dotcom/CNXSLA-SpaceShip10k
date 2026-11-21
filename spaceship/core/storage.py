@@ -20,7 +20,7 @@ from spaceship.config import PROJECT_DIR, GameMode
 
 log = logging.getLogger(__name__)
 
-SAVE_VERSION = 3
+SAVE_VERSION = 4
 APP_DIR_NAME = "SpaceShip10k"
 
 
@@ -66,6 +66,11 @@ class SaveData:
     level_stars: Dict[int, int] = field(default_factory=dict)
     campaign_cleared: bool = False
     seen_enemies: set[str] = field(default_factory=set)
+    #: Vòng lặp tín hiệu: chu kỳ đang chơi (1 = lần đầu), chu kỳ này đã qua ải cuối chưa,
+    #: tổng sao từng chu kỳ đã phá đảo. Sổ tay, kỷ lục, thống kê, Hỏa ngục KHÔNG bị đặt lại.
+    cycle: int = 1
+    cycle_complete: bool = False
+    cycle_history: Dict[int, int] = field(default_factory=dict)
 
     def mark_seen(self, key: str) -> bool:
         """Lưu mục Sổ tay mới; các lần gặp tiếp theo không ghi file."""
@@ -81,7 +86,20 @@ class SaveData:
         self.unlocked_level = max(self.unlocked_level, min(last_level, number + 1))
         if number >= last_level:
             self.campaign_cleared = True
+            self.cycle_complete = True
+            self.cycle_history[self.cycle] = max(self.total_stars, self.cycle_history.get(self.cycle, 0))
         self.save()
+
+    def start_new_cycle(self) -> bool:
+        """Bắt đầu chu kỳ mới sau khi phá đảo: ải về 1, sao của chu kỳ mới tính lại từ 0."""
+        if not self.cycle_complete:
+            return False
+        self.cycle += 1
+        self.cycle_complete = False
+        self.unlocked_level = 1
+        self.level_stars = {}
+        self.save()
+        return True
 
     @property
     def total_stars(self) -> int:
@@ -113,6 +131,9 @@ class SaveData:
                 "level_stars": {str(k): v for k, v in sorted(self.level_stars.items())},
                 "cleared": self.campaign_cleared,
                 "seen_enemies": sorted(self.seen_enemies),
+                "cycle": self.cycle,
+                "cycle_complete": self.cycle_complete,
+                "cycle_history": {str(k): v for k, v in sorted(self.cycle_history.items())},
             },
         }
 
@@ -141,6 +162,12 @@ class SaveData:
                 data.unlocked_level = max(1, int(campaign.get("unlocked_level", 1)))
                 data.level_stars = {int(k): int(v) for k, v in campaign.get("level_stars", {}).items()}
                 data.campaign_cleared = bool(campaign.get("cleared", False))
+                data.cycle = max(1, int(campaign.get("cycle", 1)))
+                # Save cũ (v3) đã phá đảo thì coi như xong chu kỳ 1, được mở chu kỳ 2
+                data.cycle_complete = bool(campaign.get("cycle_complete", data.campaign_cleared))
+                data.cycle_history = {int(k): int(v) for k, v in campaign.get("cycle_history", {}).items()}
+                if data.campaign_cleared and not data.cycle_history and data.cycle == 1:
+                    data.cycle_history = {1: data.total_stars}
                 seen = campaign.get("seen_enemies", [])
                 if isinstance(seen, list):
                     data.seen_enemies = {key for key in seen if isinstance(key, str)}
