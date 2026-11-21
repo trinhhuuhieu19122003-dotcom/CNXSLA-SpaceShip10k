@@ -65,11 +65,30 @@ RAGE_PER_HIT = 5
 MAX_WEAPON_LEVEL = 6
 MAX_BONUS_DAMAGE = 30
 
-WEAPON_BASE_DAMAGE = {"plasma": 6, "laser": 10, "homing": 4}
-PIERCING_LASER_DAMAGE = 15         # laser cấp 6 (tia xuyên thấu)
+WEAPON_BASE_DAMAGE = {"plasma": 6, "laser": 10, "homing": 7, "lightning": 7}
+WEAPON_NAMES = {"plasma": "PLASMA", "laser": "LASER", "homing": "HOMING", "lightning": "TIA SÉT"}
+PIERCING_LASER_DAMAGE = 9          # laser cấp 6 (tia xuyên thấu). Bản cũ 15 + cộng đủ bonus: hạ boss trong vài giây
+PIERCING_LASER_BONUS_SHARE = 0.5   # tia cấp 6 chỉ ăn một nửa sát thương cộng thêm
+PLASMA_SPLASH_RADIUS = 48          # plasma cấp 6: nổ lan
+PLASMA_SPLASH_SHARE = 0.5
+LIGHTNING_RANGE = 480              # tia sét tìm mục tiêu trong bán kính này (gần hết màn hình)
+LIGHTNING_CHAIN_RANGE = 150        # khoảng nhảy từ địch này sang địch khác
+LIGHTNING_CHAIN_DECAY = 0.85       # mỗi lần nhảy sát thương còn 85%
+LIGHTNING_DAMAGE_PER_LEVEL = 3     # sét không bắn nhiều tia hơn khi lên cấp, nên tăng sát thương
 DRONE_DAMAGE = 2
 DRONE_COOLDOWN_TICKS = 60
-NUKE_DAMAGE = 20
+
+# --- Kỹ năng Nộ (mỗi súng một kiểu, thay cho Nuke dùng chung) -------------------------
+SKILL_LASER_TICKS = 180            # Đại Pháo: tia khổng lồ 3 giây
+SKILL_LASER_DPS = 150
+SKILL_LASER_WIDTH = 90
+SKILL_PLASMA_DAMAGE = 45           # Vòng Plasma: nổ vòng quanh tàu, xóa đạn địch
+SKILL_PLASMA_RADIUS = 420
+SKILL_HOMING_MISSILES = 20         # Mưa Tên Lửa
+SKILL_HOMING_DAMAGE = 14
+SKILL_LIGHTNING_STRIKES = 3        # Bão Sét: đánh mọi địch trên màn 3 lần
+SKILL_LIGHTNING_DAMAGE = 16
+SKILL_NAMES = {"laser": "ĐẠI PHÁO", "plasma": "VÒNG PLASMA", "homing": "MƯA TÊN LỬA", "lightning": "BÃO SÉT"}
 
 # --- Kẻ địch -------------------------------------------------------------------
 KAMIKAZE_SPEED = 8                 # bản cũ: 15 px/tick, gần như không né được
@@ -83,6 +102,7 @@ HEAVY_COLLISION_DAMAGE = 30        # va vào boss / thiên thạch
 SCORE_ENEMY = 10
 SCORE_METEOR = 20
 SCORE_BOSS_PER_STAGE = 250         # bản cũ: boss chỉ +10 như lính thường
+SCORE_WRECK = 30
 
 # --- Vật phẩm -------------------------------------------------------------------
 HEAL_AMOUNT = {GameMode.CAMPAIGN: 30, GameMode.ENDLESS: 30, GameMode.INFERNO: 5}
@@ -90,11 +110,14 @@ SHIELD_TICKS = {GameMode.CAMPAIGN: 180, GameMode.ENDLESS: 180, GameMode.INFERNO:
 RANDOM_DROP_CHANCE = {GameMode.ENDLESS: 0.45, GameMode.INFERNO: 0.20}
 ITEM_PICKUP_RADIUS = 30
 
+# --- Độ khó (chọn ở màn Chọn ải) -----------------------------------------------
+DIFFICULTIES = ("easy", "normal", "hard")
+DIFFICULTY_LABELS = {"easy": "DỄ", "normal": "THƯỜNG", "hard": "KHÓ"}
+DIFFICULTY_HP = {"easy": 0.75, "normal": 1.0, "hard": 1.35}         # máu địch
+DIFFICULTY_FIRE = {"easy": 0.7, "normal": 1.0, "hard": 1.4}         # tốc độ bắn của địch
+DIFFICULTY_DROPS = {"easy": 1.3, "normal": 1.0, "hard": 0.7}        # tỉ lệ rơi đồ
+
 # --- Chế độ chơi ---------------------------------------------------------------
-CAMPAIGN_WAVES = {1: 5, 2: 7, 3: 10}
-CAMPAIGN_STAGES = 3
-STAGE_INTRO_TICKS = 60
-STAGE_CLEAR_TICKS = 180
 ENDLESS_BOSS_INTERVAL = 60.0       # giây (thật, nhờ bước cập nhật cố định)
 INFERNO_BOSS_INTERVAL = 45.0
 

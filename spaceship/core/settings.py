@@ -26,6 +26,12 @@ class Settings:
     auto_fire: bool = True
     sensitivity: str = "medium"
     hand_center: Optional[Tuple[float, float]] = None   # None = chưa hiệu chỉnh
+    difficulty: str = "normal"                           # easy | normal | hard
+
+    def cycle_difficulty(self) -> None:
+        order = config.DIFFICULTIES
+        i = order.index(self.difficulty) if self.difficulty in order else 1
+        self.difficulty = order[(i + 1) % len(order)]
 
     @property
     def center(self) -> Tuple[float, float]:
@@ -50,6 +56,8 @@ class Settings:
                 data.auto_fire = bool(raw.get("auto_fire", True))
                 if raw.get("sensitivity") in SENSITIVITY_ORDER:
                     data.sensitivity = raw["sensitivity"]
+                if raw.get("difficulty") in config.DIFFICULTIES:
+                    data.difficulty = raw["difficulty"]
                 center = raw.get("hand_center")
                 if isinstance(center, list) and len(center) == 2:
                     data.hand_center = (float(center[0]), float(center[1]))

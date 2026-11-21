@@ -28,10 +28,12 @@ class Assets:
     def _load_raw(self, name: str) -> Optional[pygame.Surface]:
         if name not in self._raw:
             path = self.images_dir / f"{name}.png"
+            if not path.exists() and (self.images_dir / f"{name}.jpg").exists():
+                path = self.images_dir / f"{name}.jpg"      # ảnh nền/chân dung lưu JPG cho nhẹ
             try:
                 surface = pygame.image.load(str(path))
                 if pygame.display.get_surface() is not None:
-                    surface = surface.convert_alpha()
+                    surface = surface.convert_alpha() if path.suffix == ".png" else surface.convert()
                 self._raw[name] = surface
             except (pygame.error, FileNotFoundError) as exc:
                 log.warning("Không nạp được ảnh %s (%s) - dùng hình vẽ thay thế", path, exc)
@@ -49,6 +51,10 @@ class Assets:
                 height = max(1, round(raw.get_height() * width / raw.get_width()))
                 self._scaled[key] = pygame.transform.smoothscale(raw, (int(width), height))
         return self._scaled[key]
+
+    def raw(self, name: str) -> Optional[pygame.Surface]:
+        """Ảnh gốc, không co giãn (ảnh nền cuộn, ảnh kết thúc)."""
+        return self._load_raw(name)
 
     def silhouette(self, name: str, width: int) -> Optional[pygame.Surface]:
         """Bóng trắng cùng hình dạng sprite (giữ kênh alpha) để làm hiệu ứng nháy khi trúng đạn."""

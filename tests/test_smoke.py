@@ -66,7 +66,7 @@ class SmokeTest(unittest.TestCase):
     def test_every_mode_runs_with_bosses(self):
         g = self.game
         for mode in GameMode:
-            play = self.go(GameplayScene(g, mode))
+            play = self.go(GameplayScene(g, mode, 3 if mode is GameMode.CAMPAIGN else None))
             w = play.world
             for t in range(60 * 130):
                 w.player.weapon, w.player.level, w.player.bonus_damage = "laser", 6, 30
@@ -81,6 +81,39 @@ class SmokeTest(unittest.TestCase):
             self.assertIsNone(w.outcome if mode.is_timed else None, mode)
             self.assertGreater(w.boss_kills, 0, mode)
             self.assertLess(len(w.enemy_bullets), 1500, mode)   # đạn được dọn, không rò rỉ
+
+    def test_bot_clears_whole_campaign(self):
+        """Bot "bất tử" chơi lần lượt 10 ải: phải qua hết, mở hết ải, xem đoạn kết, mở khóa Hỏa ngục."""
+        from spaceship.campaign.levels import LEVEL_COUNT
+        from spaceship.scenes.cutscene import CutsceneScene
+        g = self.game
+        loadout = None
+        for number in range(1, LEVEL_COUNT + 1):
+            play = self.go(GameplayScene(g, GameMode.CAMPAIGN, number, loadout))
+            w = play.world
+            for t in range(60 * 400):
+                p = w.player
+                p.hp, p.lives = p.max_hp, 3
+                p.weapon, p.level, p.bonus_damage = "laser", 6, 30
+                target = next(iter(w.bosses), None) or min(
+                    (e for e in w.enemies if e.y > 0), key=lambda e: abs(e.x - p.x), default=None)
+                g.scene.update(ControlState(target=(target.x if target else 400, 620), fire=True, nuke=True))
+                g._apply_pending_scene()
+                if t % 900 == 0:
+                    g.render()
+                if g.scene is not play:
+                    break
+            self.assertEqual(w.outcome, "victory", f"ải {number}")
+            loadout = play.loadout()
+            if number == LEVEL_COUNT:
+                self.assertIsInstance(g.scene, CutsceneScene)
+                g.scene.skip()
+                self.run_ticks(60)
+            self.assertIsInstance(g.scene, ResultScene)
+        self.assertTrue(g.save.campaign_cleared)
+        self.assertEqual(g.save.unlocked_level, LEVEL_COUNT)
+        self.assertGreaterEqual(loadout["drones"], 2)
+        self.assertTrue(loadout["burn"])
 
     def test_defeat_leads_to_result_and_saves(self):
         g = self.game

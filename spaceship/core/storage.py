@@ -20,7 +20,7 @@ from spaceship.config import PROJECT_DIR, GameMode
 
 log = logging.getLogger(__name__)
 
-SAVE_VERSION = 2
+SAVE_VERSION = 3
 APP_DIR_NAME = "SpaceShip10k"
 
 
@@ -61,6 +61,22 @@ class SaveData:
     path: Path
     highscore: int = 0
     modes: Dict[GameMode, ModeRecord] = field(default_factory=lambda: {m: ModeRecord() for m in GameMode})
+    #: Vượt ải: ải cao nhất đã mở, số sao từng ải, đã xem kết thúc chưa (mở khóa Hỏa ngục)
+    unlocked_level: int = 1
+    level_stars: Dict[int, int] = field(default_factory=dict)
+    campaign_cleared: bool = False
+
+    def record_level(self, number: int, stars: int, last_level: int) -> None:
+        """Qua ải: lưu số sao (giữ số cao nhất), mở ải tiếp theo / đánh dấu phá đảo."""
+        self.level_stars[number] = max(stars, self.level_stars.get(number, 0))
+        self.unlocked_level = max(self.unlocked_level, min(last_level, number + 1))
+        if number >= last_level:
+            self.campaign_cleared = True
+        self.save()
+
+    @property
+    def total_stars(self) -> int:
+        return sum(self.level_stars.values())
 
     # --- Ghi nhận ván chơi --------------------------------------------------------
     def record(self, result: GameResult) -> bool:
@@ -83,6 +99,11 @@ class SaveData:
             "version": SAVE_VERSION,
             "highscore": self.highscore,
             "modes": {m.value: asdict(r) for m, r in self.modes.items()},
+            "campaign": {
+                "unlocked_level": self.unlocked_level,
+                "level_stars": {str(k): v for k, v in sorted(self.level_stars.items())},
+                "cleared": self.campaign_cleared,
+            },
         }
 
     def save(self) -> None:
@@ -106,6 +127,10 @@ class SaveData:
                     values = raw.get("modes", {}).get(mode.value, {})
                     known = {k: v for k, v in values.items() if k in ModeRecord.__dataclass_fields__}
                     data.modes[mode] = ModeRecord(**known)
+                campaign = raw.get("campaign", {})
+                data.unlocked_level = max(1, int(campaign.get("unlocked_level", 1)))
+                data.level_stars = {int(k): int(v) for k, v in campaign.get("level_stars", {}).items()}
+                data.campaign_cleared = bool(campaign.get("cleared", False))
             except (ValueError, TypeError, AttributeError) as exc:
                 backup = path.with_suffix(".bak")
                 log.error("File lưu bị hỏng (%s) - sao lưu sang %s và bắt đầu lại", exc, backup)

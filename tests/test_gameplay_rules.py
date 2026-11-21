@@ -9,7 +9,8 @@ from spaceship.entities.enemies import Boss, Enemy, Meteor
 from spaceship.entities.items import Item
 from spaceship.entities.projectiles import Bullet, EnemyBullet
 from spaceship.systems import combat, loot
-from spaceship.systems.spawning import CampaignDirector, SurvivalDirector, formation
+from spaceship.campaign.levels import LEVELS, get_level
+from spaceship.systems.spawning import LevelDirector, SurvivalDirector, formation
 from spaceship.systems.world import World
 
 
@@ -62,13 +63,16 @@ class KillRewardTest(unittest.TestCase):
         self.assertEqual((w.kills, w.boss_kills), (1, 1))
         self.assertEqual(w.defeated_bosses, [boss])
 
-    def test_nuke_kills_also_give_score(self):
+    def test_breeder_splits_and_wreck_drops_cargo(self):
+        from spaceship.entities.enemies import Breeder, Wreck
         w = world()
-        e = Enemy(0.1, rng=w.rng)
-        w.enemies.append(e)
-        combat.detonate_nuke(w, type("N", (), {"x": 400, "y": 350})())
+        b = Breeder(1.0, 400, 200, rng=w.rng)
+        wr = Wreck(1.0, 300, rng=w.rng, carries="upgrade_lightning")
+        w.enemies += [b, wr]
+        b.hp = wr.hp = 0
         combat.reap_dead(w)
-        self.assertEqual(w.score, config.SCORE_ENEMY)
+        self.assertEqual(len(w.enemies), 4)                     # 4 Ký Sinh nhỏ
+        self.assertIn("upgrade_lightning", [i.kind for i in w.items])
 
 
 class ProjectileTest(unittest.TestCase):
@@ -136,30 +140,42 @@ class LootTest(unittest.TestCase):
 
 
 class DirectorTest(unittest.TestCase):
-    def test_every_campaign_wave_has_a_formation(self):
-        for stage, waves in config.CAMPAIGN_WAVES.items():
+    def test_every_formation_exists(self):
+        for stage, waves in {1: 5, 2: 7, 3: 10}.items():
             for wave in range(1, waves + 2):
                 positions, _ = formation(stage, wave)
                 self.assertTrue(positions, (stage, wave))
 
-    def test_campaign_flow_boss_reward_and_victory(self):
+    def _clear_level(self, number):
         w = world()
-        d = CampaignDirector()
-        for stage in (1, 2, 3):
-            self.assertEqual(w.stage, stage)
-            while not any(e.is_boss for e in w.enemies):
-                w.enemies[:] = [e for e in w.enemies if e.is_boss]   # "diệt sạch" quân mỗi wave
-                d.update(w)
-            boss = next(e for e in w.enemies if e.is_boss)
-            boss.hp = 0
-            combat.reap_dead(w)
-            w.enemies.clear()
+        w.level = get_level(number)
+        d = LevelDirector(w.level)
+        for _ in range(60 * 600):
             d.update(w)
-            if stage < 3:
-                self.assertIn(loot.BOSS_REWARDS[stage], [i.kind for i in w.items])
-                for _ in range(config.STAGE_CLEAR_TICKS + config.STAGE_INTRO_TICKS + 1):
-                    d.update(w)
-        self.assertEqual(w.outcome, "victory")
+            for e in [e for e in w.enemies if not e.is_boss]:     # "diệt sạch" quân mỗi tick
+                w.enemies.remove(e)
+            for boss in w.bosses:
+                boss.hp = 0
+            combat.reap_dead(w)
+            for item in w.items:
+                item.update(w.player)
+            combat.collect_items(w)
+            if w.outcome:
+                break
+        return w, d
+
+    def test_every_level_can_be_cleared(self):
+        for level in LEVELS:
+            w, d = self._clear_level(level.number)
+            self.assertEqual(w.outcome, "victory", level.title)
+            self.assertEqual(w.wave, len(level.waves), level.title)
+            self.assertEqual(w.boss_kills, 1 if level.boss else 0, level.title)
+
+    def test_boss_rewards_fly_to_player(self):
+        w, _ = self._clear_level(3)
+        self.assertEqual(w.player.drones, 1)                    # phần thưởng tự bay vào tàu
+        w, _ = self._clear_level(7)
+        self.assertTrue(w.player.burn_unlocked)
 
     def test_endless_spawns_boss_on_interval(self):
         w = world(GameMode.ENDLESS)
@@ -169,6 +185,15 @@ class DirectorTest(unittest.TestCase):
             d.update(w)
         self.assertEqual(len(w.bosses), 1)
         self.assertGreater(w.difficulty, 1.9)
+
+    def test_survival_reward_sequence(self):
+        w = world(GameMode.ENDLESS)
+        d = SurvivalDirector(GameMode.ENDLESS)
+        for expected in ("upgrade_drone", "upgrade_burn", "upgrade_drone"):
+            w.items.clear()
+            boss = Boss(1.0, kind="crab")
+            d.on_boss_defeated(w, boss)
+            self.assertIn(expected, [i.kind for i in w.items if i.magnet])
 
 
 if __name__ == "__main__":

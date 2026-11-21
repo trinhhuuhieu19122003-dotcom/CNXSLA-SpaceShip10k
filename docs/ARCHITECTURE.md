@@ -17,6 +17,7 @@ Ví dụ dễ hình dung: game giống một **nhà hàng**.
 | Bàn ghế, thực đơn in sẵn | Nút, panel, HUD | `ui/` |
 | Kho, sổ sách | Ảnh, âm thanh, file lưu | `core/` |
 | Bảng giá treo tường | Mọi con số cân bằng | `config.py` |
+| Thực đơn theo mùa | Dữ liệu 10 ải + lời thoại | `campaign/` |
 
 Bản 1.0 dồn tất cả vào `main.py` (991 dòng, hàm `main()` ~700 dòng) — giống một người vừa
 nấu, vừa bưng, vừa thu tiền. Bản 2.0 tách mỗi việc cho một chỗ.
@@ -73,8 +74,8 @@ bước/giây (mô hình *fixed timestep*) nên tốc độ game giống nhau tr
 
 `GameplayScene.update()` chỉ là "bản nhạc", mỗi dòng gọi một hệ thống:
 
-1. Director (kịch bản chế độ) → ra quân / gọi boss / qua màn / thắng
-2. Người chơi di chuyển, hồi chiêu, bắn, drone, nuke
+1. Director (`LevelDirector` theo dữ liệu ải, hoặc `SurvivalDirector`) → ra quân / gọi boss / thoại / qua ải
+2. Người chơi di chuyển, hồi chiêu, bắn (`weapons.fire_player`), drone, kỹ năng Nộ (`weapons.trigger_skill`)
 3. Đạn người chơi bay → `combat.resolve_player_bullets`
 4. Đạn địch bay → `combat.resolve_enemy_bullets`
 5. `attacks.run_enemy_ai` (địch di chuyển + bắn, boss 3 pha)
@@ -89,7 +90,11 @@ bước/giây (mô hình *fixed timestep*) nên tốc độ game giống nhau tr
 |---|---|
 | Đổi sát thương, máu, điểm, thời gian khiên | `spaceship/config.py` |
 | Thêm kiểu bắn mới cho boss | `systems/attacks.py` – thêm một hàm `_stageN` |
-| Đổi đội hình wave | `systems/spawning.py` – `formation()` |
+| Sửa / thêm ải, đổi wave | `campaign/levels.py` – mỗi ải là dữ liệu: `wave(grunts(...), swarm(...), shields(...))` |
+| Sửa lời thoại | `campaign/story.py` |
+| Thêm súng / kỹ năng Nộ | `systems/weapons.py` |
+| Thêm loại địch | `entities/enemies.py` (hình + di chuyển) + `systems/attacks.py` (cách bắn, khóa `ai`) |
+| Thêm boss | `BOSS_SPECS` trong `entities/enemies.py` + hàm chiêu trong `systems/attacks.py` |
 | Đổi tỉ lệ rơi đồ | `systems/loot.py` |
 | Thêm loại vật phẩm | `entities/items.py` (hình) + `systems/combat.collect_items` (tác dụng) |
 | Thêm cử chỉ tay | `input/gestures.classify` + `input/controls.ControlHub.poll` |
@@ -112,5 +117,6 @@ bước/giây (mô hình *fixed timestep*) nên tốc độ game giống nhau tr
 
 - `test_gestures.py` – nhận dạng cử chỉ (kể cả tay xoay ngang), lọc nhiễu, chống nháy cử chỉ
 - `test_storage.py` – cộng dồn thống kê, file hỏng được sao lưu, nhập dữ liệu bản cũ
-- `test_gameplay_rules.py` – khiên boss, mạng sống, thiêu đốt, đạn rò rỉ, drone, nâng cấp, rơi đồ, kịch bản 3 stage
-- `test_smoke.py` – chạy thật mọi scene + "bot" tự chơi cả 3 chế độ
+- `test_gameplay_rules.py` – khiên boss, mạng sống, thiêu đốt, đạn rò rỉ, drone, nâng cấp, rơi đồ, cả 10 ải qua được, phần thưởng boss
+- `test_hand_controls.py` – chụm ngón, nắm tay, tự bắn, hiệu chỉnh, tự tạm dừng khi bỏ tay (dùng `FakeTracker` thay webcam)
+- `test_smoke.py` – chạy thật mọi scene + "bot" tự chơi hết 10 ải tới đoạn kết, Vô tận, Hỏa ngục

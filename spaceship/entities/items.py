@@ -34,19 +34,27 @@ WEAPON_ITEMS = {"upgrade_plasma": "plasma", "upgrade_laser": "laser",
 class Item:
     SPEED = 3
 
-    def __init__(self, x, y, kind: str) -> None:
+    def __init__(self, x, y, kind: str, magnet: bool = False) -> None:
         if kind not in ITEM_STYLES:
             raise ValueError(f"Vật phẩm không hợp lệ: {kind}")
         self.x, self.y, self.kind = x, y, kind
+        self.magnet = magnet          # phần thưởng boss: tự bay vào tàu, không bao giờ rơi mất
         self.age = 0
 
     @property
     def on_screen(self) -> bool:
-        return self.y <= HEIGHT + 20
+        return self.magnet or self.y <= HEIGHT + 20
 
-    def update(self) -> None:
-        self.y += self.SPEED
+    def update(self, player=None) -> None:
         self.age += 1
+        if self.magnet and player is not None and self.age > 30:   # lơ lửng nửa giây cho người chơi thấy
+            dx, dy = player.x - self.x, player.y - self.y
+            dist = math.hypot(dx, dy) or 1.0
+            speed = min(dist, 4 + self.age * 0.15)
+            self.x += dx / dist * speed
+            self.y += dy / dist * speed
+        elif not self.magnet:
+            self.y += self.SPEED
 
     def warns(self, current_weapon: str) -> bool:
         """Ăn vào có làm mất cấp súng hiện tại không."""

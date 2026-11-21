@@ -1,14 +1,27 @@
-"""Kẻ địch: lính thường (có thể là kamikaze), thiên thạch, boss.
+"""Kẻ địch của "Đàn Ký Sinh".
 
-Bản cũ dồn cả 4 loại (kể cả "asteroid" không bao giờ được tạo ra) vào một
-lớp ``Enemy`` với hàng loạt cờ ``is_...``. Ở đây mỗi loại một lớp, dùng chung
-giao diện: ``x, y, radius, hp, max_hp, shield_hp, update(), draw()``.
+Mỗi loại một lớp, dùng chung giao diện: ``x, y, radius, hp, max_hp, shield_hp,
+update(player), draw(surface, assets)``. Cách bắn của từng loại nằm ở
+``systems/attacks.py`` (khóa ``ai``), để file này chỉ lo hình dạng + di chuyển.
+
+| Lớp | Tên trong game | Đặc điểm |
+|---|---|---|
+| Enemy | Lính thường | Bay vào đội hình; từ ải sau có thể là kamikaze |
+| Parasite | Ký Sinh | Nhỏ, nhanh, lượn sóng lao xuống, không bắn |
+| ShieldBug | Lính Khiên | Khiên phía trước chặn đạn bắn thẳng |
+| Breeder | Kẻ Đẻ Trứng | Đẻ Ký Sinh; chết thì vỡ ra thêm |
+| Turret | Pháo tháp | Đứng yên, vạch đỏ cảnh báo rồi bắn laser |
+| InfectedAlly | Tàu đồng minh bị nhiễm | Lượn nhanh, bắn đôi |
+| Meteor / Wreck | Thiên thạch / Xác tàu | Chướng ngại; xác tàu chặn cả đạn địch |
+| Boss | 6 loại boss | Thông số trong ``BOSS_SPECS`` |
 """
 from __future__ import annotations
 
 import itertools
 import math
 import random
+from dataclasses import dataclass
+from typing import Optional
 
 import pygame
 
@@ -18,12 +31,18 @@ from spaceship.config import NEON_GREEN, NEON_MAGENTA, NEON_RED, WIDTH
 _ids = itertools.count(1)
 
 ENEMY_WIDTH = 80
-BOSS_WIDTH = {1: 200, 2: 220, 3: 250}
 
 
 class EnemyBase:
     is_boss = False
     is_meteor = False
+    is_obstacle = False          # xác tàu: chặn đạn địch
+    front_shield = False         # Lính Khiên
+    ai: Optional[str] = None     # khóa trong systems/attacks.py
+    sprite: Optional[str] = None
+    sprite_width = ENEMY_WIDTH
+    score = config.SCORE_ENEMY
+    counts_as_kill = True        # tính vào "quái diệt"
 
     def __init__(self, hp: float, radius: int) -> None:
         self.id = next(_ids)
@@ -31,15 +50,45 @@ class EnemyBase:
         self.y: float = 0
         self.dx: float = 0
         self.radius = radius
+        self.rx = self.ry = radius   # vùng trúng đạn hình elip (boss bề ngang lớn)
         self.hp = self.max_hp = hp
         self.shield_hp = 0.0
         self.max_shield = 0.0
         self.burning = False
         self.hit_flash = 0          # > 0: vừa trúng đạn, vẽ nháy trắng
+        self.shoot_timer = 90
+        self.age = 0
 
     @property
     def dead(self) -> bool:
         return self.hp <= 0
+
+    def contains(self, x: float, y: float, margin: float = 0.0) -> bool:
+        dx = (x - self.x) / (self.rx + margin)
+        dy = (y - self.y) / (self.ry + margin)
+        return dx * dx + dy * dy < 1.0
+
+    def update(self, player=None) -> None:
+        self.age += 1
+
+    # --- Vẽ -----------------------------------------------------------------------------
+    def draw(self, surface: pygame.Surface, assets) -> None:
+        self._draw_sprite(surface, assets)
+        self._draw_hp_bar(surface, 30, self.radius + 10)
+
+    def _draw_sprite(self, surface, assets, angle: float = 0, add: bool = False) -> None:
+        sprite = assets.image(self.sprite, self.sprite_width) if self.sprite else None
+        if sprite is None:
+            r = self.radius
+            pts = [(self.x, self.y + r), (self.x + r, self.y), (self.x, self.y - r), (self.x - r, self.y)]
+            pygame.draw.polygon(surface, (40, 10, 20), pts)
+            pygame.draw.polygon(surface, NEON_RED, pts, 2)
+            return
+        if angle:
+            sprite = pygame.transform.rotate(sprite, angle)
+        surface.blit(sprite, sprite.get_rect(center=(int(self.x), int(self.y))),
+                     special_flags=pygame.BLEND_RGB_ADD if add else 0)
+        self._draw_hit_flash(surface, assets, self.sprite, self.sprite_width, angle)
 
     def _draw_hit_flash(self, surface, assets, name: str, width: int, angle: float = 0) -> None:
         if self.hit_flash <= 0:
@@ -53,31 +102,40 @@ class EnemyBase:
         surface.blit(white, white.get_rect(center=(int(self.x), int(self.y))))
 
     def _draw_hp_bar(self, surface, width: int, offset_y: float) -> None:
+        if self.hp >= self.max_hp:
+            return                                     # đầy máu thì khỏi vẽ cho đỡ rối
         x, y = self.x - width / 2, self.y - offset_y
         pygame.draw.rect(surface, NEON_RED, (x, y, width, 4))
         pygame.draw.rect(surface, NEON_GREEN, (x, y, width * max(0, self.hp) / self.max_hp, 4))
 
 
+# --- Lính thường ------------------------------------------------------------------------
 class Enemy(EnemyBase):
-    """Lính thường. Từ stage 2 có thể là kamikaze: lao vào người chơi khi còn ít máu."""
+    """Lính thường. Có thể là kamikaze: lao vào người chơi khi còn ít máu."""
 
-    def __init__(self, difficulty: float, stage: int = 1, rng=random) -> None:
-        super().__init__(hp=30 * difficulty * 2 ** (stage - 1), radius=15)
+    ai = "grunt"
+    sprite = "enemy"
+
+    def __init__(self, difficulty: float, stage: int = 1, rng=random, hp_scale: float = 1.0,
+                 kamikaze_chance: Optional[float] = None) -> None:
+        super().__init__(hp=30 * difficulty * 2 ** (min(stage, 3) - 1) * hp_scale, radius=15)
         self.x = rng.randint(30, WIDTH - 30)
         self.y = rng.randint(-100, -40)
         self.target_y = rng.randint(100, 250)
         self.reached_target = False
         self.shoot_timer = rng.randint(60, 120)
         self.kamikaze = False
+        chance = kamikaze_chance if kamikaze_chance is not None else (0.3 if stage >= 2 else 0.0)
         if stage >= 2:
-            self.dx = rng.choice([-2, -1.5, 1.5, 2]) * difficulty
-            self.kamikaze = rng.random() < 0.3
+            self.dx = rng.choice([-2, -1.5, 1.5, 2]) * min(difficulty, 2.0)
+        self.kamikaze = rng.random() < chance
 
     @property
     def enraged(self) -> bool:
         return self.kamikaze and self.hp < self.max_hp * 0.4
 
     def update(self, player=None) -> None:
+        self.age += 1
         if self.enraged and player is not None:
             ang = math.atan2(player.y - self.y, player.x - self.x)
             self.x += math.cos(ang) * config.KAMIKAZE_SPEED
@@ -92,73 +150,268 @@ class Enemy(EnemyBase):
                 self.dx *= -1
 
     def draw(self, surface: pygame.Surface, assets) -> None:
-        sprite = assets.image("enemy", ENEMY_WIDTH)
-        if sprite is not None:
-            flags = pygame.BLEND_RGB_ADD if self.enraged else 0
-            surface.blit(sprite, sprite.get_rect(center=(int(self.x), int(self.y))), special_flags=flags)
-            self._draw_hit_flash(surface, assets, "enemy", ENEMY_WIDTH)
-        else:
-            r = self.radius
-            pts = [(self.x, self.y - r), (self.x + r + 5, self.y), (self.x, self.y + r), (self.x - r - 5, self.y)]
-            pygame.draw.polygon(surface, (40, 10, 20), pts)
-            pygame.draw.polygon(surface, NEON_RED, pts, 2)
+        self._draw_sprite(surface, assets, add=self.enraged)
         self._draw_hp_bar(surface, 30, 25)
 
 
+# --- Ký Sinh ------------------------------------------------------------------------------
+class Parasite(EnemyBase):
+    sprite = "parasite"
+    sprite_width = 44
+    score = 5
+
+    def __init__(self, difficulty: float, x: float, y: float = -30, rng=random, small: bool = False) -> None:
+        super().__init__(hp=(8 if small else 14) * difficulty, radius=10 if small else 13)
+        self.base_x, self.x, self.y = x, x, y
+        self.vy = rng.uniform(2.6, 3.6)
+        self.amp = rng.uniform(40, 90)
+        self.phase = rng.uniform(0, math.pi * 2)
+        if small:
+            self.sprite_width = 30
+
+    def update(self, player=None) -> None:
+        self.age += 1
+        self.y += self.vy
+        self.x = self.base_x + math.sin(self.age * 0.06 + self.phase) * self.amp
+
+
+# --- Lính Khiên ---------------------------------------------------------------------------
+class ShieldBug(EnemyBase):
+    ai = "shield"
+    sprite = "shield_enemy"
+    sprite_width = 92
+    front_shield = True
+    score = 25
+
+    def __init__(self, difficulty: float, x: float, target_y: float, rng=random) -> None:
+        super().__init__(hp=70 * difficulty, radius=28)
+        self.rx, self.ry = 40, 26
+        self.x, self.y, self.target_y = x, -60, target_y
+        self.dx = rng.choice([-1.0, 1.0])
+        self.shoot_timer = rng.randint(70, 130)
+
+    def blocks(self, bullet) -> bool:
+        """Đạn bay thẳng lên vào phía trước (phía dưới con này) thì bị khiên chặn."""
+        return bullet.vy > 0 and bullet.y > self.y and abs(bullet.x - self.x) < 34
+
+    def update(self, player=None) -> None:
+        self.age += 1
+        if self.y < self.target_y:
+            self.y += 3
+            return
+        self.y += 0.25
+        self.x += self.dx
+        if self.x < 50 or self.x > WIDTH - 50:
+            self.dx *= -1
+
+
+# --- Kẻ Đẻ Trứng ---------------------------------------------------------------------------
+class Breeder(EnemyBase):
+    ai = "breeder"
+    sprite = "breeder"
+    sprite_width = 84
+    score = 30
+
+    def __init__(self, difficulty: float, x: float, target_y: float, rng=random) -> None:
+        super().__init__(hp=110 * difficulty, radius=32)
+        self.x, self.y, self.target_y = x, -70, target_y
+        self.dx = rng.choice([-0.6, 0.6])
+        self.shoot_timer = rng.randint(150, 220)       # = nhịp đẻ Ký Sinh
+        self.difficulty = difficulty
+
+    def update(self, player=None) -> None:
+        self.age += 1
+        if self.y < self.target_y:
+            self.y += 2
+            return
+        self.y += 0.15
+        self.x += self.dx
+        if self.x < 60 or self.x > WIDTH - 60:
+            self.dx *= -1
+
+    def offspring(self, rng):
+        """Chết thì vỡ ra 4 Ký Sinh nhỏ."""
+        return [Parasite(self.difficulty, self.x + rng.randint(-25, 25), self.y, rng=rng, small=True) for _ in range(4)]
+
+
+# --- Pháo tháp -------------------------------------------------------------------------------
+class Turret(EnemyBase):
+    ai = "turret"
+    sprite = "turret_base"
+    sprite_width = 80
+    score = 30
+    WARN_TICKS = 50
+
+    def __init__(self, difficulty: float, x: float, target_y: float, rng=random) -> None:
+        super().__init__(hp=90 * difficulty, radius=34)
+        self.x, self.y, self.target_y = x, -60, target_y
+        self.aim = 90.0              # độ (90 = chĩa thẳng xuống)
+        self.warning = 0             # > 0: đang hiện vạch cảnh báo, sắp bắn
+        self.shoot_timer = rng.randint(60, 120)
+
+    def update(self, player=None) -> None:
+        self.age += 1
+        if self.y < self.target_y:
+            self.y += 3
+        else:
+            self.y += 0.2
+        if player is not None and self.warning == 0:     # đang cảnh báo thì khóa hướng
+            want = math.degrees(math.atan2(player.y - self.y, player.x - self.x))
+            diff = (want - self.aim + 180) % 360 - 180
+            self.aim += max(-2.5, min(2.5, diff))
+
+    def draw(self, surface: pygame.Surface, assets) -> None:
+        if self.warning > 0:
+            rad = math.radians(self.aim)
+            end = (self.x + math.cos(rad) * 900, self.y + math.sin(rad) * 900)
+            k = 1 - self.warning / self.WARN_TICKS
+            pygame.draw.line(surface, (int(120 + 135 * k), 20, 20), (self.x, self.y), end, 1 + int(2 * k))
+        self._draw_sprite(surface, assets)
+        gun = assets.image("turret_gun", 10)
+        if gun is not None:
+            rotated = pygame.transform.rotate(gun, -(self.aim - 90))
+            surface.blit(rotated, rotated.get_rect(center=(int(self.x), int(self.y))))
+        self._draw_hp_bar(surface, 40, self.radius + 8)
+
+
+# --- Tàu đồng minh bị nhiễm -----------------------------------------------------------------
+class InfectedAlly(EnemyBase):
+    ai = "ally"
+    sprite = "infected_ally"
+    sprite_width = 90
+    score = 20
+
+    def __init__(self, difficulty: float, x: float, target_y: float, rng=random) -> None:
+        super().__init__(hp=45 * difficulty, radius=22)
+        self.rx, self.ry = 38, 20
+        self.base_x, self.x, self.y, self.target_y = x, x, -50, target_y
+        self.phase = rng.uniform(0, math.pi * 2)
+        self.shoot_timer = rng.randint(60, 110)
+
+    def update(self, player=None) -> None:
+        self.age += 1
+        if self.y < self.target_y:
+            self.y += 6
+        else:
+            self.y += 0.35
+        self.x = max(40, min(WIDTH - 40, self.base_x + math.sin(self.age * 0.035 + self.phase) * 150))
+
+
+# --- Chướng ngại -----------------------------------------------------------------------------
 class Meteor(EnemyBase):
     is_meteor = True
+    sprite = "meteor"
+    score = config.SCORE_METEOR
+    counts_as_kill = False
 
     def __init__(self, difficulty: float, rng=random) -> None:
         radius = rng.randint(30, 70)
         super().__init__(hp=150 * difficulty, radius=radius)
+        self.sprite_width = int(radius * 2.5)
         self.x = rng.randint(30, WIDTH - 30)
         self.y = rng.randint(-100, -40)
         self.speed = rng.uniform(3, 6)
         self.dx = rng.uniform(-2, 2)
         self.angle = 0.0
         self.spin = rng.uniform(-4, 4)
-        self.outline = [
-            (math.cos(math.pi * 2 * i / 6) * (radius + rng.uniform(-5, 5)),
-             math.sin(math.pi * 2 * i / 6) * (radius + rng.uniform(-5, 5)))
-            for i in range(6)
-        ]
 
     def update(self, player=None) -> None:
+        self.age += 1
         self.y += self.speed
         self.x += self.dx
         self.angle += self.spin
 
     def draw(self, surface: pygame.Surface, assets) -> None:
-        sprite = assets.image("meteor", int(self.radius * 2.5))
-        if sprite is not None:
-            rotated = pygame.transform.rotate(sprite, self.angle)
-            surface.blit(rotated, rotated.get_rect(center=(int(self.x), int(self.y))))
-            self._draw_hit_flash(surface, assets, "meteor", int(self.radius * 2.5), self.angle)
-        else:
-            c, s = math.cos(math.radians(self.angle)), math.sin(math.radians(self.angle))
-            pts = [(self.x + ox * c - oy * s, self.y + ox * s + oy * c) for ox, oy in self.outline]
-            pygame.draw.polygon(surface, (50, 40, 40), pts)
-            pygame.draw.polygon(surface, (150, 100, 50), pts, 2)
+        self._draw_sprite(surface, assets, angle=self.angle)
         self._draw_hp_bar(surface, 30, self.radius + 10)
+
+
+class Wreck(EnemyBase):
+    """Xác tàu trôi: núp sau nó để tránh đạn địch. Bắn nát được (cứng)."""
+
+    is_meteor = True              # va chạm nặng như thiên thạch
+    is_obstacle = True
+    score = config.SCORE_WRECK
+    counts_as_kill = False
+
+    def __init__(self, difficulty: float, x: float, rng=random, variant: int = 1, carries: Optional[str] = None) -> None:
+        big = variant == 1
+        super().__init__(hp=260 * difficulty, radius=50 if big else 42)
+        self.sprite = f"wreck_{variant}"
+        self.sprite_width = 200 if big else 110
+        self.rx, self.ry = (90, 40) if big else (46, 80)
+        self.x, self.y = x, -120
+        self.speed = rng.uniform(0.9, 1.3)
+        self.dx = rng.uniform(-0.3, 0.3)
+        self.carries = carries        # vật phẩm giấu trong xác tàu (vd. súng Tia Sét)
+
+    def update(self, player=None) -> None:
+        self.age += 1
+        self.y += self.speed
+        self.x += self.dx
+
+    def draw(self, surface: pygame.Surface, assets) -> None:
+        self._draw_sprite(surface, assets)
+        if self.carries and (self.age // 15) % 2 == 0:           # nhấp nháy: có đồ bên trong
+            pygame.draw.circle(surface, (255, 230, 60), (int(self.x), int(self.y)), 10, 2)
+        self._draw_hp_bar(surface, 50, self.ry + 8)
+
+
+# --- Boss --------------------------------------------------------------------------------
+@dataclass(frozen=True)
+class BossSpec:
+    title: str
+    sprite: str
+    width: int
+    hp: float
+    rx: int
+    ry: int
+    tier: int                 # nhân điểm thưởng
+    shield: float = 0.0       # tỉ lệ khiên ban đầu (so với máu)
+    hover_y: int = 150
+    rages: bool = False       # dưới 50% máu thì điên cuồng (bắn nhanh gấp đôi)
+
+
+BOSS_SPECS = {
+    "crab": BossSpec("KẺ NUỐT DRONE", "boss", 200, 600, 75, 45, 1),
+    "octopus": BossSpec("LÍNH GÁC TINH VÂN", "boss2", 220, 900, 80, 45, 2),
+    "spider": BossSpec("LÕI TINH VÂN", "boss3", 250, 1800, 95, 55, 3, shield=1 / 3, rages=True),
+    "nest": BossSpec("TỔ MẸ", "nest_mother", 270, 1300, 110, 60, 2, hover_y=140),
+    "cruiser": BossSpec("TÀU HỘ TỐNG", "escort_cruiser", 170, 1700, 70, 130, 3, hover_y=165),
+    "mothership": BossSpec("TÀU MẸ HY VỌNG", "mothership_boss", 460, 3200, 200, 80, 5, shield=1 / 4,
+                           hover_y=185, rages=True),
+}
+STAGE_KIND = {1: "crab", 2: "octopus", 3: "spider"}
 
 
 class Boss(EnemyBase):
     is_boss = True
+    counts_as_kill = False
 
-    def __init__(self, difficulty: float, stage: int = 1) -> None:
+    def __init__(self, difficulty: float, stage: int = 1, kind: Optional[str] = None) -> None:
         stage = max(1, min(3, stage))
-        hp = 600 * difficulty * {1: 1.0, 2: 1.5, 3: 3.0}[stage]
-        super().__init__(hp=hp, radius=60)
+        self.kind = kind or STAGE_KIND[stage]
+        self.spec = spec = BOSS_SPECS[self.kind]
+        super().__init__(hp=spec.hp * difficulty, radius=min(spec.rx, spec.ry) + 15)
+        self.rx, self.ry = spec.rx, spec.ry
         self.stage = stage
-        self.x, self.y = WIDTH // 2, -100
+        self.sprite, self.sprite_width = spec.sprite, spec.width
+        self.score = config.SCORE_BOSS_PER_STAGE * spec.tier
+        self.x, self.y = WIDTH // 2, -spec.ry - 40
         self.speed = 1.5
-        self.dx = 2.5
+        self.dx = 2.5 if self.kind != "mothership" else 1.2
         self.spiral_angle = 0
         self.shield_rotation = 0
         self.attack_cooldown = 60
         self.phase = 1
-        if stage >= 3:
-            self.max_shield = self.shield_hp = hp / 3
+        self.minion_timer = 0
+        self.difficulty = difficulty
+        if spec.shield:
+            self.max_shield = self.shield_hp = self.max_hp * spec.shield
+
+    @property
+    def title(self) -> str:
+        return self.spec.title
 
     @property
     def hp_ratio(self) -> float:
@@ -166,57 +419,54 @@ class Boss(EnemyBase):
 
     @property
     def raging(self) -> bool:
-        return self.stage >= 3 and self.hp_ratio < 0.5
+        return self.spec.rages and self.hp_ratio < 0.5
+
+    @property
+    def arrived(self) -> bool:
+        return self.y >= self.spec.hover_y
 
     def update(self, player=None) -> None:
-        if self.y < 150:
+        self.age += 1
+        if not self.arrived:
             self.y += self.speed
         else:
             self.x += self.dx * (2.0 if self.raging else 1.0)
-            if self.x < 100 or self.x > WIDTH - 100:
+            margin = max(100, self.spec.width // 2 - 40)
+            if self.x < margin or self.x > WIDTH - margin:
                 self.dx *= -1
+                self.x = max(margin, min(WIDTH - margin, self.x))
         self.shield_rotation += 5
 
     def draw(self, surface: pygame.Surface, assets) -> None:
         if self.shield_hp > 0:
             self._draw_shield(surface)
-        name = {1: "boss", 2: "boss2", 3: "boss3"}[self.stage]
-        sprite = assets.image(name, BOSS_WIDTH[self.stage])
-        if sprite is not None:
-            flash = self.raging and pygame.time.get_ticks() % 200 < 100
-            surface.blit(sprite, sprite.get_rect(center=(int(self.x), int(self.y))),
-                         special_flags=pygame.BLEND_RGB_ADD if flash else 0)
-            self._draw_hit_flash(surface, assets, name, BOSS_WIDTH[self.stage])
-        else:
+        if assets.image(self.sprite, self.sprite_width) is None:
             pygame.draw.circle(surface, NEON_MAGENTA, (int(self.x), int(self.y)), self.radius, 3)
-        pygame.draw.rect(surface, NEON_RED, (self.x - 40, self.y - 60, 80, 6))
-        pygame.draw.rect(surface, NEON_GREEN, (self.x - 40, self.y - 60, 80 * self.hp_ratio, 6))
-        if self.shield_hp > 0:
-            pygame.draw.rect(surface, (0, 50, 100), (self.x - 40, self.y - 52, 80, 4))
-            pygame.draw.rect(surface, (100, 200, 255),
-                             (self.x - 40, self.y - 52, 80 * self.shield_hp / max(1, self.max_shield), 4))
+            return
+        flash = self.raging and (self.age // 6) % 2 == 0
+        self._draw_sprite(surface, assets, add=flash)
 
     def _draw_shield(self, surface: pygame.Surface) -> None:
-        pulse = (math.sin(pygame.time.get_ticks() / 100.0) + 1) / 2
-        fill = (200, int(50 + 50 * pulse), 0, int(100 + 100 * pulse))
+        pulse = (math.sin(self.age / 6.0) + 1) / 2
+        fill = (200, int(50 + 50 * pulse), 0, int(70 + 70 * pulse))
         edge = (255, int(150 + 100 * pulse), 100, 255)
-        rad = self.radius + 20
+        rx, ry = self.rx + 20, self.ry + 20
         pts = []
         for i in range(24):
             ang = math.radians(i * 15 + self.shield_rotation)
-            r = rad if i % 2 == 0 else rad - 10
-            pts.append((math.cos(ang) * r + rad + 10, math.sin(ang) * r + rad + 10))
-        layer = pygame.Surface((rad * 2 + 20, rad * 2 + 20), pygame.SRCALPHA)
+            k = 1.0 if i % 2 == 0 else 0.9
+            pts.append((math.cos(ang) * rx * k + rx + 10, math.sin(ang) * ry * k + ry + 10))
+        layer = pygame.Surface((rx * 2 + 20, ry * 2 + 20), pygame.SRCALPHA)
         pygame.draw.polygon(layer, fill, pts)
         pygame.draw.polygon(layer, edge, pts, 3)
-        surface.blit(layer, (self.x - rad - 10, self.y - rad - 10))
+        surface.blit(layer, (self.x - rx - 10, self.y - ry - 10))
         if random.random() < 0.3:                      # tia điện chập chờn quanh khiên
-            for _ in range(4):
+            for _ in range(3):
                 start = math.radians(random.randint(0, 360))
                 end = start + math.radians(random.randint(20, 90))
                 arc = []
                 for step in range(6):
                     ang = start + (end - start) * step / 5
-                    r = random.randint(self.radius, rad - 5)
-                    arc.append((self.x + math.cos(ang) * r, self.y + math.sin(ang) * r))
+                    k = random.uniform(0.7, 0.95)
+                    arc.append((self.x + math.cos(ang) * rx * k, self.y + math.sin(ang) * ry * k))
                 pygame.draw.lines(surface, edge[:3], False, arc, 2)

@@ -14,7 +14,6 @@ from spaceship.config import (
     LASER_COLOR,
     NEON_CYAN,
     NEON_ORANGE,
-    NEON_RED,
     PLASMA_COLOR,
     WIDTH,
     YELLOW,
@@ -22,18 +21,19 @@ from spaceship.config import (
 from spaceship.entities.projectiles import Bullet
 from spaceship.ui import glow
 
-WEAPON_COLORS = {"plasma": PLASMA_COLOR, "laser": LASER_COLOR, "homing": HOMING_COLOR}
+LIGHTNING_COLOR = (255, 230, 60)
+WEAPON_COLORS = {"plasma": PLASMA_COLOR, "laser": LASER_COLOR, "homing": HOMING_COLOR, "lightning": LIGHTNING_COLOR}
 
 # Góc bắn (độ) / độ lệch ngang theo cấp vũ khí 1..6
 PLASMA_ANGLES = {1: [90], 2: [85, 95], 3: [75, 90, 105], 4: [60, 80, 100, 120],
                  5: [50, 70, 90, 110, 130], 6: [30, 54, 78, 102, 126, 150]}
 LASER_OFFSETS = {1: [0], 2: [-15, 15], 3: [-20, 0, 20], 4: [-30, -10, 10, 30], 5: [-40, -20, 0, 20, 40]}
 HOMING_ANGLES = {1: [90], 2: [80, 100], 3: [70, 90, 110], 4: [60, 80, 100, 120],
-                 5: [50, 70, 90, 110, 130], 6: [0, 72, 144, 216, 288]}
+                 5: [50, 70, 90, 110, 130], 6: [0, 51, 103, 154, 206, 257, 309]}   # cấp 6: 7 tên lửa xoắn ốc
 
 SHIP_WIDTH = 100
 DRONE_WIDTH = 54
-DRONE_OFFSET = (55, 15)
+DRONE_OFFSETS = ((55, 15), (-55, 15))      # drone 1 bên phải, drone 2 bên trái
 
 
 class Player:
@@ -51,7 +51,7 @@ class Player:
         self.invincible_timer = 0
         self.shield_timer = 0
         self.fire_cooldown = 0
-        self.has_drone = False
+        self.drones = 0                 # 0..2
         self.drone_cooldown = 0
         self.burn_unlocked = False
         self.focus = False              # đang né chậm (hiện điểm va chạm)
@@ -62,6 +62,10 @@ class Player:
     @property
     def color(self):
         return WEAPON_COLORS[self.weapon]
+
+    @property
+    def has_drone(self) -> bool:
+        return self.drones > 0
 
     @property
     def shield_active(self) -> bool:
@@ -109,7 +113,7 @@ class Player:
 
     def fire(self, bullets: List[Bullet]) -> bool:
         """Bắn theo vũ khí hiện tại. Trả về True nếu thực sự bắn (để phát âm thanh)."""
-        if self.fire_cooldown > 0:
+        if self.fire_cooldown > 0 or self.weapon == "lightning":     # Tia Sét do systems/weapons.py bắn
             return False
         lvl = min(self.level, config.MAX_WEAPON_LEVEL)
         x, y = self.x, self.y - 20
@@ -127,13 +131,14 @@ class Player:
                     angle = 90 - off / 3 if lvl == 5 else 90
                     bullets.append(Bullet(x + off, y, "laser", angle=angle, level=lvl))
         else:
-            self.fire_cooldown = max(12, 25 - lvl * 2)
+            self.fire_cooldown = max(10, 22 - lvl * 2)
             bullets.extend(Bullet(x, y, "homing", angle=a, level=lvl) for a in HOMING_ANGLES[lvl])
         return True
 
     def fire_drone(self, bullets: List[Bullet]) -> None:
-        if self.has_drone and self.drone_cooldown <= 0:
-            bullets.append(Bullet(self.x + DRONE_OFFSET[0], self.y + 5, "drone_laser"))
+        if self.drones and self.drone_cooldown <= 0:
+            for ox, _ in DRONE_OFFSETS[: self.drones]:
+                bullets.append(Bullet(self.x + ox, self.y + 5, "drone_laser"))
             self.drone_cooldown = config.DRONE_COOLDOWN_TICKS
 
     def apply_weapon_pickup(self, weapon: str) -> None:
@@ -162,7 +167,7 @@ class Player:
         if self.shield_active:
             self._draw_shield(surface)
         self._draw_ship(surface, assets)
-        if self.has_drone:
+        if self.drones:
             self._draw_drone(surface, assets)
         if self.focus:
             self._draw_hitbox(surface)
@@ -227,13 +232,13 @@ class Player:
             pygame.draw.polygon(surface, self.color, body, 3)
 
     def _draw_drone(self, surface: pygame.Surface, assets) -> None:
-        dx, dy = self.x + DRONE_OFFSET[0], self.y + DRONE_OFFSET[1]
-        sprite = assets.image("drone", DRONE_WIDTH)
-        if sprite is None:
-            pygame.draw.polygon(surface, (255, 0, 255), [(dx, dy - 10), (dx - 10, dy + 10), (dx + 10, dy + 10)])
-            return
-        surface.blit(sprite, sprite.get_rect(center=(int(dx), int(dy))))
-        flame = random.randint(5, 12)
-        pygame.draw.polygon(surface, NEON_ORANGE, [(dx - 3, dy + 15), (dx + 3, dy + 15), (dx, dy + 15 + flame)])
-        if self.drone_cooldown <= 0:
-            pygame.draw.circle(surface, NEON_RED, (int(dx), int(dy - 10)), 4)
+        sprite = assets.image("drone_ally", DRONE_WIDTH)
+        for ox, oy in DRONE_OFFSETS[: self.drones]:
+            dx, dy = self.x + ox, self.y + oy
+            glow.add(surface, glow.orb((0, 150, 200), 5, core=0.0), (dx, dy + 20))
+            if sprite is None:
+                pygame.draw.polygon(surface, NEON_CYAN, [(dx, dy - 10), (dx - 10, dy + 10), (dx + 10, dy + 10)])
+                continue
+            surface.blit(sprite, sprite.get_rect(center=(int(dx), int(dy))))
+            if self.drone_cooldown <= 10:                          # sắp bắn: đầu drone sáng lên
+                glow.add(surface, glow.orb(NEON_ORANGE, 4, core=0.6), (dx, dy - 16))

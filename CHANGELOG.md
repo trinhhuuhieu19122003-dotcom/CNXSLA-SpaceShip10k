@@ -1,5 +1,29 @@
 # Changelog
 
+## [2.1.0-dev] – Vũ khí, 10 ải, cốt truyện (giai đoạn 3–5)
+### Vũ khí
+- Thêm súng **Tia Sét** (nhảy dây chuyền, xuyên khiên Lính Khiên); rơi từ ải 4 (xác tàu của phi đội).
+- Mỗi súng một **kỹ năng Nộ** riêng thay cho Nuke dùng chung: Đại Pháo, Vòng Plasma, Mưa Tên Lửa, Bão Sét.
+- Cấp 6 tối thượng: Plasma nổ lan, Homing 7 tên lửa; **Laser cấp 6 giảm sức mạnh** (15 → 9, nửa sát thương cộng thêm).
+- Homing được tăng sức (4 → 7, bắn nhanh hơn) để không lép vế khi đánh boss. Kỹ năng Nộ không tự hồi Nộ.
+- **Drone thứ hai** (bay bên trái). Phần thưởng boss **tự bay vào tàu**, không rơi mất; có cả ở Vô tận/Hỏa ngục.
+- Giữ nguyên luật "ăn súng khác loại thì về cấp 1" (cố ý).
+
+### Màn chơi
+- Vượt ải từ 3 stage thành **10 ải / 3 hồi**, dữ liệu ải tách riêng (`campaign/levels.py`).
+- 6 loại địch mới: Ký Sinh, Lính Khiên (chặn đạn bắn thẳng), Kẻ Đẻ Trứng, Pháo tháp (vạch đỏ cảnh báo),
+  tàu đồng minh bị nhiễm, xác tàu (núp được).
+- Boss theo bảng thông số: Kẻ Nuốt Drone, Lõi Tinh vân, mini-boss Tổ Mẹ & Tàu Hộ Tống, boss cuối Tàu Mẹ (3 pha).
+  Thanh máu boss lớn trên đầu màn hình, có vạch chia pha.
+- Ảnh nền cuộn theo từng hồi, sương mù ở Tinh vân Đỏ.
+- Màn **Chọn ải**: sao 1–3, khóa/mở ải, **độ khó Dễ/Thường/Khó**; tiến độ lưu trong save.json.
+- Vô tận: càng lâu càng nhiều loại địch, boss đổi loại. Hỏa ngục **mở khóa khi phá đảo**.
+
+### Cốt truyện
+- Toàn bộ lời thoại ở `campaign/story.py`: hội thoại trước mỗi ải có **chân dung** KX-17 / ARIA / Chỉ huy,
+  thoại ngay trong trận (không dừng game), kết thúc u tối có ảnh riêng.
+- 19 ảnh mới (địch, boss, chân dung, nền, ảnh kết) do Codex tạo, đã thu nhỏ + nén; xóa watermark ở boss3.png.
+
 ## [2.1.0-dev] – Hình ảnh phát sáng (giai đoạn 2)
 - Đạn vẽ lại kiểu neon (cộng màu, quầng sáng cache sẵn): Plasma là quả cầu năng lượng có vệt mờ,
   Laser là vệt sáng, Laser cấp 6 là **một dải tia liền từ mũi tàu**, Homing có lửa đuôi + vệt khói.

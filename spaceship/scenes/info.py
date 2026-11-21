@@ -73,9 +73,9 @@ class HowToPlayScene(_InfoScene):
         mode_y = top + 265
         surface.blit(a.text("[ CHẾ ĐỘ CHƠI ]", 18, NEON_ORANGE), (left, mode_y))
         modes = [
-            ("VƯỢT ẢI", "3 stage, hạ Boss để qua màn.", NEON_CYAN),
+            ("VƯỢT ẢI", "10 ải, 3 hồi, có cốt truyện.", NEON_CYAN),
             ("VÔ TẬN", f"Sống sót. Boss mỗi {config.ENDLESS_BOSS_INTERVAL:.0f}s.", NEON_GREEN),
-            ("HỎA NGỤC", f"Mưa đạn, ít máu, Boss mỗi {config.INFERNO_BOSS_INTERVAL:.0f}s.", NEON_RED),
+            ("HỎA NGỤC", "Mở khóa khi phá đảo Vượt ải.", NEON_RED),
         ]
         for i, (name, desc, color) in enumerate(modes):
             y = mode_y + 32 + i * 27
@@ -89,19 +89,20 @@ class HowToPlayScene(_InfoScene):
         items = [
             ("heal", f"Hồi {heal} máu"),
             ("shield", f"Khiên bảo vệ {shield:.0f} giây"),
-            ("upgrade_plasma", f"Súng Plasma (DMG {dmg['plasma']})"),
-            ("upgrade_laser", f"Súng Laser (DMG {dmg['laser']})"),
-            ("upgrade_homing", f"Tên lửa đuổi (DMG {dmg['homing']})"),
+            ("upgrade_plasma", f"Plasma {dmg['plasma']} · tỏa rộng · Nộ: Vòng Plasma"),
+            ("upgrade_laser", f"Laser {dmg['laser']} · diệt boss · Nộ: Đại Pháo"),
+            ("upgrade_homing", f"Homing {dmg['homing']} · tự đuổi · Nộ: Mưa Tên Lửa"),
+            ("upgrade_lightning", f"Tia Sét {dmg['lightning']} · nhảy dây · Nộ: Bão Sét"),
             ("upgrade_universal", "Nâng cấp súng đang dùng"),
-            ("upgrade_drone", "Drone hỗ trợ (hạ Boss 1)"),
-            ("upgrade_burn", f"Thiêu đốt {config.BURN_DAMAGE_PER_SECOND} HP/s (hạ Boss 2)"),
+            ("upgrade_drone", "Drone (boss ải 3 · ải 9: drone 2)"),
+            ("upgrade_burn", f"Đạn cháy {config.BURN_DAMAGE_PER_SECOND} HP/s (boss ải 7)"),
         ]
         for i, (kind, desc) in enumerate(items):
-            y = top + 32 + i * 36
+            y = top + 32 + i * 34
             draw_item_icon(surface, a, kind, right + 12, y + 12, size=0.8)
-            surface.blit(a.text(desc, 15, WHITE, bold=False), (right + 35, y + 3))
+            surface.blit(a.text(desc, 13, WHITE, bold=False), (right + 32, y + 4))
         note = "Nhặt cùng loại súng: lên cấp (tối đa 6) · Khác loại: đổi súng"
-        surface.blit(a.text(note, 13, HOMING_COLOR, bold=False), (right, top + 32 + len(items) * 36 + 6))
+        surface.blit(a.text(note, 13, HOMING_COLOR, bold=False), (right, top + 32 + len(items) * 34 + 6))
 
 
 class AchievementsScene(_InfoScene):

@@ -30,7 +30,11 @@ class MenuScene(Scene):
     def _layout(self) -> None:
         entries = [("CÁC CHẾ ĐỘ CHƠI", (100, 150, 255), "toggle", True)]
         if self.show_modes:
-            entries += [(f"CHẾ ĐỘ {m.label}", MODE_COLORS[m], f"mode:{m.value}", False) for m in GameMode]
+            for m in GameMode:
+                if m is GameMode.INFERNO and not self.game.save.campaign_cleared:
+                    entries.append(("HỎA NGỤC · KHÓA", (90, 90, 100), "locked", False))
+                else:
+                    entries.append((f"CHẾ ĐỘ {m.label}", MODE_COLORS[m], f"mode:{m.value}", False))
         entries += [
             ("THÀNH TỰU", (255, 0, 255), "achievements", True),
             ("HƯỚNG DẪN CHƠI", (0, 255, 0), "how_to_play", True),
@@ -75,24 +79,21 @@ class MenuScene(Scene):
             self.game.change_scene(OptionsScene(self.game))
         elif action == "quit":
             self.game.quit()
+        elif action == "locked":
+            return
         elif action.startswith("mode:"):
             self._start(GameMode(action.split(":", 1)[1]))
 
     def _start(self, mode: GameMode) -> None:
-        from spaceship.scenes.cutscene import CutsceneScene, INTRO_SCRIPT
-        from spaceship.scenes.gameplay import GameplayScene
+        from spaceship.scenes.flow import start_survival
+        from spaceship.scenes.level_select import LevelSelectScene
 
-        from spaceship.scenes.calibration import CalibrationScene
-
-        game = self.game
         if mode is GameMode.CAMPAIGN:
-            def first():
-                return CutsceneScene(game, INTRO_SCRIPT, lambda: GameplayScene(game, mode))
+            self.game.change_scene(LevelSelectScene(self.game))
+        elif mode is GameMode.INFERNO and not self.game.save.campaign_cleared:
+            return                                   # Hỏa ngục mở khóa sau khi phá đảo
         else:
-            def first():
-                return GameplayScene(game, mode)
-        # Lần đầu chơi trong phiên có camera: hiệu chỉnh tư thế nghỉ của tay trước
-        game.change_scene(CalibrationScene(game, first) if game.needs_calibration() else first())
+            start_survival(self.game, mode)
 
     # --- Logic & vẽ ---------------------------------------------------------------------
     def update(self, controls) -> None:

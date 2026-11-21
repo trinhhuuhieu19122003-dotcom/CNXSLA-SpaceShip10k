@@ -1,0 +1,200 @@
+"""Dữ liệu 10 ải của chế độ Vượt ải (3 hồi).
+
+Mỗi ải = danh sách wave, mỗi wave = danh sách sự kiện ``(tick, hàm_sinh_địch)``.
+Wave sau chỉ bắt đầu khi đã diệt hết địch của wave trước. Muốn thêm/sửa ải:
+chỉ cần sửa dữ liệu ở đây, không đụng tới logic.
+
+| Ải | Tên | Điểm mới |
+|---|---|---|
+| 1 | Vành đai Mất Tín Hiệu | Làm quen |
+| 2 | Mưa Thiên Thạch | Thiên thạch, kamikaze |
+| 3 | Ổ Phục Kích | BOSS 1 -> Drone |
+| 4 | Bãi Xác Tàu | Ký Sinh, xác tàu (núp được), súng Tia Sét |
+| 5 | Tinh vân Đỏ | Sương mù, Lính Khiên |
+| 6 | Tổ Đàn | Kẻ Đẻ Trứng, mini-boss Tổ Mẹ |
+| 7 | Lõi Tinh vân | BOSS 2 -> Thiêu đốt |
+| 8 | Trạm Tiền Tiêu | Pháo tháp, tàu đồng minh bị nhiễm |
+| 9 | Hạm Đội Hộ Tống | Mini-boss Tàu Hộ Tống -> Drone thứ hai |
+| 10 | Tàu Mẹ | BOSS CUỐI |
+"""
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Callable, List, Optional, Tuple
+
+from spaceship.config import WIDTH
+from spaceship.entities.enemies import Breeder, Enemy, InfectedAlly, Meteor, Parasite, ShieldBug, Turret, Wreck
+from spaceship.systems.spawning import FORMATION_Y, formation
+
+Event = Tuple[int, Callable]
+Wave = List[Event]
+
+
+# --- "Ngôn ngữ" mô tả wave ---------------------------------------------------------------------
+def grunts(stage: int, wave: int, at: int = 0, kamikaze: float = 0.0, style: str = "single") -> List[Event]:
+    """Đội hình lính thường lấy từ bảng đội hình gốc của game (formation)."""
+    def spawn(world):
+        positions, dx = formation(stage, wave)
+        for px, py in positions:
+            e = Enemy(world.hp_mult, stage=stage, rng=world.rng, kamikaze_chance=kamikaze)
+            e.style = style
+            e.x = max(30, min(WIDTH - 30, WIDTH // 2 + px))
+            e.y = -150 + py * 1.5 - abs(px)
+            e.target_y = FORMATION_Y + py
+            e.dx = dx * world.rng.choice([-1, 1]) if dx else e.dx
+            world.enemies.append(e)
+    return [(at, spawn)]
+
+
+def swarm(count: int, at: int = 0, every: int = 10, side: Optional[str] = None) -> List[Event]:
+    """Bầy Ký Sinh lao xuống lần lượt (side: "left" | "right" | None = rải khắp)."""
+    events = []
+    for i in range(count):
+        def spawn(world, i=i):
+            if side == "left":
+                x = world.rng.randint(80, 300)
+            elif side == "right":
+                x = world.rng.randint(WIDTH - 300, WIDTH - 80)
+            else:
+                x = world.rng.randint(80, WIDTH - 80)
+            world.enemies.append(Parasite(world.hp_mult, x, rng=world.rng))
+        events.append((at + i * every, spawn))
+    return events
+
+
+def _placed(cls, xs, y: int, at: int = 0, every: int = 0) -> List[Event]:
+    return [(at + i * every, lambda world, x=x: world.enemies.append(cls(world.hp_mult, x, y, rng=world.rng)))
+            for i, x in enumerate(xs)]
+
+
+def shields(xs, y: int = 190, at: int = 0, every: int = 20) -> List[Event]:
+    return _placed(ShieldBug, xs, y, at, every)
+
+
+def breeders(xs, y: int = 160, at: int = 0, every: int = 40) -> List[Event]:
+    return _placed(Breeder, xs, y, at, every)
+
+
+def turrets(xs, y: int = 130, at: int = 0, every: int = 30) -> List[Event]:
+    return _placed(Turret, xs, y, at, every)
+
+
+def allies(count: int, at: int = 0, every: int = 40, y: int = 200) -> List[Event]:
+    xs = [int(WIDTH * (i + 1) / (count + 1)) for i in range(count)]
+    return _placed(InfectedAlly, xs, y, at, every)
+
+
+def meteors(count: int, at: int = 0, every: int = 30) -> List[Event]:
+    return [(at + i * every, lambda world: world.enemies.append(Meteor(world.hp_mult, rng=world.rng)))
+            for i in range(count)]
+
+
+def wreck(x: int, variant: int = 1, at: int = 0, carries: Optional[str] = None) -> List[Event]:
+    return [(at, lambda world: world.enemies.append(Wreck(world.hp_mult, x, rng=world.rng, variant=variant,
+                                                          carries=carries)))]
+
+
+def wave(*parts: List[Event]) -> Wave:
+    return sorted((e for part in parts for e in part), key=lambda e: e[0])
+
+
+# --- Định nghĩa ải -------------------------------------------------------------------------------
+@dataclass(frozen=True)
+class Level:
+    number: int
+    act: int
+    name: str
+    background: str
+    difficulty: float
+    waves: Tuple[Wave, ...]
+    boss: Optional[str] = None             # khóa trong BOSS_SPECS
+    reward: Optional[str] = None           # phần thưởng khi hạ boss (tự bay vào tàu)
+    meteor_rate: float = 0.0               # xác suất mỗi tick có thiên thạch bay ngang
+    wreck_every: int = 0                   # cứ N tick lại trôi xuống một xác tàu
+    fog: bool = False
+    hint: str = field(default="", compare=False)
+
+    @property
+    def title(self) -> str:
+        return f"ẢI {self.number} · {self.name}"
+
+
+LEVELS: Tuple[Level, ...] = (
+    # ===== HỒI I · LẠC LỐI =====
+    Level(1, 1, "VÀNH ĐAI MẤT TÍN HIỆU", "bg_act1", 1.0, (
+        wave(grunts(1, 1)),
+        wave(grunts(1, 2)),
+        wave(grunts(1, 3)),
+        wave(grunts(1, 4)),
+    ), hint="Làm quen điều khiển"),
+    Level(2, 1, "MƯA THIÊN THẠCH", "bg_act1", 1.05, (
+        wave(grunts(1, 5, kamikaze=0.2)),
+        wave(grunts(2, 1, kamikaze=0.25)),
+        wave(grunts(2, 3, kamikaze=0.25), meteors(2, at=60, every=90)),
+        wave(meteors(8, every=28), grunts(1, 2, at=120)),
+        wave(grunts(2, 4, kamikaze=0.3)),
+    ), meteor_rate=0.006, hint="Thiên thạch, kamikaze"),
+    Level(3, 1, "Ổ PHỤC KÍCH", "bg_act1", 1.1, (
+        wave(grunts(1, 5, kamikaze=0.2)),
+        wave(grunts(2, 2, kamikaze=0.3, style="pink")),
+    ), boss="crab", reward="upgrade_drone", hint="Boss: Kẻ Nuốt Drone"),
+
+    # ===== HỒI II · BÃI THA MA =====
+    Level(4, 2, "BÃI XÁC TÀU", "bg_act2", 1.2, (
+        wave(swarm(10, every=14), wreck(250, 1, at=30)),
+        wave(grunts(2, 1, kamikaze=0.2), swarm(6, at=90, every=16, side="left")),
+        wave(wreck(400, 1, carries="upgrade_lightning"), grunts(1, 3, at=60), swarm(8, at=200, every=12)),
+        wave(swarm(14, every=9, side="left"), swarm(14, every=9, side="right"), wreck(560, 2, at=40)),
+        wave(grunts(2, 4, kamikaze=0.25, style="pink"), swarm(8, at=150, every=12)),
+    ), wreck_every=520, hint="Ký Sinh, xác tàu, súng Tia Sét"),
+    Level(5, 2, "TINH VÂN ĐỎ", "bg_act2", 1.3, (
+        wave(shields([250, 550]), grunts(1, 2, at=60)),
+        wave(swarm(12, every=12), shields([400], at=80)),
+        wave(grunts(2, 3, kamikaze=0.2), shields([200, 600], at=120)),
+        wave(shields([160, 400, 640]), swarm(10, at=140, every=10)),
+        wave(grunts(2, 5, style="pink"), shields([300, 500], at=150)),
+    ), fog=True, hint="Sương mù, Lính Khiên"),
+    Level(6, 2, "TỔ ĐÀN", "bg_act2", 1.4, (
+        wave(breeders([280, 520]), swarm(8, at=60, every=14)),
+        wave(breeders([200, 400, 600]), shields([400], at=120)),
+        wave(grunts(2, 6, style="pink"), breeders([400], at=100), swarm(10, at=160, every=10)),
+    ), boss="nest", reward="upgrade_universal", hint="Mini-boss: Tổ Mẹ"),
+    Level(7, 2, "LÕI TINH VÂN", "bg_act2", 1.5, (
+        wave(grunts(3, 1, style="triple"), shields([250, 550], at=80)),
+        wave(breeders([250, 550]), grunts(2, 4, at=100, kamikaze=0.25)),
+    ), boss="spider", reward="upgrade_burn", hint="Boss: Lõi Tinh vân"),
+
+    # ===== HỒI III · TRỞ VỀ =====
+    Level(8, 3, "TRẠM TIỀN TIÊU", "bg_act3", 1.6, (
+        wave(turrets([200, 600]), grunts(2, 1, at=60)),
+        wave(allies(4)),
+        wave(turrets([150, 400, 650]), allies(2, at=120)),
+        wave(swarm(16, every=8), turrets([300, 500], at=60)),
+        wave(allies(6, every=30), shields([250, 550], at=120)),
+    ), hint="Pháo tháp, tàu đồng minh bị nhiễm"),
+    Level(9, 3, "HẠM ĐỘI HỘ TỐNG", "bg_act3", 1.7, (
+        wave(allies(5, every=30), turrets([200, 600], at=60)),
+        wave(grunts(3, 4, style="triple"), allies(3, at=120)),
+    ), boss="cruiser", reward="upgrade_drone", hint="Mini-boss: Tàu Hộ Tống"),
+    Level(10, 3, "TÀU MẸ", "bg_act3", 1.8, (
+        wave(turrets([150, 650]), allies(4, at=60)),
+        wave(breeders([250, 550]), shields([400], at=60), swarm(10, at=120, every=10)),
+    ), boss="mothership", hint="BOSS CUỐI"),
+)
+
+LEVEL_COUNT = len(LEVELS)
+
+
+def get_level(number: int) -> Level:
+    return LEVELS[number - 1]
+
+
+def default_loadout(number: int) -> dict:
+    """Trang bị khi vào thẳng một ải từ màn Chọn ải (đã "đi qua" các ải trước theo truyện)."""
+    return {
+        "weapon": "laser",
+        "level": min(4, 1 + (number - 1) // 2),
+        "bonus_damage": 0,
+        "drones": (1 if number > 3 else 0) + (1 if number > 9 else 0),
+        "burn": number > 7,
+    }

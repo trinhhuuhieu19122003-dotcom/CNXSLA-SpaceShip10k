@@ -3,14 +3,23 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import Any, List, Optional
 
+from spaceship import config
 from spaceship.config import GameMode
 from spaceship.entities.effects import DamageNumber, Flash, Particle, Shockwave, Spark
 from spaceship.entities.enemies import Boss, EnemyBase
 from spaceship.entities.items import Item
 from spaceship.entities.player import Player
-from spaceship.entities.projectiles import Bullet, EnemyBullet, NukeMissile
+from spaceship.entities.projectiles import Bullet, EnemyBullet
+
+
+@dataclass
+class RadioLine:
+    """Câu thoại hiện ở góc dưới màn hình ngay trong trận (không dừng game)."""
+    speaker: str
+    text: str
+    ticks: int
 
 
 @dataclass
@@ -21,10 +30,10 @@ class World:
     enemies: List[EnemyBase] = field(default_factory=list)
     bullets: List[Bullet] = field(default_factory=list)
     enemy_bullets: List[EnemyBullet] = field(default_factory=list)
-    nukes: List[NukeMissile] = field(default_factory=list)
     items: List[Item] = field(default_factory=list)
-    particles: List[Particle] = field(default_factory=list)
+    particles: List[Any] = field(default_factory=list)
     damage_numbers: List[DamageNumber] = field(default_factory=list)
+    skills: List[Any] = field(default_factory=list)       # kỹ năng Nộ đang diễn ra
 
     stage: int = 1
     wave: int = 0
@@ -33,15 +42,37 @@ class World:
     score: int = 0
     kills: int = 0
     boss_kills: int = 0
+    lives_lost: int = 0
+
+    #: độ khó người chơi chọn: "easy" | "normal" | "hard"
+    preset: str = "normal"
+    #: ải đang chơi (chế độ Vượt ải), xem campaign/levels.py
+    level: Any = None
 
     screen_shake: int = 0
     flash: int = 0
+    banner: str = ""
+    banner_ticks: int = 0
+    radio: List[RadioLine] = field(default_factory=list)
     #: âm thanh cần phát trong tick này (scene sẽ phát rồi xóa)
     sounds: List[str] = field(default_factory=list)
     #: boss vừa bị hạ, chờ kịch bản chế độ chơi xử lý (qua màn, thắng...)
     defeated_bosses: List[Boss] = field(default_factory=list)
     #: "victory" | "defeat" khi ván kết thúc
     outcome: Optional[str] = None
+
+    # --- Độ khó ----------------------------------------------------------------------------
+    @property
+    def hp_mult(self) -> float:
+        return self.difficulty * config.DIFFICULTY_HP[self.preset]
+
+    @property
+    def fire_mult(self) -> float:
+        return config.DIFFICULTY_FIRE[self.preset]
+
+    @property
+    def drop_mult(self) -> float:
+        return config.DIFFICULTY_DROPS[self.preset]
 
     # --- Tiện ích dùng chung ----------------------------------------------------------
     def play(self, sound: str) -> None:
@@ -67,9 +98,24 @@ class World:
     def shake(self, amount: int) -> None:
         self.screen_shake = max(self.screen_shake, amount)
 
-    def drop(self, x: float, y: float, kind: Optional[str]) -> None:
+    def drop(self, x: float, y: float, kind: Optional[str], magnet: bool = False) -> None:
         if kind:
-            self.items.append(Item(x, y, kind))
+            self.items.append(Item(x, y, kind, magnet=magnet))
+
+    def announce(self, text: str, seconds: float = 2.0) -> None:
+        """Chữ lớn giữa màn hình (vd. "NHẬN ĐƯỢC DRONE")."""
+        self.banner, self.banner_ticks = text, int(seconds * config.TICK_RATE)
+
+    def say(self, speaker: str, text: str, seconds: float = 4.0) -> None:
+        self.radio.append(RadioLine(speaker, text, int(seconds * config.TICK_RATE)))
+
+    def tick_messages(self) -> None:
+        if self.banner_ticks > 0:
+            self.banner_ticks -= 1
+        if self.radio:
+            self.radio[0].ticks -= 1
+            if self.radio[0].ticks <= 0:
+                self.radio.pop(0)
 
     @property
     def bosses(self) -> List[EnemyBase]:

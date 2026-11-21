@@ -1,4 +1,7 @@
-"""Đoạn hội thoại mở đầu chế độ Vượt ải (radar + chữ gõ máy + nhiễu tín hiệu).
+"""Đoạn hội thoại giữa các ải: chân dung người nói, chữ gõ máy, nhiễu sóng, radar.
+
+Phông nền (``backdrop``): ``"radar"`` (màn hình radar - mở đầu game), tên một ảnh
+nền hồi (``"bg_act2"``...) hoặc ``"ending"`` (ảnh kết thúc).
 
 Sửa lỗi bản cũ: bấm SPACE đặt ``fade_state = "OUT"`` — trạng thái không tồn tại
 (đúng phải là ``"FADE_OUT"``), nên phím tua không hoạt động. Ngoài ra mọi bộ
@@ -12,8 +15,10 @@ from typing import Callable, List, Optional
 
 import pygame
 
-from spaceship.config import GRAY, HEIGHT, TICK_RATE, WHITE, WIDTH
+from spaceship.campaign import story
+from spaceship.config import GRAY, HEIGHT, TICK_RATE, WHITE, WIDTH, YELLOW
 from spaceship.core.scene import Scene
+from spaceship.ui.hud import wrap_text
 
 
 @dataclass(frozen=True)
@@ -26,21 +31,30 @@ class Line:
     radar_contacts: bool = False
 
 
-INTRO_SCRIPT = (
-    Line("KX-17", "KX-17 gọi tàu mẹ... lặp lại...", 1.5),
-    Line("SYSTEM", "---tín hiệu--- mất --- kết nối---", 1.5, effect="glitch"),
-    Line("KX-17", "Chết tiệt... mất liên lạc hoàn toàn.", 1.5),
-    Line("SYSTEM", "Cảnh báo: Phát hiện nhiều mục tiêu.", 1.5, sound="radar", radar_contacts=True),
-    Line("KX-17", "...Bị lộ rồi.", 1),
-    Line("SYSTEM", "Kẻ địch đang tiếp cận.", 1),
-    Line("KX-17", "Không còn đường lui... chiến thôi.", 2),
-)
+def make_script(lines) -> List[Line]:
+    """Đổi lời thoại dạng (người nói, câu[, hiệu ứng]) trong story.py thành Line."""
+    script = []
+    for entry in lines:
+        speaker, text = entry[0], entry[1]
+        effect = entry[2] if len(entry) > 2 else None
+        delay = 1.0 + len(text) / 35                       # câu dài thì chờ lâu hơn cho kịp đọc
+        script.append(Line(speaker, text, delay,
+                           effect="glitch" if effect == "glitch" else None,
+                           sound="radar" if effect == "radar" else None,
+                           radar_contacts=effect == "radar"))
+    return script
 
-CHARS_PER_SECOND = 25
+
+INTRO_SCRIPT = tuple(make_script(story.INTROS[1]))
+ENDING_SCRIPT = tuple(make_script(story.ENDING))
+
+CHARS_PER_SECOND = 28
 FADE_STEP = 5
 GLITCH_CHARS = "!@#$%^&*()_+-=[]{}|;':,./<>?░▒▓█"
-RADAR_CENTER = (WIDTH // 2, HEIGHT // 2 - 100)
-RADAR_RADIUS = 150
+RADAR_CENTER = (WIDTH // 2, HEIGHT // 2 - 110)
+RADAR_RADIUS = 140
+BOX = pygame.Rect(40, HEIGHT - 210, WIDTH - 80, 160)
+PORTRAIT = 130
 
 
 class Typewriter:
@@ -72,18 +86,22 @@ class Typewriter:
 class CutsceneScene(Scene):
     music = "menu"
 
-    def __init__(self, game, script, next_scene: Callable[[], Scene]) -> None:
+    def __init__(self, game, script, next_scene: Callable[[], Scene], backdrop: str = "radar",
+                 title: str = "", subtitle: str = "") -> None:
         super().__init__(game)
-        self.script: List[Line] = list(script)
+        self.script: List[Line] = list(script) if script and isinstance(script[0], Line) else make_script(script)
         self.next_scene = next_scene
+        self.backdrop, self.title, self.subtitle = backdrop, title, subtitle
         self.index = 0
         self.typewriter = Typewriter(self.script[0].text)
         self.wait = 0
+        self.ticks = 0
         self.fade_alpha = 255
         self.fade = "in"                # in | playing | out
         self.radar_angle = 0.0
         self.radar_dots: List[List[float]] = []
         self.glitch = 0
+        self._announce_line()
 
     @property
     def line(self) -> Optional[Line]:
@@ -102,25 +120,32 @@ class CutsceneScene(Scene):
     def skip(self) -> None:
         self.fade = "out"
 
-    def next_line(self) -> None:
-        self.index += 1
-        self.wait = 0
+    def _announce_line(self) -> None:
         line = self.line
         if line is None:
-            self.fade = "out"
             return
-        self.typewriter = Typewriter(line.text)
         if line.sound:
             self.game.audio.play(line.sound)
         if line.effect == "glitch":
             self.game.audio.play("glitch")
         if line.radar_contacts:
             rng = self.game.rng
-            self.radar_dots = [[WIDTH // 2 - 150 + rng.randint(0, 300), HEIGHT // 2 - 200 - rng.randint(0, 200),
-                                rng.uniform(1.0, 2.5)] for _ in range(15)]
+            cx, cy = RADAR_CENTER
+            self.radar_dots = [[cx - 110 + rng.randint(0, 220), cy - 100 - rng.randint(0, 120), rng.uniform(0.6, 1.4)]
+                               for _ in range(15)]
+
+    def next_line(self) -> None:
+        self.index += 1
+        self.wait = 0
+        if self.line is None:
+            self.fade = "out"
+            return
+        self.typewriter = Typewriter(self.line.text)
+        self._announce_line()
 
     # --- Logic --------------------------------------------------------------------------
     def update(self, controls) -> None:
+        self.ticks += 1
         if self.fade == "in":
             self.fade_alpha = max(0, self.fade_alpha - FADE_STEP)
             if self.fade_alpha == 0:
@@ -149,14 +174,43 @@ class CutsceneScene(Scene):
 
     # --- Vẽ -----------------------------------------------------------------------------
     def draw(self, surface: pygame.Surface) -> None:
-        surface.fill((5, 10, 15))
-        self._draw_radar(surface)
+        a = self.game.assets
+        self._draw_backdrop(surface)
+        if self.title:
+            label = a.text(self.title, 30, YELLOW)
+            surface.blit(label, (WIDTH // 2 - label.get_width() // 2, 40))
+        if self.subtitle:
+            label = a.text(self.subtitle, 16, GRAY)
+            surface.blit(label, (WIDTH // 2 - label.get_width() // 2, 18))
         self._draw_dialog(surface)
-        surface.blit(self.game.assets.text("CLICK: TUA CÂU · SPACE/ESC: BỎ QUA", 14, GRAY), (10, 10))
+        surface.blit(a.text("CLICK: TUA CÂU · SPACE/ESC: BỎ QUA", 13, GRAY), (10, HEIGHT - 22))
         if self.fade_alpha > 0:
             veil = pygame.Surface((WIDTH, HEIGHT))
             veil.set_alpha(self.fade_alpha)
             surface.blit(veil, (0, 0))
+
+    def _draw_backdrop(self, surface: pygame.Surface) -> None:
+        if self.backdrop == "radar":
+            surface.fill((5, 10, 15))
+            self._draw_radar(surface)
+            return
+        image = self.game.assets.raw(self.backdrop)
+        surface.fill((0, 0, 0))
+        if image is None:
+            return
+        if self.backdrop == "ending":                       # ảnh kết thúc: căn giữa, từ từ phóng to
+            k = 1.0 + min(0.08, self.ticks / 6000)
+            w = int(WIDTH * k)
+            h = int(image.get_height() * w / image.get_width())
+            scaled = pygame.transform.smoothscale(image, (w, h))
+            surface.blit(scaled, scaled.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 60)))
+            return
+        y = int(self.ticks * 0.4) % image.get_height()      # ảnh nền hồi: cuộn chậm, tối đi
+        surface.blit(image, (0, y - image.get_height()))
+        surface.blit(image, (0, y))
+        veil = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        veil.fill((0, 0, 0, 90))
+        surface.blit(veil, (0, 0))
 
     def _draw_radar(self, surface: pygame.Surface) -> None:
         cx, cy = RADAR_CENTER
@@ -184,24 +238,37 @@ class CutsceneScene(Scene):
             pygame.draw.circle(surface, (255, 0, 0), (int(x), int(y)), 4)
 
     def _draw_dialog(self, surface: pygame.Surface) -> None:
-        box = pygame.Rect(WIDTH // 2 - 300, HEIGHT - 200, 600, 150)
-        pygame.draw.rect(surface, (10, 20, 20), box)
-        for i in range(0, box.height, 4):
-            pygame.draw.line(surface, (0, 50, 50), (box.x, box.y + i), (box.right, box.y + i), 1)
-        pygame.draw.rect(surface, (0, 255, 255), box, 2)
-        pygame.draw.line(surface, WHITE, box.topleft, (box.x + 20, box.y), 4)
-        pygame.draw.line(surface, WHITE, box.topleft, (box.x, box.y + 20), 4)
+        panel = pygame.Surface(BOX.size, pygame.SRCALPHA)
+        panel.fill((8, 16, 20, 225))
+        surface.blit(panel, BOX)
+        for i in range(0, BOX.height, 4):
+            pygame.draw.line(surface, (0, 40, 40), (BOX.x, BOX.y + i), (BOX.right, BOX.y + i), 1)
         line = self.line
+        color = story.SPEAKER_COLORS.get(line.speaker, WHITE) if line else (0, 255, 255)
+        pygame.draw.rect(surface, color, BOX, 2)
+        pygame.draw.line(surface, WHITE, BOX.topleft, (BOX.x + 20, BOX.y), 4)
+        pygame.draw.line(surface, WHITE, BOX.topleft, (BOX.x, BOX.y + 20), 4)
         if line is None:
             return
-        assets, rng = self.game.assets, self.game.rng
-        ally = line.speaker == "KX-17"
-        surface.blit(assets.text(line.speaker, 24, (0, 255, 255) if ally else (255, 50, 50)), (box.x + 20, box.y + 15))
-        text = self.typewriter.visible
-        if self.glitch > 0:
-            text = "".join(rng.choice(GLITCH_CHARS) if c != " " and rng.random() < 0.2 else c for c in text)
-            rx, ry = rng.randint(-3, 3), rng.randint(-3, 3)
-            surface.blit(assets.text(text, 20, (255, 0, 0)), (box.x + 20 + rx, box.y + 60 + ry))
-            surface.blit(assets.text(text, 20, (0, 255, 255)), (box.x + 20 - rx, box.y + 60 - ry))
-        else:
-            surface.blit(assets.text(text, 20, (0, 255, 0) if ally else (255, 100, 100)), (box.x + 20, box.y + 60))
+        a, rng = self.game.assets, self.game.rng
+        tx = BOX.x + 20
+        portrait = a.image(story.PORTRAITS[line.speaker], PORTRAIT) if line.speaker in story.PORTRAITS else None
+        if portrait is not None:
+            px, py = BOX.x + 14, BOX.y + 15
+            if line.effect == "glitch" and self.glitch:                       # chân dung cũng nhiễu
+                px += rng.randint(-4, 4)
+            surface.blit(portrait, (px, py))
+            pygame.draw.rect(surface, color, (BOX.x + 14, py, PORTRAIT, PORTRAIT), 1)
+            tx = BOX.x + PORTRAIT + 32
+        surface.blit(a.text(line.speaker, 22, color), (tx, BOX.y + 14))
+        width = BOX.right - tx - 20
+        rows = wrap_text(a, self.typewriter.visible, 19, width)
+        for i, row in enumerate(rows[:4]):
+            y = BOX.y + 50 + i * 25
+            if self.glitch > 0:
+                row = "".join(rng.choice(GLITCH_CHARS) if c != " " and rng.random() < 0.2 else c for c in row)
+                rx, ry = rng.randint(-3, 3), rng.randint(-2, 2)
+                surface.blit(a.text(row, 19, (255, 0, 0), bold=False), (tx + rx, y + ry))
+                surface.blit(a.text(row, 19, (0, 255, 255), bold=False), (tx - rx, y - ry))
+            else:
+                surface.blit(a.text(row, 19, WHITE, bold=False), (tx, y))

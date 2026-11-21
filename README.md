@@ -26,23 +26,27 @@
 Game bắn phi thuyền điều khiển **bằng cử chỉ tay qua webcam** (MediaPipe), làm trong môn
 Công nghệ xử lý ảnh. Không có webcam vẫn chơi được bằng **bàn phím**.
 
-> Phiên bản **2.0** là bản đại tu toàn bộ: tách code thành package `spaceship/`, sửa lỗi game chạy
+> Phiên bản **2.x** là bản đại tu toàn bộ: tách code thành package `spaceship/`, sửa lỗi game chạy
 > chậm theo webcam, thêm điều khiển bàn phím, lưu thống kê cộng dồn, có test tự động.
 > Chi tiết thay đổi: [CHANGELOG.md](CHANGELOG.md) · Kiến trúc: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
-## 2. Bối cảnh
+## 2. Cốt truyện
 
-Ở thiên niên kỷ thứ 12, nhân loại đã mở rộng ra khắp thiên hà. Trong một nhiệm vụ trinh sát
-tại rìa không gian, tàu **KX-17** bất ngờ mất kết nối với trung tâm chỉ huy và bị một thực thể
-chưa xác định tấn công. Không còn đường lui — chiến đấu, sống sót và tìm đường về tàu mẹ.
+Thiên niên kỷ thứ 12. Trong một nhiệm vụ trinh sát ở rìa thiên hà, phi công **KX-17** mất liên lạc với
+cả phi đội và tàu mẹ **Hy Vọng**. Chỉ còn trí tuệ nhân tạo **ARIA** bên cạnh, KX-17 lần theo tín hiệu
+yếu ớt của tàu mẹ, vượt qua bầy sinh vật nửa cơ khí **Đàn Ký Sinh**: thứ không chế tạo gì cả, chỉ chiếm lấy.
+
+Càng đến gần nhà, KX-17 càng nhận ra điều gì đó không đúng...
+
+3 hồi · 10 ải · hội thoại có chân dung nhân vật · kết thúc u tối.
 
 ## 3. Hình ảnh
 
-| Menu | Trong trận |
+| Chọn ải | Hội thoại giữa các ải |
 |:---:|:---:|
-| ![Menu](docs/screenshots/menu.png) | ![Gameplay](docs/screenshots/gameplay.png) |
-| **Đánh Boss** | **Kết quả** |
-| ![Boss](docs/screenshots/boss.png) | ![Kết quả](docs/screenshots/ket-qua.png) |
+| ![Chọn ải](docs/screenshots/chon-ai.png) | ![Hội thoại](docs/screenshots/hoi-thoai.png) |
+| **Trong trận (kỹ năng Vòng Plasma, pháo tháp cảnh báo)** | **Boss cuối: Tàu Mẹ Hy Vọng** |
+| ![Gameplay](docs/screenshots/gameplay.png) | ![Boss](docs/screenshots/boss.png) |
 
 *Video demo (bản 1.0): [Xem video gameplay](https://drive.google.com/file/d/1O6J_LIKSlvcKQLEFiB_6ogn2hGoPeJ3p/view?usp=sharing)*
 
@@ -97,24 +101,40 @@ Tuỳ chọn dòng lệnh:
 
 | Chế độ | Mô tả |
 |---|---|
-| **Vượt ải** | 3 stage (5 / 7 / 10 wave), cuối mỗi stage có Boss. Hạ Boss 1 nhận **Drone**, Boss 2 nhận **Thiêu đốt**, hạ Boss 3 là thắng. |
-| **Vô tận** | Sống sót càng lâu càng tốt. Độ khó tăng theo thời gian, Boss xuất hiện mỗi 60 giây. |
-| **Hỏa ngục** | Mưa đạn: địch bắn 3 tia, vật phẩm hồi máu rất ít, không rơi khiên, Boss mỗi 45 giây. |
+| **Vượt ải** | 10 ải chia 3 hồi, có cốt truyện. Chọn ải, chọn độ khó **Dễ / Thường / Khó**, mỗi ải chấm **1–3 sao** (qua ải · mất tối đa 1 mạng · không mất mạng). Tiến độ được lưu. |
+| **Vô tận** | Sống sót càng lâu càng tốt. Độ khó tăng dần, càng về sau càng nhiều loại địch, boss đổi loại mỗi 60 giây. |
+| **Hỏa ngục** | Mở khóa khi phá đảo Vượt ải. Mưa đạn, ít máu, không rơi khiên, boss mỗi 45 giây. |
 
-## 7. Vật phẩm
+**10 ải:**
 
-| Vật phẩm | Ký hiệu | Tác dụng |
-|---|:---:|---|
-| Hồi máu | `+` | +30 HP (Hỏa ngục: +5) |
-| Khiên | `S` | Bất tử 3 giây, húc chết địch thường (Hỏa ngục: 1 giây) |
-| Plasma | ▲ xanh | Đạn tỏa rộng, DMG 6 |
-| Laser | ▲ đỏ | Sát thương cao, DMG 10. Cấp 6: tia xuyên thấu toàn màn hình |
-| Homing | ▲ tím | Tên lửa tự đuổi, DMG 4 |
-| Universal | ●●● | Nâng cấp súng đang dùng |
-| Drone | `D` | Phi thuyền phụ tự bắn (rơi từ Boss 1) |
-| Thiêu đốt | `B` | Đạn gây cháy 6 HP/giây (rơi từ Boss 2) |
+| Hồi | Ải | Điểm mới |
+|---|---|---|
+| I · Lạc lối | 1 Vành đai Mất Tín Hiệu · 2 Mưa Thiên Thạch · 3 Ổ Phục Kích | Làm quen, thiên thạch, kamikaze, **boss Kẻ Nuốt Drone → Drone** |
+| II · Bãi tha ma | 4 Bãi Xác Tàu · 5 Tinh vân Đỏ · 6 Tổ Đàn · 7 Lõi Tinh vân | Ký Sinh, xác tàu (núp được), **súng Tia Sét**, sương mù, Lính Khiên, Kẻ Đẻ Trứng, mini-boss Tổ Mẹ, **boss Lõi Tinh vân → Thiêu đốt** |
+| III · Trở về | 8 Trạm Tiền Tiêu · 9 Hạm Đội Hộ Tống · 10 Tàu Mẹ | Pháo tháp (vạch đỏ cảnh báo), tàu đồng minh bị nhiễm, **mini-boss Tàu Hộ Tống → Drone thứ hai**, **boss cuối** |
 
-Nhặt **cùng loại** súng → lên cấp (tối đa 6, sau đó cộng sát thương). Nhặt **khác loại** → đổi súng, về cấp 1.
+## 7. Vũ khí & vật phẩm
+
+| Súng | Vai trò | Cấp 6 | Kỹ năng Nộ (chụm tay / K khi đầy thanh) |
+|---|---|---|---|
+| **Plasma** | Quét đông, tỏa rộng | Đạn nổ lan | **Vòng Plasma**: vòng nổ quanh tàu, xóa đạn địch |
+| **Laser** | Diệt boss | Tia xuyên thấu liền mạch | **Đại Pháo**: tia khổng lồ 3 giây |
+| **Homing** | An toàn, tự đuổi | 7 tên lửa xoắn ốc | **Mưa Tên Lửa**: 20 tên lửa |
+| **Tia Sét** | Nhảy dây chuyền | Nhảy 8 mục tiêu | **Bão Sét**: sét đánh mọi địch 3 lần |
+
+Nhặt **cùng loại** súng → lên cấp (tối đa 6, sau đó cộng sát thương). Nhặt **khác loại** → đổi súng, **về cấp 1**
+(cố ý, để người chơi phải né cả vật phẩm). Hộp súng khác loại súng đang cầm sẽ **nháy đỏ + dấu "!"**.
+
+| Vật phẩm | Tác dụng |
+|---|---|
+| Hồi máu `+` | +30 HP (Hỏa ngục: +5) |
+| Khiên (lục giác) | Bất tử 3 giây, húc chết địch thường (Hỏa ngục: 1 giây) |
+| Universal (3 chấm màu) | Nâng cấp súng đang dùng |
+| **Drone** | Phi thuyền phụ tự bắn. Tối đa 2 chiếc |
+| **Thiêu đốt** | Đạn gây cháy 6 HP/giây |
+
+Phần thưởng boss (Drone, Thiêu đốt) **tự bay vào tàu**, không bao giờ rơi mất. Ở Vô tận/Hỏa ngục: hạ boss
+lần 1, 2, 3 lần lượt được Drone, Thiêu đốt, Drone thứ hai.
 
 ## 8. Cấu trúc project
 
@@ -132,8 +152,9 @@ CNXSLA-SpaceShip10k/
 │   ├── core/                # Hạ tầng: scene, ảnh/font, âm thanh, file lưu
 │   ├── input/               # Webcam + MediaPipe (luồng riêng), cử chỉ, bàn phím
 │   ├── entities/            # Đối tượng: người chơi, địch, đạn, vật phẩm, hiệu ứng
-│   ├── systems/             # Luật chơi: va chạm, rơi đồ, AI boss, kịch bản chế độ
-│   ├── scenes/              # Màn hình: menu, cutscene, trận đấu, tạm dừng, kết quả...
+│   ├── systems/             # Luật chơi: va chạm, vũ khí & kỹ năng Nộ, rơi đồ, AI địch/boss, kịch bản ải
+│   ├── campaign/            # DỮ LIỆU 10 ải (levels.py) + toàn bộ lời thoại (story.py)
+│   ├── scenes/              # Màn hình: menu, chọn ải, hội thoại, trận đấu, tạm dừng, kết quả, cài đặt...
 │   └── ui/                  # Nút bấm, panel, HUD
 ├── tests/                   # test tự động (chạy không cần màn hình/webcam)
 └── docs/
@@ -151,8 +172,8 @@ Windows `%APPDATA%\SpaceShip10k\save.json`, macOS `~/Library/Application Support
 python -m unittest discover -s tests -t .
 ```
 
-Test chạy ở chế độ không màn hình (SDL dummy), gồm cả một "bot" tự chơi hết 3 stage của
-chế độ Vượt ải, đánh Boss ở Vô tận và Hỏa ngục để chắc chắn game không treo hay rò rỉ đạn.
+Test chạy ở chế độ không màn hình (SDL dummy), gồm cả một "bot" tự chơi **hết 10 ải** của
+chế độ Vượt ải tới đoạn kết, đánh boss ở Vô tận và Hỏa ngục để chắc chắn game không treo hay rò rỉ đạn.
 
 ## 10. Công nghệ sử dụng
 

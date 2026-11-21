@@ -13,7 +13,6 @@ from spaceship.config import (
     LASER_COLOR,
     NEON_ORANGE,
     PLASMA_COLOR,
-    WHITE,
     WIDTH,
     YELLOW,
 )
@@ -27,8 +26,10 @@ HOMING_TURN_SPEED = 16
 class Bullet:
     """Đạn của người chơi. ``kind``: plasma | laser | homing | drone_laser."""
 
-    def __init__(self, x, y, kind: str, angle: Optional[float] = 90, level: int = 1) -> None:
+    def __init__(self, x, y, kind: str, angle: Optional[float] = 90, level: int = 1,
+                 damage: Optional[float] = None) -> None:
         self.x, self.y, self.kind, self.level = x, y, kind, level
+        self.damage = damage          # None = theo súng + sát thương cộng thêm
         self.timer = 0
         self.trail: list = []
         self.hit_ids: set = set()      # địch đã bị tia xuyên thấu trúng (mỗi địch 1 lần)
@@ -82,10 +83,10 @@ class Bullet:
 
     def hits(self, enemy) -> bool:
         if self.kind == "drone_laser":
-            return abs(self.x - enemy.x) < enemy.radius + 6 and self.y - 120 < enemy.y + enemy.radius and self.y > enemy.y - enemy.radius
+            return abs(self.x - enemy.x) < enemy.rx + 6 and self.y - 120 < enemy.y + enemy.ry and self.y > enemy.y - enemy.ry
         if self.is_piercing_laser:
-            return abs(self.x - enemy.x) < enemy.radius + 30 and enemy.y < self.y + enemy.radius
-        return math.hypot(self.x - enemy.x, self.y - enemy.y) < enemy.radius + 5
+            return abs(self.x - enemy.x) < enemy.rx + 12 and enemy.y < self.y + enemy.ry
+        return enemy.contains(self.x, self.y, 5)
 
     # --- Vẽ (phát sáng, xem ui/glow.py) ---------------------------------------------
     def draw(self, surface: pygame.Surface) -> None:
@@ -172,55 +173,3 @@ class EnemyBullet:
         color = (200, 70, 255) if self.kind == "purple_laser" else NEON_ORANGE
         tail = (self.x - self.dx * 4, self.y - self.dy * 4)
         glow.glow_line(surface, color, (self.x, self.y), tail, 6)
-
-
-class NukeMissile:
-    SPEED = 12
-
-    def __init__(self, x, y) -> None:
-        self.x, self.y = x, y
-        self.target_x, self.target_y = WIDTH // 2, HEIGHT // 2
-        self.exploded = False
-
-    @property
-    def heading(self) -> float:
-        return math.atan2(self.target_y - self.y, self.target_x - self.x)
-
-    def update(self) -> None:
-        if math.hypot(self.target_x - self.x, self.target_y - self.y) < self.SPEED:
-            self.exploded = True
-            return
-        self.x += math.cos(self.heading) * self.SPEED
-        self.y += math.sin(self.heading) * self.SPEED
-
-    def draw(self, surface: pygame.Surface, assets) -> None:
-        a = self.heading
-        length = 50
-
-        def polar(angle_offset: float, scale: float):
-            return (self.x + math.cos(a + angle_offset) * length * scale,
-                    self.y + math.sin(a + angle_offset) * length * scale)
-
-        nose = polar(0, 1.0)
-        p_r, p_l = polar(-math.pi * 0.2, 0.3), polar(math.pi * 0.2, 0.3)
-        back_r, back_l = polar(-math.pi * 0.8, 0.4), polar(math.pi * 0.8, 0.4)
-        body = [nose, p_r, back_r, back_l, p_l]
-
-        glow = pygame.Surface((120, 120), pygame.SRCALPHA)
-        alpha = 100 + int(50 * math.sin(pygame.time.get_ticks() / 80.0))
-        pygame.draw.polygon(glow, (255, 100, 100, alpha), [(px - self.x + 60, py - self.y + 60) for px, py in body], 6)
-        surface.blit(glow, (self.x - 60, self.y - 60))
-        pygame.draw.polygon(surface, (50, 60, 70), body)
-        pygame.draw.polygon(surface, WHITE, body, 1)
-        pygame.draw.polygon(surface, (255, 50, 50), [polar(-math.pi * 0.7, 0.6), polar(-math.pi, 0.6), back_r])
-        pygame.draw.polygon(surface, (255, 50, 50), [polar(math.pi * 0.7, 0.6), polar(math.pi, 0.6), back_l])
-
-        flame_len = 20 + random.randint(0, 10)
-        base = polar(math.pi, 0.4)
-        tip = (base[0] + math.cos(a + math.pi) * flame_len, base[1] + math.sin(a + math.pi) * flame_len)
-        flame = [back_r, polar(math.pi * 1.05, 0.3), tip, polar(math.pi * 0.95, 0.3), back_l]
-        pygame.draw.polygon(surface, (255, 100, 0), flame)
-        pygame.draw.polygon(surface, (255, 255, 0), flame, 1)
-
-        label = pygame.transform.rotate(assets.text("[NUKE]", 12, WHITE), -math.degrees(a))
-        surface.blit(label, label.get_rect(center=(int(self.x), int(self.y))))
