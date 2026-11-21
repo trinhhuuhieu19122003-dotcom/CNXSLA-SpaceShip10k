@@ -111,8 +111,8 @@ ACHIEVEMENTS: tuple[Achievement, ...] = (
                 lambda s, r: r is not None and r.mother_by_lightning),
     Achievement("combo30", "BẬC THẦY CHUỖI", "Đạt chuỗi hạ 30 (x4) trong một ván", "fist",
                 lambda s, r: r is not None and r.best_combo >= 30),
-    Achievement("graze100", "LUỒN LÁCH", "Sát đạn 100 lần trong một ván", "hand",
-                lambda s, r: r is not None and r.grazes >= 100),
+    Achievement("graze150", "LUỒN LÁCH", "Sát đạn 150 lần trong một ván", "hand",
+                lambda s, r: r is not None and r.grazes >= 150),
     Achievement("cancel30", "DỌN SẠCH BẦU TRỜI", "Hủy 30 viên đạn cùng lúc khi hạ boss", "star",
                 lambda s, r: r is not None and r.best_cancel >= 30),
 )

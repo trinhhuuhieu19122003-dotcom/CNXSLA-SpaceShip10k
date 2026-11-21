@@ -14,12 +14,12 @@
   chuỗi. Hiện "CHUỖI xN" trên tàu, trên dải điểm, ở bảng trái màn rộng; màn Kết quả ghi chuỗi dài nhất.
 - **Bất tử sau khi trúng đạn rút còn 0,25 giây** (trước: 0,5): bot né đạn chạy 6 ván mỗi cấu hình cho thấy 0,5 giây
   làm số mạng mất giảm ~60% ở ải 6 và ~37% ở Hỏa ngục, quá dễ. 0,25 giây vẫn chặn được "trúng cả chùm 3 viên".
-- **Sát đạn (graze)**: đạn địch sượt qua trong 34 px mà không trúng → +2 điểm (nhân theo chuỗi), tia sáng nhỏ,
+- **Sát đạn (graze)**: đạn địch sượt qua trong 26 px mà không trúng → +1 điểm (nhân theo chuỗi), tia sáng nhỏ,
   tiếng "xẹt", và giữ chuỗi hạ không bị đứt. Không tính khi đang bất tử.
 - **Thống kê**: lưu chuỗi hạ dài nhất của từng chế độ (`ModeRecord.best_combo`), hiện dưới Điểm cao.
 - **Bảng điểm** (thẻ thứ 3 ở màn Thành tựu): 5 ván điểm cao nhất mỗi chế độ, kèm ải / thời gian, chuỗi dài nhất,
   ngày chơi (`ModeRecord.top_runs`; file lưu cũ / dữ liệu lạ vẫn nạp được).
-- **3 huy hiệu mới** (tổng 21): Bậc thầy chuỗi (chuỗi 30), Luồn lách (100 lần sát đạn trong một ván), Dọn sạch
+- **3 huy hiệu mới** (tổng 21): Bậc thầy chuỗi (chuỗi 30), Luồn lách (150 lần sát đạn trong một ván), Dọn sạch
   bầu trời (hủy 30 viên đạn cùng lúc). Thẻ huy hiệu thấp hơn để đủ 7 hàng: ngày đạt / tiến độ nằm bên phải tên.
 - Bảng trái màn rộng hiện số lần **sát đạn**; mất chuỗi từ 10 trở lên hiện chữ đỏ **"MẤT CHUỖI N"**.
 - **Tiếng mới** (tổng hợp bằng numpy): `lock_on`, `heartbeat` (khớp nhịp viền đỏ khi máu thấp), `bullet_cancel`,

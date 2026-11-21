@@ -103,11 +103,14 @@ Chuỗi hiện ở mấy chỗ:
 
 ## 9. Sát đạn (graze)
 
-Đạn địch bay sượt qua trong 34 px quanh tâm tàu mà không trúng (vùng trúng chỉ 15 px) thì được +2 điểm (nhân
+Đạn địch bay sượt qua trong 26 px quanh tâm tàu mà không trúng (vùng trúng chỉ 15 px) thì được +1 điểm (nhân
 theo chuỗi), có tia sáng nhỏ, tiếng "xẹt", và **giữ chuỗi hạ không bị đứt**. Mỗi viên chỉ tính một lần. Lúc đang
 bất tử thì không tính, để không "cày" điểm được. Cơ chế này lấy từ các game bắn tàu như Touhou và Psyvariar:
 thưởng cho người dám luồn lách sát đạn thay vì luôn né thật xa, và hợp với chế độ **né chậm** (nắm tay / Shift)
 vốn đã hiện vùng trúng thật của tàu.
+
+Lần đầu thử 34 px / +2 điểm: bot di chuyển ngẫu nhiên kiếm được 276 lần sát đạn trong 2,5 phút, và hơn nửa số điểm
+đến từ sát đạn, nhiều hơn cả từ hạ địch. Đã thu lại còn 26 px / +1 điểm để hạ địch vẫn là nguồn điểm chính.
 
 ## 10. Tim đập
 

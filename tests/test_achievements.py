@@ -129,10 +129,10 @@ if __name__ == "__main__":
 class PlayStyleBadgeTest(unittest.TestCase):
     def test_combo_graze_cancel_badges(self):
         save = SaveData(path=Path(tempfile.mkdtemp()) / "save.json")
-        run = RunStats(GameMode.ENDLESS, best_combo=29, grazes=99, best_cancel=29)
-        self.assertFalse({"combo30", "graze100", "cancel30"} & {a.key for a in evaluate(save, run)})
-        run.best_combo, run.grazes, run.best_cancel = 30, 100, 30
-        self.assertTrue({"combo30", "graze100", "cancel30"} <= {a.key for a in evaluate(save, run)})
+        run = RunStats(GameMode.ENDLESS, best_combo=29, grazes=149, best_cancel=29)
+        self.assertFalse({"combo30", "graze150", "cancel30"} & {a.key for a in evaluate(save, run)})
+        run.best_combo, run.grazes, run.best_cancel = 30, 150, 30
+        self.assertTrue({"combo30", "graze150", "cancel30"} <= {a.key for a in evaluate(save, run)})
 
     def test_gameplay_feeds_play_style_stats(self):
         game = Game(camera=False, seed=2)
