@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from functools import lru_cache
 
 import pygame
 
@@ -12,14 +13,13 @@ from spaceship.input.gestures import Gesture
 from spaceship.entities.items import draw_item_icon
 from spaceship.systems.world import World
 from spaceship.ui import glow
-from spaceship.ui.widgets import ACCENT, CORNER, FRAME, MUTED, TEXT, draw_panel, draw_progress_ring, fit_text, wrap_text
+from spaceship.ui.widgets import ACCENT, FRAME, MUTED, TEXT, draw_panel, draw_progress_ring, fit_text, wrap_text
 
 GESTURE_LABELS = {
     Gesture.FIST: ("NẮM TAY: NÉ CHẬM", ACCENT),
     Gesture.PINCH: ("CHỤM: KỸ NĂNG NỘ", NEON_ORANGE),
 }
 
-BAR_W, BAR_H = 200, 15
 HUD_FILL = (8, 15, 25, 194)
 ENCOUNTER_WIDTH, ENCOUNTER_HEIGHT = 380, 56
 
@@ -30,33 +30,6 @@ def format_time(seconds: float) -> str:
 
 
 SEGMENTS = 10
-
-
-def _hp_bar(surface, assets, x, y, ratio) -> None:
-    """Thanh máu chia 10 ô, đổi màu xanh -> vàng -> đỏ khi tụt máu."""
-    ratio = max(0.0, min(1.0, ratio))
-    color = NEON_GREEN if ratio > 0.5 else (YELLOW if ratio > 0.25 else NEON_RED)
-    surface.blit(assets.text("HP", 12, MUTED, role="label"), (x, y + 1))
-    seg_w = (BAR_W - 24) / SEGMENTS
-    for i in range(SEGMENTS):
-        rect = pygame.Rect(x + 24 + i * seg_w, y, seg_w - 2, BAR_H)
-        filled = ratio * SEGMENTS - i
-        pygame.draw.rect(surface, (30, 34, 42), rect)
-        if filled > 0:
-            pygame.draw.rect(surface, color, (rect.x, rect.y, rect.w * min(1.0, filled), rect.h))
-
-
-def _rage_bar(surface, assets, x, y, ratio, t, skill: str = "") -> None:
-    """Thanh Nộ; đầy thì phát sáng nhấp nháy + nhắc cách dùng."""
-    ratio = max(0.0, min(1.0, ratio))
-    surface.blit(assets.text("NỘ", 12, MUTED, role="label"), (x, y + 1))
-    rect = pygame.Rect(x + 24, y, BAR_W - 24, BAR_H)
-    pygame.draw.rect(surface, (30, 34, 42), rect)
-    pygame.draw.rect(surface, NEON_ORANGE, (rect.x, rect.y, rect.w * ratio, rect.h))
-    if ratio >= 1.0:
-        pulse = 0.6 + 0.4 * math.sin(t * 8)
-        pygame.draw.rect(surface, glow.scale((255, 220, 120), pulse), rect.inflate(4, 4), 2)
-        surface.blit(assets.text(f"{skill} - chụm tay / K", 12, NEON_ORANGE, role="body"), (x + 24, y + BAR_H + 3))
 
 
 def _weapon_panel(surface, assets, p, cx, cy, t) -> None:
@@ -75,43 +48,127 @@ def _weapon_panel(surface, assets, p, cx, cy, t) -> None:
         surface.blit(assets.text(f"+{p.bonus_damage} DMG", 12, YELLOW, role="label"), (x + 82, cy - 2))
 
 
-def draw_hud(surface: pygame.Surface, assets, world: World, controls=None, director=None) -> None:
-    p = world.player
+STRIP_H = 34                     # dải mảnh trên cùng: điểm · ải · wave
+CORNER_FILL = (6, 12, 20, 168)
+
+
+@lru_cache(maxsize=4)
+def _top_strip(width: int) -> pygame.Surface:
+    strip = pygame.Surface((width, STRIP_H + 14), pygame.SRCALPHA)
+    for y in range(STRIP_H + 14):
+        alpha = 170 if y < STRIP_H - 6 else int(170 * (1 - (y - STRIP_H + 6) / 20))
+        pygame.draw.line(strip, (4, 8, 14, max(0, alpha)), (0, y), (width, y))
+    return strip
+
+
+def _status_line(world: World, director) -> str:
     progress = director.progress_text if director is not None else ""
+    score = f"ĐIỂM {world.score:,}".replace(",", " ")
     if world.level is not None:
-        cycle = f"CK{world.cycle} · " if world.cycle > 1 else ""
-        info = f"ĐIỂM: {world.score} | {cycle}ẢI {world.level.number} - {progress}"
+        cycle = f"CHU KỲ {world.cycle} · " if world.cycle > 1 else ""
+        parts = [score, f"{cycle}ẢI {world.level.number}", progress]
     else:
-        info = f"ĐIỂM: {world.score} | THỜI GIAN: {format_time(world.survival_time)}"
-        if progress:
-            info += f" | {progress}"
-    heading = fit_text(assets, info, 17, TEXT, WIDTH - 175, role="ui")
-    box = pygame.Rect(5, 5, max(440, heading.get_width() + 20), 94 if p.rage_full else 80)
-    draw_panel(surface, box, CORNER, HUD_FILL, header_height=29)
-    surface.blit(heading, (14, 8))
+        parts = [score, format_time(world.survival_time), progress]
+    return "  ·  ".join(x for x in parts if x)
 
-    _hp_bar(surface, assets, 16, 40, p.hp / p.max_hp)
-    _rage_bar(surface, assets, 16, 62, p.rage / p.max_rage, world.survival_time, config.SKILL_NAMES.get(p.weapon, ""))
-    _weapon_panel(surface, assets, p, 254, 52, world.survival_time)
 
+_LAYER: list = []
+
+
+def _corner_layer() -> pygame.Surface:
+    if not _LAYER:
+        _LAYER.append(pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA))
+    layer = _LAYER[0]
+    layer.fill((0, 0, 0, 0))
+    return layer
+
+
+def _corner_box(surface, rect: pygame.Rect, color=FRAME) -> None:
+    surface.fill(CORNER_FILL, rect)
+    pygame.draw.rect(surface, color, rect, 1)
+
+
+def draw_hud(surface: pygame.Surface, assets, world: World, controls=None, director=None) -> None:
+    """HUD gọn 4 góc (cửa sổ thường): dải mảnh trên cùng, máu/Nộ/mạng góc dưới trái, vũ khí góc dưới phải.
+    Chiến trường ở giữa để trống; thanh boss nằm ngay dưới dải trên."""
+    p, t = world.player, world.survival_time
+    surface.blit(_top_strip(WIDTH), (0, 0))
+    line = fit_text(assets, _status_line(world, director), 18, TEXT, WIDTH - 40, role="ui")
+    surface.blit(line, (14, 7))
+    screen, surface = surface, _corner_layer()           # 2 ô góc vẽ lên lớp riêng để làm mờ khi tàu bay sát
+
+    # --- Góc dưới trái: mạng + cử chỉ tay, máu, Nộ ---------------------------------------------
+    full = p.rage_full
+    block = pygame.Rect(10, HEIGHT - (100 if full else 80) - 10, 236, 100 if full else 80)
+    _corner_box(surface, block, NEON_ORANGE if full else FRAME)
+    x, y = block.x + 10, block.y + 8
     for i in range(p.lives):
-        hx = WIDTH - 30 - i * 30
-        pygame.draw.polygon(surface, NEON_GREEN, [(hx, 12), (hx - 8, 28), (hx, 24), (hx + 8, 28)], 2)
-
-    icon = "TAY" if controls is not None and controls.source == "hand" else "PHÍM"
-    label = assets.text(f"ĐIỀU KHIỂN: {icon}", 13, MUTED, role="label")
-    surface.blit(label, label.get_rect(topright=(WIDTH - 21, 36)))
-    if p.shield_active:
-        surface.blit(assets.text(f"KHIÊN {p.shield_timer / config.TICK_RATE:.1f}s", 14, ACCENT, role="label"), (12, 106))
-    if p.burn_unlocked or p.drones:
-        drone = "DRONE + HỘ VỆ" if p.drones > 1 else "DRONE"
-        perks = " + ".join(t for t, on in ((drone, p.drones), ("THIÊU ĐỐT", p.burn_unlocked)) if on)
-        surface.blit(assets.text(perks, 12, YELLOW, role="label"), (12, 124))
-    boss = next((e for e in world.enemies if e.is_boss), None)
-    if boss is not None:
-        _boss_bar(surface, assets, boss)
+        hx = x + 8 + i * 20
+        pygame.draw.polygon(surface, NEON_GREEN, [(hx, y), (hx - 7, y + 14), (hx, y + 11), (hx + 7, y + 14)], 2)
     if controls is not None:
-        draw_hand_indicator(surface, assets, controls, p.rage_full)
+        _hand_status(surface, assets, controls, full, block.right - 10, y + 7)
+    ratio = max(0.0, min(1.0, p.hp / p.max_hp))
+    hp_color = NEON_GREEN if ratio > 0.5 else (YELLOW if ratio > 0.25 else NEON_RED)
+    surface.blit(assets.text("HP", 14, MUTED, role="label"), (x, y + 23))
+    seg_w = (block.width - 54) / SEGMENTS
+    for i in range(SEGMENTS):
+        seg = pygame.Rect(x + 34 + i * seg_w, y + 25, seg_w - 2, 12)
+        pygame.draw.rect(surface, (30, 34, 42), seg)
+        filled = ratio * SEGMENTS - i
+        if filled > 0:
+            pygame.draw.rect(surface, hp_color, (seg.x, seg.y, seg.w * min(1.0, filled), seg.h))
+    surface.blit(assets.text("NỘ", 14, NEON_ORANGE if full else MUTED, role="label"), (x, y + 44))
+    bar = pygame.Rect(x + 34, y + 46, block.width - 54, 12)
+    pygame.draw.rect(surface, (30, 34, 42), bar)
+    pygame.draw.rect(surface, NEON_ORANGE, (bar.x, bar.y, bar.w * min(1.0, p.rage / p.max_rage), bar.h))
+    if full:
+        pulse = 0.6 + 0.4 * math.sin(t * 8)
+        pygame.draw.rect(surface, glow.scale((255, 220, 120), pulse), bar.inflate(4, 4), 2)
+        hint = f"{config.SKILL_NAMES.get(p.weapon, '')} · chụm tay / K"
+        surface.blit(fit_text(assets, hint, 15, NEON_ORANGE, block.width - 20, role="body"), (x, y + 64))
+
+    # --- Góc dưới phải: vũ khí + tăng cường ----------------------------------------------------
+    perks = []
+    if p.drones:
+        perks.append("DRONE + HỘ VỆ" if p.drones > 1 else "DRONE")
+    if p.burn_unlocked:
+        perks.append("THIÊU ĐỐT")
+    if p.shield_active:
+        perks.append(f"KHIÊN {p.shield_timer / config.TICK_RATE:.1f}s")
+    wbox = pygame.Rect(WIDTH - 216, HEIGHT - (80 if perks else 60) - 10, 206, 80 if perks else 60)
+    _corner_box(surface, wbox)
+    _weapon_panel(surface, assets, p, wbox.x + 28, wbox.y + 30, t)
+    if perks:
+        text = fit_text(assets, " · ".join(perks), 13, ACCENT if p.shield_active else YELLOW, wbox.width - 20, role="label")
+        surface.blit(text, (wbox.x + 10, wbox.bottom - 22))
+
+    ship = pygame.Rect(0, 0, 90, 80)
+    ship.center = (int(p.x), int(p.y))
+    for rect in (block, wbox):
+        piece = surface.subsurface(rect).copy()
+        piece.set_alpha(70 if rect.inflate(16, 16).colliderect(ship) else 255)
+        screen.blit(piece, rect)
+    draw_boss_bar(screen, assets, world, y=56)
+
+
+def _hand_status(surface, assets, controls, rage_full: bool, right: int, cy: int) -> None:
+    """Cử chỉ tay đang nhận (canh phải trong ô góc dưới trái); vòng tròn đầy dần khi giữ chụm ngón."""
+    if controls.hand_absent > 0.3:
+        label, color, progress = "MẤT TAY - SẮP NGHỈ", YELLOW, min(1.0, controls.hand_absent / config.HAND_PAUSE_SECONDS)
+    elif controls.gesture == Gesture.NONE:
+        return
+    else:
+        label, color = GESTURE_LABELS.get(controls.gesture, ("TAY: LÁI", TEXT))
+        progress = 0.0
+        if controls.gesture == Gesture.PINCH:
+            if rage_full:
+                progress = controls.skill_progress
+            else:
+                label, color = "NỘ CHƯA ĐẦY", MUTED
+    text = assets.text(label, 13, color, role="label")
+    rect = text.get_rect(midright=(right, cy))
+    surface.blit(text, rect)
+    draw_progress_ring(surface, (rect.x - 12, cy), 8, progress, color=color, stroke=2)
 
 
 def draw_boss_bar(surface, assets, world: World, y: int = 92) -> None:
@@ -156,13 +213,14 @@ def draw_banner(surface, assets, world: World, director=None) -> None:
 
 
 def draw_radio(surface, assets, world: World) -> None:
-    """Thoại trong trận: chân dung nhỏ + lời thoại ở dưới màn hình, không dừng game."""
+    """Thoại trong trận: chân dung nhỏ + lời thoại ngay dưới dải trên, không dừng game."""
     if not world.radio:
         return
     from spaceship.campaign.story import PORTRAITS, SPEAKER_COLORS
 
     line = world.radio[0]
-    box = pygame.Rect(150, 122, WIDTH - 300, 64)          # trên cùng: không che tàu và đạn quanh tàu
+    top = 84 if any(e.is_boss for e in world.enemies) else 44
+    box = pygame.Rect(150, top, WIDTH - 300, 64)          # trên cùng: không che tàu và đạn quanh tàu
     color = SPEAKER_COLORS.get(line.speaker, TEXT)
     draw_panel(surface, box, color, HUD_FILL, header_height=22)
     portrait = assets.image(PORTRAITS.get(line.speaker, ""), 56) if line.speaker in PORTRAITS else None
@@ -193,28 +251,3 @@ def draw_encounter(surface: pygame.Surface, assets, entry, y: int) -> None:
     tip = fit_text(assets, entry.tip, 14, TEXT, box.width - 24, role="body")
     surface.blit(title, (box.x + 12, box.y + 2))
     surface.blit(tip, (box.x + 12, box.y + 31))
-
-
-def draw_hand_indicator(surface: pygame.Surface, assets, controls, rage_full: bool) -> None:
-    """Góc dưới trái: game đang thấy cử chỉ gì, vòng tròn đầy dần khi giữ chụm ngón."""
-    x, y = 14, HEIGHT - 46
-    if controls.hand_absent > 0.3:
-        ratio = min(1.0, controls.hand_absent / config.HAND_PAUSE_SECONDS)
-        surface.blit(assets.text("Mất tay - sắp tạm dừng để nghỉ", 14, YELLOW, role="body"), (x, y))
-        pygame.draw.rect(surface, FRAME, (x, y + 22, 200, 5), 1)
-        pygame.draw.rect(surface, YELLOW, (x, y + 22, 200 * ratio, 5))
-        return
-    if controls.gesture == Gesture.NONE:
-        return
-    label, color = GESTURE_LABELS.get(controls.gesture, ("TAY: LÁI", TEXT))
-    center, r = (x + 14, y + 14), 12
-    progress = 0.0
-    if controls.gesture == Gesture.PINCH:
-        if not rage_full:
-            label, color = "CHỤM: NỘ CHƯA ĐẦY", MUTED
-        else:
-            progress = controls.skill_progress
-    else:
-        pygame.draw.circle(surface, color, center, 4)
-    draw_progress_ring(surface, center, r, progress, color=color, stroke=3)
-    surface.blit(assets.text(label, 14, color, role="label"), (x + 34, y + 5))

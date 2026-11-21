@@ -39,6 +39,7 @@ class EnemyBase:
     is_obstacle = False          # xác tàu: chặn đạn địch
     threat = 1.0                 # trọng số trong "ngân sách đe dọa" (config.THREAT_CAP)
     gone = False                 # đã rời màn hình theo lối khác ngoài mép dưới (vd. lính rút lui)
+    hp_bar_timer = 0             # > 0: vừa trúng đạn -> hiện thanh máu
     front_shield = False         # Lính Khiên
     ai: Optional[str] = None     # khóa trong systems/attacks.py
     sprite: Optional[str] = None
@@ -104,11 +105,13 @@ class EnemyBase:
         surface.blit(white, white.get_rect(center=(int(self.x), int(self.y))))
 
     def _draw_hp_bar(self, surface, width: int, offset_y: float) -> None:
-        if self.hp >= self.max_hp:
-            return                                     # đầy máu thì khỏi vẽ cho đỡ rối
+        """Chỉ hiện ngay sau khi trúng đạn (tự ẩn sau ~1,5 giây) cho màn hình đỡ rối."""
+        if self.hp >= self.max_hp or self.hp_bar_timer <= 0:
+            return
         x, y = self.x - width / 2, self.y - offset_y
-        pygame.draw.rect(surface, NEON_RED, (x, y, width, 4))
-        pygame.draw.rect(surface, NEON_GREEN, (x, y, width * max(0, self.hp) / self.max_hp, 4))
+        pygame.draw.rect(surface, (20, 8, 10), (x - 1, y - 1, width + 2, 5))
+        pygame.draw.rect(surface, (120, 30, 36), (x, y, width, 3))
+        pygame.draw.rect(surface, NEON_GREEN, (x, y, width * max(0, self.hp) / self.max_hp, 3))
 
 
 # --- Lính thường ------------------------------------------------------------------------

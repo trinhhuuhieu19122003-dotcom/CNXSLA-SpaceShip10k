@@ -28,6 +28,7 @@ PLAYER_BODY_RADIUS = 20
 def damage_enemy(world: World, enemy: EnemyBase, amount: float, *, crit: bool = False, gain_rage: bool = True) -> None:
     player = world.player
     enemy.hit_flash = 4                           # nháy trắng vài tick: cảm giác "trúng"
+    enemy.hp_bar_timer = 90
     world.play("hit")
     if player.burn_unlocked:
         enemy.burning = True

@@ -281,6 +281,8 @@ def run_enemy_ai(world: World) -> None:
     for enemy in list(world.enemies):
         if enemy.hit_flash > 0:
             enemy.hit_flash -= 1
+        if enemy.hp_bar_timer > 0:
+            enemy.hp_bar_timer -= 1
         enemy.update(world.player)
         if enemy.is_boss:
             boss_attack(world, enemy)

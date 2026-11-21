@@ -268,7 +268,8 @@ class GameplayScene(Scene):
     def _encounter_y(self) -> int:
         if self.game.wide_layout:
             return 60 if any(e.is_boss for e in self.world.enemies) else 14
-        y = 195 if self.world.radio else 113
+        boss = any(e.is_boss for e in self.world.enemies)
+        y = (84 if boss else 44) + (72 if self.world.radio else 0)
         if self.game.tracker is not None and self.game.show_camera:
             below_preview = self.game.to_virtual((0, PREVIEW_SIZE[1] + 32))
             if below_preview is not None:
@@ -363,7 +364,7 @@ class GameplayScene(Scene):
         return 0, 0
 
     def _draw_background(self, surface: pygame.Surface) -> None:
-        bg = self.game.assets.raw(self.background)
+        bg = self._dark_background()
         if bg is None:
             surface.fill((0, 0, 0))
             return
@@ -371,6 +372,17 @@ class GameplayScene(Scene):
         y = int(self.bg_offset) % h
         surface.blit(bg, (0, y - h))
         surface.blit(bg, (0, y))
+
+    BG_BRIGHTNESS = (150, 150, 158)            # nền trong trận tối đi ~40% để đạn/địch nổi bật
+
+    def _dark_background(self) -> Optional[pygame.Surface]:
+        if getattr(self, "_bg_dark", None) is None:
+            bg = self.game.assets.raw(self.background)
+            if bg is None:
+                return None
+            self._bg_dark = bg.copy()
+            self._bg_dark.fill(self.BG_BRIGHTNESS, special_flags=pygame.BLEND_MULT)
+        return self._bg_dark
 
     def draw(self, surface: pygame.Surface) -> None:
         w, assets = self.world, self.game.assets

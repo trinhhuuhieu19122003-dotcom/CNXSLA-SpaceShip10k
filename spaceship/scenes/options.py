@@ -6,18 +6,14 @@ import pygame
 from spaceship import config
 from spaceship.config import WIDTH
 from spaceship.core.scene import Scene
-from spaceship.input.gestures import Gesture
 from spaceship.ui.menu_list import MenuList
-from spaceship.ui.widgets import (
-    ACCENT, CORNER, FRAME, MUTED, PANEL_FILL, SECONDARY, SELECTED_FILL, TEXT, Button, blit_center, draw_panel, fit_text,
-)
+from spaceship.ui.volume_sliders import STEP as VOLUME_STEP, VOLUMES, VolumeSliders
+from spaceship.ui.widgets import FRAME, MUTED, SECONDARY, TEXT, Button, blit_center, draw_panel, fit_text
 
 PANEL = pygame.Rect(60, 60, WIDTH - 120, 580)
 BTN_W, BTN_H = 440, 40
 BTN_TOP, BTN_STEP = 150, 50
-VOLUME_STEP = 0.05
 VOLUME_NOTE = "Kéo thanh bằng chuột · phím trái/phải: ±5% · chụm tay rồi di ngang để kéo."
-SLIDER_LABEL_W, SLIDER_VALUE_W = 170, 64          # cột chữ bên trái / ô phần trăm bên phải của thanh trượt
 #: (chữ cố định, hành động, ghi chú hiện ở cuối khung khi mục được chọn)
 ROWS = (
     ("", "fullscreen", "Phủ kín màn hình. Phím tắt: F11 hoặc Alt + Enter, dùng được ở mọi màn."),
@@ -30,7 +26,6 @@ ROWS = (
     ("VỀ MENU", "menu", "Lưu tự động: mọi thay đổi có hiệu lực ngay."),
 )
 NOTE_Y = BTN_TOP + len(ROWS) * BTN_STEP + 8
-VOLUMES = {"music": "music_volume", "sfx": "sfx_volume"}
 
 
 class OptionsScene(Scene):
@@ -43,49 +38,14 @@ class OptionsScene(Scene):
         self.buttons = [Button(text, pygame.Rect(x, BTN_TOP + i * BTN_STEP, BTN_W, BTN_H), action)
                         for i, (text, action, _note) in enumerate(ROWS)]
         self.menu = MenuList.for_buttons(game, self.buttons, self._do)
-        self._mouse_drag: str | None = None   # đang kéo thanh trượt nào bằng chuột
-        self._hand_drag: str | None = None    # ... bằng tay (chụm + di ngang)
+        self.sliders = VolumeSliders(game, self.buttons)      # thanh trượt âm lượng dùng chung với Tạm dừng
         self._refresh()
 
-    # --- Thanh trượt âm lượng ------------------------------------------------------------
-    @staticmethod
-    def _track(button: Button) -> pygame.Rect:
-        r = button.rect
-        return pygame.Rect(r.x + SLIDER_LABEL_W, r.centery - 3, r.width - SLIDER_LABEL_W - SLIDER_VALUE_W, 6)
+    _track = staticmethod(VolumeSliders.track)
 
-    def _set_volume(self, action: str, value: float, *, save: bool) -> None:
-        s = self.game.settings
-        key = VOLUMES[action]
-        value = min(1.0, max(0.0, round(value * 20) / 20))          # bước 5%
-        changed = abs(getattr(s, key) - value) > 1e-6
-        setattr(s, key, value)
-        self.game.audio.set_volumes(s.music_volume, s.sfx_volume)
-        if changed and action == "sfx":
-            self.game.audio.play("ui_move")                          # nghe thử ngay mức vừa chỉnh
-        if save:
-            s.save()
-
-    def _set_from_x(self, button: Button, x: int, *, save: bool = False) -> None:
-        track = self._track(button)
-        self._set_volume(button.action, (x - track.x) / track.width, save=save)
-
-    def _draw_slider(self, surface, assets, button: Button, selected: bool) -> None:
-        value = getattr(self.game.settings, VOLUMES[button.action])
-        r = button.rect
-        draw_panel(surface, r, ACCENT if selected else CORNER, SELECTED_FILL if selected else PANEL_FILL)
-        color = ACCENT if selected else TEXT
-        label = fit_text(assets, button.text, 20, color, SLIDER_LABEL_W - 28, role="ui")
-        surface.blit(label, label.get_rect(midleft=(r.x + 20, r.centery)))
-        track = self._track(button)
-        pygame.draw.rect(surface, (30, 38, 50), track, border_radius=3)
-        filled = pygame.Rect(track.x, track.y, round(track.width * value), track.height)
-        pygame.draw.rect(surface, ACCENT if selected else SECONDARY, filled, border_radius=3)
-        knob = (track.x + round(track.width * value), track.centery)
-        dragging = button.action in (self._mouse_drag, self._hand_drag)
-        pygame.draw.circle(surface, (11, 20, 30), knob, 11 if dragging else 9)
-        pygame.draw.circle(surface, ACCENT if selected else TEXT, knob, 11 if dragging else 9, 3)
-        percent = assets.text(f"{round(value * 100)}%", 18, color, role="ui")
-        surface.blit(percent, percent.get_rect(midright=(r.right - 16, r.centery)))
+    @property
+    def _hand_drag(self):
+        return self.sliders.hand_drag
 
     def _refresh(self) -> None:
         s = self.game.settings
@@ -101,39 +61,15 @@ class OptionsScene(Scene):
             button.text = texts.get(button.action, button.text)
 
     def _change_volume(self, action: str, step: float, wrap: bool) -> None:
-        s = self.game.settings
-        value = getattr(s, VOLUMES[action]) + step
-        if wrap and value > 1.0 + 1e-6:
-            value = 0.0
-        self._set_volume(action, value, save=True)
+        self.sliders.step(action, step, wrap)
         self._refresh()
 
-    def _slider_at(self, pos):
-        if pos is None:
-            return None
-        return next((b for b in self.buttons if b.action in VOLUMES and b.rect.collidepoint(pos)), None)
-
     def handle_event(self, event) -> None:
-        action = self.buttons[self.menu.selected].action
-        if event.type == pygame.MOUSEBUTTONDOWN and getattr(event, "button", 0) == 1 and self._slider_at(event.pos):
-            button = self._slider_at(event.pos)                  # bấm vào thanh trượt: nhảy tới chỗ bấm, bắt đầu kéo
-            self.menu.select(self.buttons.index(button))
-            self._mouse_drag = button.action
-            self._set_from_x(button, event.pos[0])
-            return
-        if event.type == pygame.MOUSEMOTION and self._mouse_drag and event.pos is not None:
-            button = next(b for b in self.buttons if b.action == self._mouse_drag)
-            self._set_from_x(button, event.pos[0])
-            return
-        if event.type == pygame.MOUSEBUTTONUP and self._mouse_drag:
-            self._mouse_drag = None
-            self.game.settings.save()
+        if self.sliders.handle_event(event, self.menu):
             return
         if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
             self.game.audio.play("ui_back")
             self._do("menu")
-        elif event.type == pygame.KEYDOWN and event.key in (pygame.K_LEFT, pygame.K_RIGHT) and action in VOLUMES:
-            self._change_volume(action, VOLUME_STEP if event.key == pygame.K_RIGHT else -VOLUME_STEP, wrap=False)
         else:
             self.menu.handle_event(event)
 
@@ -168,19 +104,9 @@ class OptionsScene(Scene):
     def update(self, controls) -> None:
         self.game.starfield.update()
         self._refresh()                      # F11 / Alt+Enter có thể đổi toàn màn hình từ bên ngoài
-        selected = self.buttons[self.menu.selected]
-        pinching = controls.gesture is Gesture.PINCH and controls.target is not None
-        if self.game.settings.hand_menu and pinching and (self._hand_drag or selected.action in VOLUMES):
-            # Chụm tay trên thanh trượt = nắm núm kéo ngang (không tính là "bấm" mục)
-            self.game.menu_pinch_consumed = True
-            self._hand_drag = self._hand_drag or selected.action
-            self._set_from_x(selected, controls.target[0])
-        elif self._hand_drag:
-            self._hand_drag = None
-            self.game.settings.save()
+        self.sliders.before_menu_update(controls, self.menu)
         self.menu.update(controls)
-        if self._hand_drag:
-            self.menu.progress = 0.0
+        self.sliders.after_menu_update(self.menu)
 
     def draw(self, surface: pygame.Surface) -> None:
         a = self.game.assets
@@ -190,7 +116,7 @@ class OptionsScene(Scene):
         blit_center(surface, a.text("CÀI ĐẶT", 36, TEXT, role="display"), PANEL.y + 8)
         for i, button in enumerate(self.buttons):
             if button.action in VOLUMES:
-                self._draw_slider(surface, a, button, i == self.menu.selected)
+                self.sliders.draw(surface, a, button, i == self.menu.selected)
             else:
                 button.draw(surface, a, i == self.menu.selected)
         self.menu.draw_progress(surface)
@@ -199,5 +125,5 @@ class OptionsScene(Scene):
         blit_center(surface, note, NOTE_Y + 8)
         if not self.game.hand_available:
             note = "(Không có camera - các mục về tay sẽ có tác dụng khi bật camera)"
-            blit_center(surface, a.text(note, 14, MUTED, role="body"), NOTE_Y + 36)
-        blit_center(surface, a.text("ESC: VỀ MENU", 14, MUTED, role="label"), PANEL.bottom + 14)
+            blit_center(surface, a.text(note, 15, MUTED, role="body"), NOTE_Y + 36)
+        blit_center(surface, a.text("ESC: VỀ MENU", 15, MUTED, role="label"), PANEL.bottom + 14)

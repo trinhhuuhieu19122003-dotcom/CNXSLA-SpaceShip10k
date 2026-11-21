@@ -40,13 +40,15 @@ class LevelSelectScene(Scene):
         self._build_buttons()
 
     def _build_buttons(self) -> None:
-        actions = ["difficulty", "new_game", "menu"]
+        actions = ["difficulty", "menu"]
         if self.game.save.cycle_complete:
             actions.insert(1, "new_cycle")
-        w, gap = (236, 12) if len(actions) == 3 else (180, 10)
+        w, gap = (250, 20) if len(actions) == 2 else (236, 12)
         x = WIDTH // 2 - (w * len(actions) + gap * (len(actions) - 1)) // 2
         self.buttons = [Button("", pygame.Rect(x + i * (w + gap), 600, w, 44), action, 18)
                         for i, action in enumerate(actions)]
+        # Nút nguy hiểm (xóa sạch dữ liệu) tách riêng ở góc trên phải, viền đỏ - không lẫn với nút thường
+        self.buttons.append(Button("", pygame.Rect(PANEL.right - 156, PANEL.y + 14, 142, 32), "new_game", 15))
         self.menu = MenuList(self.game, self.cards + [b.rect for b in self.buttons], self._activate)
         self._refresh()
 
@@ -58,6 +60,15 @@ class LevelSelectScene(Scene):
                  "new_game": "XÓA HẾT? CHỌN LẠI" if confirming == "new_game" else "CHƠI MỚI"}
         for button in self.buttons:
             button.text = texts[button.action]
+
+    @staticmethod
+    def _draw_danger(surface, assets, button, selected: bool) -> None:
+        fill = (70, 14, 22) if selected else (24, 10, 14)
+        pygame.draw.rect(surface, fill, button.rect, border_radius=4)
+        pygame.draw.rect(surface, DANGER, button.rect, 2 if selected else 1, border_radius=4)
+        label = fit_text(assets, button.text, button.font_size, DANGER if not selected else TEXT,
+                         button.rect.width - 14, role="ui")
+        surface.blit(label, label.get_rect(center=button.rect.center))
 
     def _confirmed(self, action: str) -> bool:
         """Lần chọn đầu chỉ hỏi lại; chọn lần 2 (trong 4 giây, vẫn trên nút đó) mới trả về True."""
@@ -153,7 +164,7 @@ class LevelSelectScene(Scene):
         surface.blit(stars, star_rect)
         draw_star(surface, (star_rect.x - 13, star_rect.centery), 8, True)
         acts = "   ·   ".join(ACTS[k] for k in (1, 2, 3))
-        blit_center(surface, a.text(acts, 14, MUTED, role="label"), 97)
+        blit_center(surface, a.text(acts, 15, MUTED, role="label"), 97)
         for i, level in enumerate(LEVELS):
             self._draw_card(surface, i, level)
         selected_action = (self.buttons[self.menu.selected - LEVEL_COUNT].action
@@ -173,16 +184,19 @@ class LevelSelectScene(Scene):
                     "mỗi chu kỳ). Giữ nguyên Sổ tay, kỷ lục, Hỏa ngục.")
             blit_center(surface, fit_text(a, hint, 15, ACCENT, PANEL.width - 40, role="body"), 529)
         criteria = "1 sao: qua ải · 2 sao: mất tối đa 1 mạng · 3 sao: không mất mạng nào"
-        blit_center(surface, a.text(criteria, 14, MUTED, role="body"), 559)
+        blit_center(surface, a.text(criteria, 15, MUTED, role="body"), 559)
         for i, button in enumerate(self.buttons, LEVEL_COUNT):
-            button.draw(surface, a, i == self.menu.selected)
+            if button.action == "new_game":
+                self._draw_danger(surface, a, button, i == self.menu.selected)
+            else:
+                button.draw(surface, a, i == self.menu.selected)
         if self.menu.selected < LEVEL_COUNT:
             card = self.cards[self.menu.selected]
             self.menu.draw_progress(surface, (card.right - 14, card.bottom - 18))
         else:
             self.menu.draw_progress(surface)
         detail = "Độ khó: dễ = địch ít máu, bắn chậm, rơi nhiều đồ · khó = ngược lại"
-        blit_center(surface, a.text(detail, 13, MUTED, role="body"), 660)
+        blit_center(surface, a.text(detail, 15, MUTED, role="body"), 660)
 
     def _draw_card(self, surface, index: int, level) -> None:
         a = self.game.assets
@@ -202,7 +216,7 @@ class LevelSelectScene(Scene):
         for j, row in enumerate(wrap_text(a, level.name, 14, rect.width - 20, role="ui")):
             surface.blit(a.text(row, 14, TEXT if unlocked else MUTED, role="ui"), (rect.x + 10, rect.y + 45 + j * 19))
         if not unlocked:
-            label = a.text("KHÓA", 14, MUTED, role="label")
+            label = a.text("KHÓA", 15, MUTED, role="label")
             surface.blit(label, label.get_rect(midleft=(rect.centerx - 13, rect.bottom - 23)))
             draw_lock(surface, (rect.centerx - 25, rect.bottom - 23))
             return

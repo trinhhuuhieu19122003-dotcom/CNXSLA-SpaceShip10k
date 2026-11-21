@@ -13,9 +13,9 @@ from spaceship.config import WIDTH
 ACCENT = (0, 220, 255)
 DANGER = (247, 104, 111)
 TEXT = (231, 239, 246)
-SECONDARY = (186, 202, 215)
-MUTED = (150, 168, 185)
-LOCKED = (115, 126, 142)
+SECONDARY = (204, 216, 228)
+MUTED = (172, 188, 204)
+LOCKED = (132, 144, 160)
 FRAME = (40, 61, 76)
 CORNER = (89, 141, 162)
 PANEL_FILL = (10, 17, 27, 235)
@@ -115,7 +115,7 @@ def draw_progress_ring(surface, center, radius: int, progress: float, *, color=A
 
 
 def draw_back_hint(surface: pygame.Surface, assets, y: int) -> None:
-    blit_center(surface, assets.text("CLICK / CHỤM TAY / ENTER / ESC · VỀ MENU", 14, MUTED, role="label"), y)
+    blit_center(surface, assets.text("CLICK / CHỤM TAY / ENTER / ESC · VỀ MENU", 15, MUTED, role="label"), y)
 
 
 @lru_cache(maxsize=8)

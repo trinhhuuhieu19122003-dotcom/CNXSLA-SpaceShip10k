@@ -190,7 +190,7 @@ class MenuScene(Scene):
                 lock_x = label_rect.right + 14
                 draw_lock(surface, (lock_x, label_rect.centery), DANGER if self.lock_feedback else LOCKED)
                 if not selected:
-                    note = a.text("phá đảo để mở", 14, LOCKED, role="body")
+                    note = a.text("phá đảo để mở", 15, LOCKED, role="body")
                     surface.blit(note, note.get_rect(midleft=(lock_x + 15, label_rect.centery)))
                 description = "phá đảo để mở"
             if selected:
@@ -214,7 +214,7 @@ class MenuScene(Scene):
         pygame.draw.rect(surface, (8, 13, 21), (0, y, WIDTH, FOOTER_HEIGHT))
         pygame.draw.line(surface, FRAME, (0, y), (WIDTH, y))
         a = self.game.assets
-        controls = a.text("↑↓ / DI TAY: CHỌN · ENTER / CHỤM TAY: VÀO · ESC: QUAY LẠI", 14, MUTED, role="label")
+        controls = a.text("↑↓ / DI TAY: CHỌN · ENTER / CHỤM TAY: VÀO · ESC: QUAY LẠI", 15, MUTED, role="label")
         surface.blit(controls, controls.get_rect(midleft=(27, y + FOOTER_HEIGHT // 2)))
-        version = a.text("v2.1", 13, MUTED, role="label")
+        version = a.text("v2.1", 14, MUTED, role="label")
         surface.blit(version, version.get_rect(midright=(WIDTH - 26, y + FOOTER_HEIGHT // 2)))

@@ -32,6 +32,20 @@ log = logging.getLogger(__name__)
 WINDOWS_APP_ID = "IamSoftware.SpaceShip10K"
 
 
+def upscale(source: pygame.Surface, size: Tuple[int, int]) -> pygame.Surface:
+    """Phóng hình sắc nét nhất có thể: đúng cỡ thì giữ nguyên; phóng >= 2 lần thì nhân điểm ảnh theo bội số
+    nguyên trước (giữ nét) rồi mới làm mượt phần lẻ còn lại; phóng ít hơn thì làm mượt trực tiếp."""
+    if size == source.get_size():
+        return source
+    sw, sh = source.get_size()
+    k = min(size[0] // sw, size[1] // sh)
+    if k >= 2:
+        source = pygame.transform.scale(source, (sw * k, sh * k))
+        if source.get_size() == size:
+            return source
+    return pygame.transform.smoothscale(source, size)
+
+
 def prepare_windows() -> None:
     """Chuẩn bị riêng cho Windows, gọi trước khi mở cửa sổ.
 
@@ -116,15 +130,14 @@ class Game:
 
     @staticmethod
     def _windowed_size() -> Tuple[int, int]:
-        """Cửa sổ thường: phóng theo màn hình (cao ~85%) để không bị bé trên màn độ phân giải cao."""
+        """Cửa sổ thường: bội số NGUYÊN của 800x700 (1x, 2x...) vừa màn hình -> mỗi điểm ảnh game ứng với đúng
+        1 (hoặc 2x2...) điểm ảnh màn hình, chữ nét tuyệt đối. Muốn to hơn: phóng to cửa sổ / toàn màn hình."""
         try:
             desk_w, desk_h = pygame.display.get_desktop_sizes()[0]
         except (pygame.error, IndexError, AttributeError):
             return config.WIDTH, config.HEIGHT
-        scale = min(desk_h * 0.85 / config.HEIGHT, desk_w * 0.9 / config.WIDTH)
-        if scale <= 1.05:
-            return config.WIDTH, config.HEIGHT
-        return int(config.WIDTH * scale), int(config.HEIGHT * scale)
+        k = max(1, int(min(desk_h * 0.9 / config.HEIGHT, desk_w * 0.9 / config.WIDTH)))
+        return config.WIDTH * k, config.HEIGHT * k
 
     def toggle_fullscreen(self) -> None:
         self.set_fullscreen(not self.fullscreen)
@@ -253,7 +266,7 @@ class Game:
         dx, dy = self.scene.screen_offset() if source is self.screen else (0, 0)
         size = (int(config.WIDTH * scale), int(config.HEIGHT * scale))
         self._draw_backdrop(source, size)
-        frame = source if size == source.get_size() else pygame.transform.smoothscale(source, size)
+        frame = upscale(source, size)
         self.window.blit(frame, (ox + int(dx * scale), oy + int(dy * scale)))
         if ox > 0 or oy > 0:                                 # viền mảnh tách khung game khỏi nền mờ
             pygame.draw.rect(self.window, (40, 61, 76), (ox - 1, oy - 1, size[0] + 2, size[1] + 2), 1)
@@ -282,8 +295,7 @@ class Game:
             canvas.fill(SIDEBAR_BG)
             left, right = pygame.Rect(0, 0, side, config.HEIGHT), pygame.Rect(side, 0, side, config.HEIGHT)
             self.scene.draw_sidebars(canvas, left, right)
-            self._side_images = tuple(pygame.transform.smoothscale(canvas.subsurface(r), (side_w, height))
-                                      for r in (left, right))
+            self._side_images = tuple(upscale(canvas.subsurface(r), (side_w, height)) for r in (left, right))
             self._side_key = key
         if oy > 0 or ox > 0:
             self.window.fill((0, 0, 0))
@@ -294,7 +306,7 @@ class Game:
             self.window.fill(SIDEBAR_BG, (ox, oy, side_w, height))
             self.window.fill(SIDEBAR_BG, (right_x, oy, ww - right_x - ox, height))
         dx, dy = self.scene.screen_offset() if source is self.screen else (0, 0)
-        frame = pygame.transform.smoothscale(source, (field_w, height))
+        frame = upscale(source, (field_w, height))
         self.window.set_clip(pygame.Rect(field_x, oy, field_w, height))   # rung màn không lấn sang bảng bên
         self.window.blit(frame, (field_x + int(dx * scale), oy + int(dy * scale)))
         self.window.set_clip(None)

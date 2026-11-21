@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.1.0-dev] – Đánh bóng giao diện
+- **HUD trong trận gọn 4 góc** (cửa sổ thường): dải mảnh trên cùng "ĐIỂM · ẢI · WAVE"; góc dưới trái mạng + cử chỉ
+  tay + máu + Nộ (gợi ý kỹ năng khi đầy); góc dưới phải vũ khí + tăng cường. Hai ô góc **tự mờ khi tàu bay sát**.
+  Bỏ nhãn lẻ "DRONE", "ĐIỀU KHIỂN: PHÍM"; thống nhất dấu "·". Thanh máu lính chỉ hiện ~1,5 giây sau khi trúng đạn.
+- **Đạn địch dễ thấy**: nền trong trận tối đi ~40%, đạn địch có viền sáng.
+- **Độ nét**: chữ phụ sáng hơn, chữ gợi ý tối thiểu cỡ 15; cửa sổ thường dùng bội số nguyên của 800x700 (vẽ 1:1, nét
+  tuyệt đối); phóng >= 2 lần (2K/4K) nhân điểm ảnh trước rồi mới làm mượt (`app.upscale`).
+- Màn Chọn ải: nút **CHƠI MỚI** tách ra góc trên phải, viền đỏ.
+- Màn **Kết quả**: sao bật lên lần lượt kèm tiếng, số liệu đếm tăng dần, huy hiệu mới thành thẻ có biểu tượng.
+- Màn **Tạm dừng**: thông tin ải/wave/điểm/máu + **2 thanh trượt âm lượng** (`ui/volume_sliders.py`, dùng chung với
+  Cài đặt); kéo bằng tay chỉ bắt đầu khi tay nằm trên thanh trượt.
+- 3 test mới, tổng 112.
+
 ## [2.1.0-dev] – Huy hiệu thành tựu & Chơi mới
 - **18 huy hiệu** (`campaign/achievements.py`): qua ải, 3 sao, phá đảo, toàn sao, chu kỳ 2, đủ Sổ tay, boss ở độ khó
   Khó, trụ 5/10 phút Vô tận, 3 phút Hỏa ngục, 20 boss, 1 000 địch, 25 lần Nộ, hộ vệ chặn 100 đạn, qua ải chỉ bằng tay,

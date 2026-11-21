@@ -171,7 +171,7 @@ class HowToPlayScene(_InfoScene):
         hint = "← → / DI TAY: ĐỔI THẺ · CHỤM TAY: CHỌN"
         if self.tab == ENEMIES:
             hint = "← →: ĐỔI THẺ · ↑ ↓: CHỌN Ô · ENTER / CHỤM TAY: XEM"
-        text = assets.text(hint, 13, MUTED, role="label")
+        text = assets.text(hint, 15, MUTED, role="label")
         surface.blit(text, text.get_rect(midleft=(GUIDE_BODY.x, y)))
         page = assets.text(f"trang {self.tab + 1} / {len(TAB_NAMES)}", 14, SECONDARY, role="label")
         surface.blit(page, page.get_rect(midright=(GUIDE_BACK.x - 20, y)))
@@ -374,5 +374,5 @@ class AchievementsScene(Scene):
         extra = (f"Chu kỳ đã phá đảo: {len(save.cycle_history)} · Kỹ năng Nộ đã dùng: {save.counters.get('skills', 0)}"
                  f" · Đạn hộ vệ đã chặn: {save.counters.get('guard_blocks', 0)}")
         blit_center(surface, fit_text(a, extra, 14, SECONDARY, PANEL.width - 50, role="body"), PANEL.bottom - 78)
-        blit_center(surface, a.text("Số quái/boss là tổng cộng dồn qua mọi ván.", 13, MUTED, role="body"),
+        blit_center(surface, a.text("Số quái/boss là tổng cộng dồn qua mọi ván.", 14, MUTED, role="body"),
                     PANEL.bottom - 58)

@@ -208,4 +208,4 @@ def draw_frame(surface: pygame.Surface, assets, title: Optional[str] = None) -> 
         for y, dy in ((area.top, 1), (area.bottom - 1, -1)):
             pygame.draw.lines(surface, FRAME, False, ((x + dx * length, y), (x, y), (x, y + dy * length)), 2)
     if title:
-        surface.blit(assets.text(title, 11, MUTED, role="label"), (area.x + 10, area.y + 6))
+        surface.blit(assets.text(title, 13, MUTED, role="label"), (area.x + 10, area.y + 6))

@@ -121,4 +121,4 @@ class CalibrationScene(Scene):
         else:
             status, color = "Tay đang di chuyển - giữ yên một chút", TEXT
         blit_center(surface, a.text(status, 18, color, role="body"), box.bottom + 116)
-        blit_center(surface, a.text("SPACE / ENTER: bỏ qua, dùng vị trí cũ", 14, MUTED, role="label"), PANEL.bottom - 35)
+        blit_center(surface, a.text("SPACE / ENTER: bỏ qua, dùng vị trí cũ", 15, MUTED, role="label"), PANEL.bottom - 35)

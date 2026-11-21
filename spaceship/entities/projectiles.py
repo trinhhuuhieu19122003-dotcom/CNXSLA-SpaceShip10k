@@ -174,8 +174,10 @@ class EnemyBullet:
     def draw(self, surface: pygame.Surface) -> None:
         if self.kind in self.STYLE:
             dark, color, outer, inner = self.STYLE[self.kind]
-            pygame.draw.circle(surface, dark, (int(self.x), int(self.y)), outer)
+            center = (int(self.x), int(self.y))
+            pygame.draw.circle(surface, dark, center, outer)
             glow.add(surface, glow.orb(color, inner, core=0.45, halo=0.7), (self.x, self.y))
+            pygame.draw.circle(surface, (255, 235, 235), center, outer, 1)   # viền sáng: nổi trên nền đỏ
             if self.kind == "boss_homing" and self.track_time > 0:
                 pygame.draw.circle(surface, YELLOW, (int(self.x), int(self.y)), outer + 3, 1)
             return

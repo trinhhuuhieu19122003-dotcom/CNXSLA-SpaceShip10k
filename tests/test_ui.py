@@ -205,3 +205,68 @@ class WideLayoutTest(unittest.TestCase):
         self.assertEqual(side, SIDEBAR_MAX)
         self.assertGreater(ox, 0)                                 # màn siêu rộng: phần dư hai mép
         game.render()
+
+
+class PolishTest(unittest.TestCase):
+    def setUp(self):
+        from spaceship.core.settings import Settings
+        from spaceship.core.storage import SaveData
+
+        self.folder = Path(TemporaryDirectory().name)
+        self.folder.mkdir(parents=True, exist_ok=True)
+        self.game = Game(camera=False, seed=1, save=SaveData.load(self.folder / "save.json"),
+                         settings=Settings(path=self.folder / "settings.json"))
+
+    def go(self, scene):
+        self.game.change_scene(scene)
+        self.game._apply_pending_scene()
+        return scene
+
+    def test_pause_has_volume_sliders(self):
+        import pygame
+        from spaceship.config import GameMode
+        from spaceship.scenes.gameplay import GameplayScene
+        from spaceship.scenes.pause import PauseScene
+
+        play = self.go(GameplayScene(self.game, GameMode.ENDLESS))
+        pause = self.go(PauseScene(self.game, play))
+        actions = [b.action for b in pause.buttons]
+        self.assertEqual(actions, ["resume", "music", "sfx", "menu"])
+        self.game.settings.music_volume = 0.5
+        pause.menu.select(actions.index("music"))
+        pause.handle_event(pygame.event.Event(pygame.KEYDOWN, key=pygame.K_RIGHT, mod=0))
+        self.assertAlmostEqual(self.game.settings.music_volume, 0.55)
+        pause.draw(self.game.screen)
+        self.assertIn("ẢI", pause._info_line() if play.level else "ẢI")
+
+    def test_result_stars_pop_in_order(self):
+        from spaceship.config import GameMode
+        from spaceship.core.storage import GameResult
+        from spaceship.input.controls import ControlState
+        from spaceship.scenes.gameplay import GameplayScene
+        from spaceship.scenes.result import STAR_GAP, STAR_START, ResultScene
+
+        play = self.go(GameplayScene(self.game, GameMode.CAMPAIGN, 2))
+        played = []
+        original = self.game.audio.play
+        self.game.audio.play = lambda name, volume=1.0: played.append(name) or original(name, volume)
+        res = self.go(ResultScene(self.game, play, GameResult(GameMode.CAMPAIGN, 900, 20, 0, 60.0, True), False,
+                                  level=2, stars=3))
+        for _ in range(STAR_START + 3 * STAR_GAP + 2):
+            res.update(ControlState())
+            res.draw(self.game.screen)
+        self.assertEqual(played.count("ui_select"), 3)
+
+    def test_hud_corner_fades_under_ship(self):
+        from spaceship.config import GameMode, HEIGHT
+        from spaceship.scenes.gameplay import GameplayScene
+
+        play = self.go(GameplayScene(self.game, GameMode.ENDLESS))
+        p = play.world.player
+        p.x, p.y = 400, 600
+        play.draw(self.game.screen)
+        clear = self.game.screen.get_at((30, HEIGHT - 40))
+        p.x, p.y = 110, HEIGHT - 50                    # tàu bay vào góc dưới trái
+        play.draw(self.game.screen)
+        faded = self.game.screen.get_at((30, HEIGHT - 40))
+        self.assertNotEqual(clear, faded)

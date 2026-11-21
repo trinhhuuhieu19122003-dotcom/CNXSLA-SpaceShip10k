@@ -195,7 +195,7 @@ class CutsceneScene(Scene):
         if self.subtitle:
             blit_center(surface, a.text(self.subtitle, 15, MUTED, role="label"), 17)
         self._draw_dialog(surface)
-        surface.blit(a.text("CLICK: TUA CÂU · SPACE / ESC: BỎ QUA", 13, MUTED, role="label"), (BOX.x, HEIGHT - 30))
+        surface.blit(a.text("CLICK: TUA CÂU · SPACE / ESC: BỎ QUA", 15, MUTED, role="label"), (BOX.x, HEIGHT - 30))
         if self.fade_alpha > 0:
             dim(surface, self.fade_alpha)
 

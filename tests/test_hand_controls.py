@@ -278,7 +278,7 @@ class HandScenesTest(unittest.TestCase):
     def test_returning_open_hand_resumes_even_at_lower_row(self):
         play = self.go(GameplayScene(self.game, GameMode.ENDLESS))
         pause = self.go(PauseScene(self.game, play, reason="hand"))
-        self.tracker.show(y=pause.buttons[1].rect.centery / config.HEIGHT)
+        self.tracker.show(y=pause.buttons[-1].rect.centery / config.HEIGHT)
         self.steps(int((0.3 + config.RESUME_COUNTDOWN_SECONDS) * config.TICK_RATE) + 2)
         self.assertIs(self.game.scene, play)
 
@@ -290,7 +290,7 @@ class HandScenesTest(unittest.TestCase):
         self.tracker.show()
         self.steps(HAND_BACK_TICKS)
         self.assertTrue(pause.counting)
-        self.pinch(*pause.buttons[1].rect.center)
+        self.pinch(*pause.buttons[-1].rect.center)
         self.steps(int(config.PINCH_HOLD_SECONDS * config.TICK_RATE))
         self.assertIsInstance(self.game.scene, MenuScene)
 

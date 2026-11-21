@@ -36,7 +36,7 @@ class _Column:
         self.right = self.x + self.width
 
     def label(self, text: str, color=MUTED) -> None:
-        img = self.assets.text(text, 12, color, role="label")
+        img = self.assets.text(text, 13, color, role="label")
         self.surface.blit(img, (self.x, self.y))
         self.y += img.get_height() + 4
 

@@ -64,7 +64,7 @@ def draw_controls(surface, assets, body: pygame.Rect, seconds: float) -> None:
         surface.blit(fit_text(assets, label, 22, ACCENT, width, role="ui"), (x, box.y + 18))
         _paragraph(surface, assets, description, (x, box.y + 59), width)
         y = box.bottom - 47
-        surface.blit(assets.text("BÀN PHÍM", 13, MUTED, role="label"), (x, y - 19))
+        surface.blit(assets.text("BÀN PHÍM", 14, MUTED, role="label"), (x, y - 19))
         label = assets.text(key, 15, (11, 20, 30), role="ui")
         keycap = pygame.Rect(x, y, label.get_width() + 18, 27)
         pygame.draw.rect(surface, TEXT, keycap, border_radius=4)
@@ -83,16 +83,16 @@ def draw_weapons(surface, assets, body: pygame.Rect, previews) -> None:
         right = box.right - 16
         width = right - x
         # Mọi dòng dựng sẵn rồi xếp dọc với khoảng cách đều, cả khối căn giữa theo chiều dọc của thẻ.
-        damage_label = assets.text("SÁT THƯƠNG GỐC", 12, MUTED, role="label")
+        damage_label = assets.text("SÁT THƯƠNG GỐC", 13, MUTED, role="label")
         damage_value = assets.text(str(config.WEAPON_BASE_DAMAGE[weapon]), 17, TEXT, role="ui")
         lines = [
             (assets.text(config.WEAPON_NAMES[weapon], 23, ACCENT, role="ui"), 0),
             (fit_text(assets, purpose, 15, SECONDARY, width, role="body"), 1),
             (None, 9),                                                  # đường kẻ
             ("damage", 9),
-            (assets.text("DẠNG CẤP 6", 12, MUTED, role="label"), 10),
+            (assets.text("DẠNG CẤP 6", 13, MUTED, role="label"), 10),
             (fit_text(assets, upgrade, 15, TEXT, width, role="body"), 2),
-            (assets.text("KỸ NĂNG NỘ", 12, MUTED, role="label"), 10),
+            (assets.text("KỸ NĂNG NỘ", 13, MUTED, role="label"), 10),
             (fit_text(assets, config.SKILL_NAMES[weapon].upper(), 16, TEXT, width, role="ui"), 2),
         ]
         heights = {None: 1, "damage": max(damage_label.get_height(), damage_value.get_height())}
@@ -116,7 +116,7 @@ def draw_weapons(surface, assets, body: pygame.Rect, previews) -> None:
     pickup = "Nhặt cùng loại: lên cấp (tối đa 6) · Khác loại: đổi súng, về cấp 1"
     blit_center(surface, assets.text(pickup, 15, TEXT, role="body"), body.bottom - 42)
     fire = "Tự động bắn mặc định. Khi tắt: giơ ngón trỏ hoặc giữ Space / J."
-    blit_center(surface, assets.text(fire, 14, MUTED, role="body"), body.bottom - 18)
+    blit_center(surface, assets.text(fire, 15, MUTED, role="body"), body.bottom - 18)
 
 
 def draw_items(surface, assets, body: pygame.Rect, seconds: float) -> None:
@@ -216,7 +216,7 @@ class BestiaryView:
             lines = wrap_text(assets, "???" if locked else entry.name, 12, box.width - 12, role="label")
             y = box.bottom - 6 - 14 * len(lines)
             for j, label in enumerate(lines):
-                blit_center(surface, assets.text(label, 12, MUTED if locked else TEXT, role="label"),
+                blit_center(surface, assets.text(label, 13, MUTED if locked else TEXT, role="label"),
                             y + 14 * j, box.centerx)
         self._draw_detail(surface, assets, seen)
 
