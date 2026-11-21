@@ -454,8 +454,17 @@ BOSS_SPECS = {
     "cruiser": BossSpec("TÀU HỘ TỐNG", "escort_cruiser", 170, 1700, 70, 130, 3, hover_y=165),
     "mothership": BossSpec("TÀU MẸ HY VỌNG", "mothership_boss", 460, 3200, 200, 80, 5, shield=1 / 4,
                            hover_y=185, rages=True),
+    # Hồi IV (đợt 1: tạm dùng kiểu đánh của boss cũ, xem docs/design/hoi-4.md)
+    "storm_eye": BossSpec("MẮT BÃO", "storm_eye", 300, 1800, 100, 70, 3, hover_y=170),
+    "listener": BossSpec("KẺ NGHE", "listener", 300, 1600, 110, 60, 3, hover_y=150),
+    "swarm_heart": BossSpec("TRÁI TIM ĐÀN", "swarm_heart", 480, 4200, 210, 90, 6, shield=1 / 4,
+                            hover_y=185, rages=True),
 }
 STAGE_KIND = {1: "crab", 2: "octopus", 3: "spider"}
+#: Boss nhỏ giữa hồi (thẻ "MINI-BOSS", dấu thoi nhỏ trên bản đồ)
+MINI_BOSSES = frozenset({"nest", "cruiser", "storm_eye", "listener"})
+#: Trận cuối của một hồi lớn: nhạc trận cuối
+FINAL_BOSSES = frozenset({"mothership", "swarm_heart"})
 
 
 class Boss(EnemyBase):

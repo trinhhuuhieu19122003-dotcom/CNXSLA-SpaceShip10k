@@ -1,6 +1,6 @@
 """Bản đồ hành trình: phông nền của đoạn hội thoại mở đầu mỗi ải (thay màn radar cũ).
 
-10 ải = 10 điểm sao chia 3 cụm theo hồi, nối bằng đường bay. Ải đã qua sáng xanh kèm số sao, ải sắp chơi
+Hồi IV (ải 11-15) có tấm bản đồ riêng (``NODES_ACT4``). Hồi I-III: 10 ải = 10 điểm sao chia 3 cụm theo hồi, nối bằng đường bay. Ải đã qua sáng xanh kèm số sao, ải sắp chơi
 nhấp nháy đỏ, ải chưa tới mờ. Tàu bay từ ải trước tới ải này trong ~2 giây đầu. Ải có boss gắn dấu thoi đỏ,
 ải cuối là bóng Tàu Mẹ. Câu thoại có hiệu ứng "radar" làm hiện một bầy chấm đỏ áp sát điểm ải hiện tại.
 
@@ -16,6 +16,7 @@ import pygame
 
 from spaceship.campaign.levels import LEVELS
 from spaceship.config import HEIGHT, WIDTH
+from spaceship.entities.enemies import MINI_BOSSES
 from spaceship.ui import glow
 from spaceship.ui.widgets import ACCENT, DANGER, FRAME, MUTED, TEXT, draw_star
 
@@ -25,8 +26,13 @@ NODES: Dict[int, Tuple[int, int]] = {
     4: (338, 336), 5: (408, 286), 6: (478, 326), 7: (548, 262),
     8: (612, 212), 9: (664, 160), 10: (722, 112),
 }
-ACT_COLORS = {1: (90, 200, 255), 2: (200, 120, 255), 3: (255, 110, 110)}
+#: Hồi IV có tấm bản đồ riêng: xuất phát từ xác Tàu Mẹ (điểm 10, dưới trái) tới nguồn tín hiệu (trên phải).
+NODES_ACT4: Dict[int, Tuple[int, int]] = {
+    10: (96, 420), 11: (228, 372), 12: (352, 410), 13: (462, 318), 14: (566, 246), 15: (690, 150),
+}
+ACT_COLORS = {1: (90, 200, 255), 2: (200, 120, 255), 3: (255, 110, 110), 4: (255, 90, 190)}
 ACT_LABELS = {1: ("HỒI I", (150, 456)), 2: ("HỒI II", (440, 376)), 3: ("HỒI III", (708, 214))}
+ACT_LABELS_ACT4 = {4: ("HỒI IV", (470, 450))}
 START = (30, 466)                     # ải 1: tàu bay vào từ mép bản đồ
 TRAVEL_TICKS = 130
 CLEARED = (90, 230, 255)
@@ -42,6 +48,9 @@ class JourneyMap:
     def __init__(self, level_number: int, stars: Dict[int, int]) -> None:
         self.level = level_number
         self.stars = dict(stars)
+        self.act4 = level_number > 10
+        self.nodes = NODES_ACT4 if self.act4 else NODES
+        self.labels = ACT_LABELS_ACT4 if self.act4 else ACT_LABELS
         self.ticks = 0
         self.blips: List[List[float]] = []
         rnd = random.Random(level_number)
@@ -50,12 +59,12 @@ class JourneyMap:
     # --- Trạng thái --------------------------------------------------------------------
     @property
     def origin(self) -> Tuple[float, float]:
-        return NODES[self.level - 1] if self.level > 1 else START
+        return self.nodes[self.level - 1] if self.level > 1 else START
 
     @property
     def ship_pos(self) -> Tuple[float, float]:
         k = _ease(self.ticks / TRAVEL_TICKS)
-        (x0, y0), (x1, y1) = self.origin, NODES[self.level]
+        (x0, y0), (x1, y1) = self.origin, self.nodes[self.level]
         # bay theo đường cong nhẹ (nhô lên giữa đường) cho tự nhiên
         lift = math.sin(k * math.pi) * 26
         return x0 + (x1 - x0) * k, y0 + (y1 - y0) * k - lift
@@ -66,14 +75,14 @@ class JourneyMap:
 
     def contacts(self) -> None:
         """Hiệu ứng 'nhiều mục tiêu áp sát': bầy chấm đỏ quây quanh điểm ải hiện tại."""
-        cx, cy = NODES[self.level]
+        cx, cy = self.nodes[self.level]
         self.blips = [[min(WIDTH - 36, max(36, cx + math.cos(a) * r)),
                        min(HEIGHT - 232, max(84, cy + math.sin(a) * r * 0.7)), random.uniform(0.4, 0.9)]
                       for a, r in ((random.uniform(0, math.tau), random.uniform(70, 130)) for _ in range(16))]
 
     def update(self) -> None:
         self.ticks += 1
-        cx, cy = NODES[self.level]
+        cx, cy = self.nodes[self.level]
         for blip in self.blips:                       # tiến dần về phía điểm ải
             dx, dy = cx - blip[0], cy - blip[1]
             dist = math.hypot(dx, dy)
@@ -90,16 +99,16 @@ class JourneyMap:
         self._draw_acts(surface, assets)
         self._draw_routes(surface)
         self._draw_mothership(surface, assets)
-        for number in NODES:
+        for number in self.nodes:
             self._draw_node(surface, assets, number)
         self._draw_blips(surface)
         self._draw_ship(surface, assets)
 
     def _draw_acts(self, surface, assets) -> None:
-        for act, (label, pos) in ACT_LABELS.items():
+        for act, (label, pos) in self.labels.items():
             numbers = [lv.number for lv in LEVELS if lv.act == act]
-            xs = [NODES[n][0] for n in numbers]
-            ys = [NODES[n][1] for n in numbers]
+            xs = [self.nodes[n][0] for n in numbers]
+            ys = [self.nodes[n][1] for n in numbers]
             area = pygame.Rect(min(xs) - 34, min(ys) - 30, max(xs) - min(xs) + 68, max(ys) - min(ys) + 60)
             active = any(n == self.level for n in numbers)
             color = ACT_COLORS[act] if active else LOCKED
@@ -123,9 +132,10 @@ class JourneyMap:
             pygame.draw.line(surface, color, p0, p1, width)
 
     def _draw_routes(self, surface) -> None:
-        points = [START] + [NODES[n] for n in sorted(NODES)]
-        for i in range(len(points) - 1):
-            target = i + 1                          # số ải ở đầu cuối đoạn này
+        numbers = sorted(self.nodes)
+        points = ([] if self.act4 else [START]) + [self.nodes[n] for n in numbers]
+        targets = numbers[1:] if self.act4 else numbers       # số ải ở đầu cuối mỗi đoạn
+        for i, target in enumerate(targets):
             a, b = points[i], points[i + 1]
             if target < self.level:
                 self._segment(surface, a, b, glow.scale(CLEARED, 0.45), False, width=5)
@@ -137,6 +147,15 @@ class JourneyMap:
                 self._segment(surface, a, b, LOCKED, True, width=1)
 
     def _draw_mothership(self, surface, assets) -> None:
+        if self.act4:                                   # Hồi IV: xác Tàu Mẹ mờ ở điểm xuất phát, Trái Tim Đàn ở đích
+            for name, number, alpha, width in (("mothership_boss", 10, 40, 110), ("swarm_heart", 15, 70, 120)):
+                image = assets.image(name, width)
+                if image is not None:
+                    ghost = image.copy()
+                    ghost.set_alpha(alpha * 2 if number == self.level else alpha)
+                    x, y = self.nodes[number]
+                    surface.blit(ghost, ghost.get_rect(center=(x - 6, y + 4)))
+            return
         image = assets.image("mothership_boss", 120)
         if image is None:
             return
@@ -146,7 +165,7 @@ class JourneyMap:
         surface.blit(ghost, ghost.get_rect(center=(x - 6, y + 4)))     # bóng Tàu Mẹ phía sau điểm ải 10
 
     def _draw_node(self, surface, assets, number: int) -> None:
-        x, y = NODES[number]
+        x, y = self.nodes[number]
         level = LEVELS[number - 1]
         current = number == self.level
         cleared = not current and (number < self.level or number in self.stars)
@@ -165,7 +184,7 @@ class JourneyMap:
         label = assets.text(str(number), 13, TEXT if (current or cleared) else MUTED, role="ui")
         surface.blit(label, label.get_rect(center=(x, y + 1)))
         if level.boss:                              # ải có boss: dấu thoi đỏ phía trên
-            size = 6 if level.boss in ("nest", "cruiser") else 8
+            size = 6 if level.boss in MINI_BOSSES else 8
             top = (x, y - 26)
             diamond = [(top[0], top[1] - size), (top[0] + size, top[1]), (top[0], top[1] + size), (top[0] - size, top[1])]
             pygame.draw.polygon(surface, (60, 12, 18), diamond)
@@ -182,7 +201,7 @@ class JourneyMap:
 
     def _draw_ship(self, surface, assets) -> None:
         x, y = self.ship_pos
-        (x0, y0), (x1, y1) = self.origin, NODES[self.level]
+        (x0, y0), (x1, y1) = self.origin, self.nodes[self.level]
         angle = math.degrees(math.atan2(-(y1 - y0), x1 - x0)) - 90
         if not self.arrived:                          # vệt động cơ khi đang bay
             for i in range(1, 6):

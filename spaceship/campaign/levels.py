@@ -1,4 +1,4 @@
-"""Dữ liệu 10 ải của chế độ Vượt ải (3 hồi).
+"""Dữ liệu 15 ải của chế độ Vượt ải (4 hồi; Hồi IV mở sau khi phá đảo ải 10).
 
 Mỗi ải = danh sách wave, mỗi wave = danh sách sự kiện ``(tick, hàm_sinh_địch)``.
 Wave sau chỉ bắt đầu khi đã diệt hết địch của wave trước. Muốn thêm/sửa ải:
@@ -15,7 +15,15 @@ chỉ cần sửa dữ liệu ở đây, không đụng tới logic.
 | 7 | Lõi Tinh vân | BOSS 2 -> Thiêu đốt |
 | 8 | Trạm Tiền Tiêu | Pháo tháp, tàu đồng minh bị nhiễm |
 | 9 | Hạm Đội Hộ Tống | Mini-boss Tàu Hộ Tống -> Drone thứ hai |
-| 10 | Tàu Mẹ | BOSS CUỐI |
+| 10 | Tàu Mẹ | BOSS CUỐI (phá đảo: mở Hỏa ngục) |
+| 11 | Tiếng Vọng | Hồi IV: Bóng KX (đợt 2) |
+| 12 | Khoang Ngủ Đông | Hộ tống tàu cứu sinh (đợt 3) |
+| 13 | Giếng Trọng Lực | Lực hút, mini-boss Mắt Bão (đợt 4) |
+| 14 | Tín Hiệu Câm | Màn tối, mini-boss Kẻ Nghe (đợt 5) |
+| 15 | Trái Tim Đàn | BOSS CUỐI THẬT (đợt 6) |
+
+Hồi IV mở sau khi qua ải 10. Đợt 1 chỉ dựng khung (dữ liệu ải + thoại), địch tạm dùng loại có sẵn;
+thiết kế đầy đủ: docs/design/hoi-4.md.
 """
 from __future__ import annotations
 
@@ -191,9 +199,41 @@ LEVELS: Tuple[Level, ...] = (
         wave(turrets([150, 650]), allies(4, at=60)),
         wave(breeders([250, 550]), shields([400], at=60), swarm(10, at=120, every=10)),
     ), boss="mothership", hint="BOSS CUỐI"),
+    # ===== HỒI IV · NGUỒN TÍN HIỆU (mở sau khi qua ải 10) =====
+    Level(11, 4, "TIẾNG VỌNG", "bg_act4", 1.9, (
+        wave(grunts(3, 1)),
+        wave(swarm(14, every=8)),
+        wave(shields([250, 550]), grunts(3, 2, at=90)),
+        wave(grunts(3, 4, kamikaze=0.3), allies(2, at=90)),
+        wave(turrets([200, 600]), swarm(10, at=60, every=10)),
+    ), hint="Đàn đang học cách bạn lái"),
+    Level(12, 4, "KHOANG NGỦ ĐÔNG", "bg_act4", 1.9, (
+        wave(grunts(3, 2)),
+        wave(swarm(12, every=10)),
+        wave(breeders([250, 550]), grunts(3, 3, at=60, kamikaze=0.4)),
+        wave(turrets([150, 650]), allies(3, at=60)),
+    ), hint="40 người sống sót đang chờ"),
+    Level(13, 4, "GIẾNG TRỌNG LỰC", "bg_blackhole", 2.0, (
+        wave(grunts(3, 2)),
+        wave(swarm(16, every=8), meteors(3, at=40, every=60)),
+        wave(shields([200, 400, 600]), grunts(3, 3, at=90, kamikaze=0.3)),
+        wave(turrets([200, 600]), allies(2, at=60)),
+    ), boss="storm_eye", reward="upgrade_universal", hint="Mini-boss: Mắt Bão"),
+    Level(14, 4, "TÍN HIỆU CÂM", "bg_act4", 2.0, (
+        wave(grunts(3, 3)),
+        wave(swarm(9, side="left", every=10), swarm(9, at=40, side="right", every=10)),
+        wave(breeders([250, 550]), grunts(3, 2, at=90)),
+        wave(turrets([150, 400, 650])),
+    ), boss="listener", fog=True, hint="Mini-boss: Kẻ Nghe"),
+    Level(15, 4, "TRÁI TIM ĐÀN", "bg_heart", 2.1, (
+        wave(grunts(3, 4, kamikaze=0.3), shields([200, 600], at=60)),
+        wave(breeders([250, 550]), turrets([150, 650], at=60), swarm(12, at=120, every=10)),
+    ), boss="swarm_heart", hint="BOSS CUỐI THẬT"),
 )
 
 LEVEL_COUNT = len(LEVELS)
+#: Ải cuối của mạch chính (Hồi I-III): qua ải này là "phá đảo" - mở Hỏa ngục và Hồi IV.
+MAIN_LEVELS = 10
 
 
 def get_level(number: int) -> Level:
@@ -206,6 +246,6 @@ def default_loadout(number: int) -> dict:
         "weapon": "laser",
         "level": min(4, 1 + (number - 1) // 2),
         "bonus_damage": 0,
-        "drones": (1 if number > 3 else 0) + (1 if number > 9 else 0),
+        "drones": (1 if number > 3 else 0) + (1 if number > 9 else 0),   # Hồi IV: đủ 2 drone
         "burn": number > 7,
     }

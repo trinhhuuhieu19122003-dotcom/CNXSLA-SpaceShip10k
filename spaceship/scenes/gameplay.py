@@ -10,13 +10,13 @@ import pygame
 from spaceship.campaign import achievements
 from spaceship.campaign.achievements import RunStats
 from spaceship.campaign.bestiary import BESTIARY, BestiaryEntry
-from spaceship.campaign.levels import LEVEL_COUNT, default_loadout, get_level
+from spaceship.campaign.levels import LEVEL_COUNT, MAIN_LEVELS, default_loadout, get_level
 from spaceship.campaign.story import RADIO
 from spaceship import config
 from spaceship.config import HEIGHT, TICK, TICK_RATE, WIDTH, GameMode
 from spaceship.core.scene import Scene
 from spaceship.core.storage import GameResult
-from spaceship.entities.enemies import Boss, Breeder, Enemy, InfectedAlly, Meteor, Parasite, ShieldBug, Turret, Wreck
+from spaceship.entities.enemies import FINAL_BOSSES, Boss, Breeder, Enemy, InfectedAlly, Meteor, Parasite, ShieldBug, Turret, Wreck
 from spaceship.input.hand_tracker import PREVIEW_SIZE
 from spaceship.systems import attacks, combat, weapons
 from spaceship.systems.spawning import create_director
@@ -293,7 +293,7 @@ class GameplayScene(Scene):
         return "act3" if self.mode is GameMode.INFERNO else "game"
 
     def _boss_music(self, bosses) -> str:
-        if self.mode is GameMode.INFERNO or any(b.kind == "mothership" for b in bosses):
+        if self.mode is GameMode.INFERNO or any(b.kind in FINAL_BOSSES for b in bosses):
             return "final_boss"
         return "game"                              # nhạc gốc thời đại học cho trận boss
 
@@ -355,22 +355,25 @@ class GameplayScene(Scene):
         new_record = self.game.save.record(result)
         game = self.game
         stars = self.stars if victory and self.level is not None else 0
-        cycle = game.save.cycle                                   # trước khi ghi (đoạn kết nói về chu kỳ vừa xong)
         if victory and self.level is not None:
-            game.save.record_level(self.level_number, stars, LEVEL_COUNT)
+            game.save.record_level(self.level_number, stars, LEVEL_COUNT, MAIN_LEVELS)
         self._record_achievements(victory and self.level is not None, stars)
         if self.level is None:
             return game.change_scene(ResultScene(game, self, result, new_record))
 
-        def result_scene(ending: bool = False):
+        def result_scene(ending=False):
             return ResultScene(game, self, result, new_record, level=self.level_number, stars=stars,
                                loadout=self.loadout(), ending=ending)
 
-        if victory and self.level_number == LEVEL_COUNT:          # phá đảo -> đoạn kết
-            script = list(ENDING_SCRIPT) + make_script(story.cycle_teaser(cycle))
-            game.change_scene(CutsceneScene(game, script, lambda: result_scene(ending=True),
+        if victory and self.level_number == MAIN_LEVELS:          # phá đảo mạch chính -> đoạn kết + mở Hồi IV
+            script = list(ENDING_SCRIPT) + make_script(story.AFTER_MAIN)
+            game.change_scene(CutsceneScene(game, script, lambda: result_scene(ending="main"),
                                             backdrop="ending", title="KẾT THÚC",
                                             music="ending"))
+        elif victory and self.level_number == LEVEL_COUNT:        # Hồi IV xong -> kết thúc thật
+            game.change_scene(CutsceneScene(game, make_script(story.TRUE_ENDING),
+                                            lambda: result_scene(ending="true"),
+                                            backdrop="ending", title="KẾT THÚC THẬT", music="ending"))
         else:
             game.change_scene(result_scene())
 

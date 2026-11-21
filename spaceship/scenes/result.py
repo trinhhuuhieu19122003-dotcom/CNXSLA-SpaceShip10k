@@ -25,13 +25,16 @@ class ResultScene(Scene):
     music = None
 
     def __init__(self, game, gameplay, result: GameResult, new_record: bool, level: Optional[int] = None,
-                 stars: int = 0, loadout: Optional[dict] = None, ending: bool = False) -> None:
+                 stars: int = 0, loadout: Optional[dict] = None, ending=False) -> None:
+        """``ending``: False | "main" (qua ải 10: mở Hồi IV) | "true" (qua ải 15: kết thúc thật).
+        ``True`` (cách gọi cũ) được hiểu là "true"."""
         super().__init__(game)
         self.gameplay = gameplay
         self.result = result
         self.new_record = new_record
         self.board_rank = self._board_rank(game, result)
-        self.level, self.stars, self.loadout, self.ending = level, stars, loadout, ending
+        self.level, self.stars, self.loadout = level, stars, loadout
+        self.ending = "true" if ending is True else (ending or None)
         self.music = "ending" if ending else None      # đoạn kết: giữ nhạc kết thúc
         self._jingle_played = False
         self.ticks = 0
@@ -56,7 +59,7 @@ class ResultScene(Scene):
         r = self.result
         if self.level is None:
             actions = [("CHƠI LẠI", "retry"), ("VỀ MENU", "menu")]
-        elif self.ending:
+        elif self.ending == "true":
             actions = [("CHỌN ẢI", "levels"), ("VỀ MENU", "menu")]
         elif r.victory:
             actions = [("ẢI TIẾP THEO", "next"), ("CHỌN ẢI", "levels"), ("VỀ MENU", "menu")]
@@ -128,7 +131,9 @@ class ResultScene(Scene):
 
     def _title(self):
         r = self.result
-        if self.ending:
+        if self.ending == "true":
+            return "KẾT THÚC THẬT", ACCENT
+        if self.ending == "main":
             return "PHÁ ĐẢO!", ACCENT
         if self.level is not None:
             return (f"QUA ẢI {self.level}!", ACCENT) if r.victory else ("THẤT BẠI", DANGER)
@@ -171,8 +176,11 @@ class ResultScene(Scene):
             surface.blit(val, (PANEL.right - 70 - val.get_width(), ry))
         y += len(rows) * 26 + 6
         if self.ending:
-            unlock = "Đã mở Hỏa ngục · " if self.game.save.cycle == 1 else ""
-            text = f"{unlock}Chu kỳ {self.game.save.cycle + 1} đã mở ở màn Chọn ải"
+            if self.ending == "main":
+                unlock = "Đã mở Hỏa ngục · " if self.game.save.cycle == 1 else ""
+                text = f"{unlock}Hồi IV · Nguồn tín hiệu đã mở"
+            else:
+                text = f"Chu kỳ {self.game.save.cycle + 1} đã mở ở màn Chọn ải"
             blit_center(surface, fit_text(a, text, 17, ACCENT, PANEL.width - 40, role="body"), y)
         elif self.new_record:
             record = a.text("KỶ LỤC MỚI!", 18, ACCENT, role="ui")

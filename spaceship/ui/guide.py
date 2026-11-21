@@ -5,8 +5,7 @@ import pygame
 
 from spaceship import config
 from spaceship.campaign.bestiary import BESTIARY
-from spaceship.campaign.levels import LEVEL_COUNT
-from spaceship.campaign.story import ACTS
+from spaceship.campaign.levels import MAIN_LEVELS
 from spaceship.config import GameMode
 from spaceship.entities.items import draw_item_icon
 from spaceship.ui.guide_preview import draw_hand_demo
@@ -146,7 +145,7 @@ def draw_items(surface, assets, body: pygame.Rect, seconds: float) -> None:
 
 def draw_modes(surface, assets, body: pygame.Rect, campaign_cleared: bool) -> None:
     details = (
-        (f"{LEVEL_COUNT} ải, {len(ACTS)} hồi, có cốt truyện. Chọn độ khó Dễ, Thường hoặc Khó.",
+        (f"{MAIN_LEVELS} ải, 3 hồi, có cốt truyện; phá đảo mở thêm một hồi nữa. Chọn độ khó Dễ, Thường hoặc Khó.",
          "1 sao: qua ải · 2 sao: mất tối đa 1 mạng · 3 sao: không mất mạng nào."),
         ("Sống sót càng lâu càng tốt. Độ khó tăng dần và càng về sau càng nhiều loại địch.",
          f"Boss đổi loại sau mỗi {config.ENDLESS_BOSS_INTERVAL:g} giây. "

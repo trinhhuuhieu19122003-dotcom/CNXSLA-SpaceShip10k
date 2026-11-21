@@ -100,12 +100,17 @@ class SaveData:
         self.save()
         return True
 
-    def record_level(self, number: int, stars: int, last_level: int) -> None:
-        """Qua ải: lưu số sao (giữ số cao nhất), mở ải tiếp theo / đánh dấu phá đảo."""
+    def record_level(self, number: int, stars: int, last_level: int, main_level: Optional[int] = None) -> None:
+        """Qua ải: lưu số sao (giữ số cao nhất), mở ải tiếp theo.
+
+        ``main_level`` (ải 10): qua ải này là phá đảo mạch chính -> mở Hỏa ngục + Hồi IV.
+        ``last_level`` (ải 15): qua ải này là kết thúc thật -> xong chu kỳ, mở chu kỳ mới."""
+        main_level = last_level if main_level is None else main_level
         self.level_stars[number] = max(stars, self.level_stars.get(number, 0))
         self.unlocked_level = max(self.unlocked_level, min(last_level, number + 1))
-        if number >= last_level:
+        if number >= main_level:
             self.campaign_cleared = True
+        if number >= last_level:
             self.cycle_complete = True
             self.cycle_history[self.cycle] = max(self.total_stars, self.cycle_history.get(self.cycle, 0))
         self.save()
@@ -239,6 +244,9 @@ class SaveData:
                 # Save cũ (v3) đã phá đảo thì coi như xong chu kỳ 1, được mở chu kỳ 2
                 data.cycle_complete = bool(campaign.get("cycle_complete", data.campaign_cleared))
                 data.cycle_history = {int(k): int(v) for k, v in campaign.get("cycle_history", {}).items()}
+                # Save trước khi có Hồi IV: đã qua ải 10 trong chu kỳ này -> mở luôn ải 11
+                if data.unlocked_level >= 10 and 10 in data.level_stars:
+                    data.unlocked_level = max(data.unlocked_level, 11)
                 if data.campaign_cleared and not data.cycle_history and data.cycle == 1:
                     data.cycle_history = {1: data.total_stars}
                 achievements = raw.get("achievements", {})

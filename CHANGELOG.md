@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.2.0-dev] – Hồi IV · Nguồn Tín Hiệu (đợt 1: khung)
+- **5 ải mới (11–15)**, mở sau khi qua ải 10: Tiếng Vọng, Khoang Ngủ Đông, Giếng Trọng Lực, Tín Hiệu Câm, Trái Tim Đàn.
+  Toàn bộ thoại mở đầu và thoại trong trận; địch tạm dùng loại có sẵn, cơ chế mới làm ở các đợt sau
+  ([docs/design/hoi-4.md](docs/design/hoi-4.md)).
+- **Tiến trình:** qua ải 10 = phá đảo mạch chính (mở Hỏa ngục + Hồi IV, đoạn kết có đuôi mới dẫn sang ải 11, màn Kết
+  quả có nút ẢI TIẾP THEO). Qua ải 15 = **kết thúc thật** (đoạn hội thoại mới, màn "KẾT THÚC THẬT") rồi mới mở chu kỳ
+  mới. Save cũ đã qua ải 10 được mở ải 11; ai đang chơi chu kỳ 2 giữ nguyên.
+- **Màn Chọn ải 3 hàng** (thẻ gọn hơn); Hồi IV hiện "???" và tổng sao tính trên 10 ải cho tới khi phá đảo.
+- **Bản đồ hành trình riêng cho Hồi IV**: từ xác Tàu Mẹ tới nguồn tín hiệu.
+- 3 boss mới trong `BOSS_SPECS` (Mắt Bão, Kẻ Nghe, Trái Tim Đàn), tạm mượn kiểu đánh boss cũ; nhạc trận cuối cho Trái
+  Tim Đàn. `MINI_BOSSES`, `FINAL_BOSSES` thay cho danh sách viết tay.
+- **Ảnh tạm** (`Assets` `PLACEHOLDERS`): ảnh Hồi IV chưa có file thì dùng ảnh có sẵn; thả file Codex vẽ vào
+  `assets/images/` là dùng ngay.
+- 9 test mới (`tests/test_act4.py`), bot "bất tử" chơi hết 15 ải; tổng 165.
+
 ## [2.1.0-dev] – Chữ sắc nét, chuỗi hạ địch, kamikaze báo trước
 - **Chữ sắc nét khi toàn màn hình** (`ui/crisp.py`): `Assets.text` trả về `TextSurface` nhớ chữ/cỡ/màu; tấm vẽ
   800x700 và tấm 2 bảng bên là `CrispSurface`. Khi phóng > 1,05 lần, chữ được ghi lại rồi vẽ lại bằng font cỡ lớn

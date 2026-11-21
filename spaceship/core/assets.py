@@ -26,6 +26,15 @@ FONT_FILES = {
 }
 
 
+#: Ảnh của Hồi IV chưa có file thì tạm dùng ảnh có sẵn (thả file thật vào assets/images là game tự dùng).
+PLACEHOLDERS = {
+    "bg_act4": "bg_act3", "bg_blackhole": "bg_act3", "bg_heart": "bg_act3",
+    "storm_eye": "boss2", "listener": "nest_mother",
+    "swarm_heart": "mothership_boss", "swarm_heart_core": "mothership_boss",
+    "lifeboat": "infected_ally", "portrait_aria_glitch": "portrait_aria",
+}
+
+
 class Assets:
     def __init__(self, images_dir: Path = IMAGES_DIR, *, fonts_dir: Path = FONTS_DIR) -> None:
         self.images_dir = images_dir
@@ -36,11 +45,18 @@ class Assets:
         self._missing_fonts: set[Path] = set()
 
     # --- Ảnh -------------------------------------------------------------------
+    def _path(self, name: str) -> Path:
+        path = self.images_dir / f"{name}.png"
+        if not path.exists() and (self.images_dir / f"{name}.jpg").exists():
+            path = self.images_dir / f"{name}.jpg"          # ảnh nền/chân dung lưu JPG cho nhẹ
+        return path
+
     def _load_raw(self, name: str) -> Optional[pygame.Surface]:
         if name not in self._raw:
-            path = self.images_dir / f"{name}.png"
-            if not path.exists() and (self.images_dir / f"{name}.jpg").exists():
-                path = self.images_dir / f"{name}.jpg"      # ảnh nền/chân dung lưu JPG cho nhẹ
+            path = self._path(name)
+            if not path.exists() and name in PLACEHOLDERS:
+                self._raw[name] = self._load_raw(PLACEHOLDERS[name])
+                return self._raw[name]
             try:
                 surface = pygame.image.load(str(path))
                 if pygame.display.get_surface() is not None:

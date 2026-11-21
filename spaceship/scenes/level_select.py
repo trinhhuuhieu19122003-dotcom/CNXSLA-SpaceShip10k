@@ -1,31 +1,35 @@
-"""Chọn ải: 10 ải chia 3 hồi, sao đã đạt, ải bị khóa, chọn độ khó, bắt đầu chu kỳ mới sau khi phá đảo."""
+"""Chọn ải: 15 ải chia 4 hồi (Hồi IV hiện "???" tới khi phá đảo ải 10), sao đã đạt, ải bị khóa, chọn độ khó,
+bắt đầu chu kỳ mới sau kết thúc thật."""
 from __future__ import annotations
 
 import pygame
 
 from spaceship import config
-from spaceship.campaign.levels import LEVEL_COUNT, LEVELS
+from spaceship.campaign.levels import LEVEL_COUNT, LEVELS, MAIN_LEVELS
 from spaceship.campaign.story import ACTS
 from spaceship.config import WIDTH
 from spaceship.core.scene import Scene
+from spaceship.entities.enemies import MINI_BOSSES
 from spaceship.ui.menu_list import MenuList
 from spaceship.ui.widgets import (
     ACCENT, CORNER, DANGER, LOCKED, MUTED, PANEL_FILL, SECONDARY, SELECTED_FILL, TEXT,
     Button, blit_center, draw_lock, draw_panel, draw_star, fit_text, wrap_text,
 )
 
-CARD_W, CARD_H, GAP = 140, 150, 12
+CARD_W, CARD_H, GAP = 140, 112, 12
 GRID_X = (WIDTH - (CARD_W * 5 + GAP * 4)) // 2
-GRID_Y = 150
+GRID_Y = 130
+ROW_STEP = CARD_H + 14                 # 3 hàng (Hồi I-III ở 2 hàng đầu, Hồi IV hàng cuối)
 PANEL = pygame.Rect(14, 14, WIDTH - 28, 633)
 LOCKED_FILL = (10, 15, 23, 240)
 CONFIRM_TICKS = 240                    # nút CHU KỲ MỚI / CHƠI MỚI: chọn lần 2 trong 4 giây mới thực hiện
 NOTICE_TICKS = 360
+HINT_Y = GRID_Y + 3 * ROW_STEP + 8          # dòng gợi ý dưới lưới ải
 
 
 def card_rect(index: int) -> pygame.Rect:
     row, col = divmod(index, 5)
-    return pygame.Rect(GRID_X + col * (CARD_W + GAP), GRID_Y + row * (CARD_H + 44), CARD_W, CARD_H)
+    return pygame.Rect(GRID_X + col * (CARD_W + GAP), GRID_Y + row * ROW_STEP, CARD_W, CARD_H)
 
 
 class LevelSelectScene(Scene):
@@ -100,6 +104,15 @@ class LevelSelectScene(Scene):
     def unlocked(self, number: int) -> bool:
         return number <= self.game.save.unlocked_level
 
+    @property
+    def act4_known(self) -> bool:
+        """Hồi IV lộ diện khi đã phá đảo ải 10 (ở bất kỳ chu kỳ nào) hoặc đã mở tới ải 11."""
+        save = self.game.save
+        return save.campaign_cleared or save.unlocked_level > MAIN_LEVELS
+
+    def hidden(self, number: int) -> bool:
+        return number > MAIN_LEVELS and not self.act4_known
+
     def _back(self) -> None:
         from spaceship.scenes.menu import MenuScene
 
@@ -159,32 +172,36 @@ class LevelSelectScene(Scene):
         save = self.game.save
         blit_center(surface, a.text("CHẾ ĐỘ VƯỢT ẢI", 34, TEXT, role="display"), 20)
         cycle = f"   ·   CHU KỲ {save.cycle}" if save.cycle > 1 else ""
-        stars = a.text(f"{save.total_stars} / {LEVEL_COUNT * 3}{cycle}", 18, ACCENT, role="label")
+        shown = LEVEL_COUNT if self.act4_known else MAIN_LEVELS           # chưa lộ Hồi IV: tính trên 10 ải
+        stars = a.text(f"{save.total_stars} / {shown * 3}{cycle}", 18, ACCENT, role="label")
         star_rect = stars.get_rect(center=(WIDTH // 2 + 9, 79))
         surface.blit(stars, star_rect)
         draw_star(surface, (star_rect.x - 13, star_rect.centery), 8, True)
-        acts = "   ·   ".join(ACTS[k] for k in (1, 2, 3))
-        blit_center(surface, a.text(acts, 15, MUTED, role="label"), 97)
+        acts = "  ·  ".join(ACTS[k] for k in (1, 2, 3)) + ("  ·  " + ACTS[4] if self.act4_known else "")
+        blit_center(surface, fit_text(a, acts, 15, MUTED, PANEL.width - 40, role="label"), 97)
         for i, level in enumerate(LEVELS):
             self._draw_card(surface, i, level)
         selected_action = (self.buttons[self.menu.selected - LEVEL_COUNT].action
                            if self.menu.selected >= LEVEL_COUNT else None)
         if self.notice_ticks:
-            blit_center(surface, fit_text(a, self.notice, 15, ACCENT, PANEL.width - 40, role="body"), 529)
+            blit_center(surface, fit_text(a, self.notice, 15, ACCENT, PANEL.width - 40, role="body"), HINT_Y)
         elif self.menu.selected < LEVEL_COUNT:
             level = LEVELS[self.menu.selected]
-            hint = level.hint if self.unlocked(level.number) else "Qua ải trước để mở khóa"
-            blit_center(surface, a.text(hint, 16, SECONDARY, role="body"), 529)
+            if self.hidden(level.number):
+                hint = "Phá đảo ải 10 để mở Hồi IV"
+            else:
+                hint = level.hint if self.unlocked(level.number) else "Qua ải trước để mở khóa"
+            blit_center(surface, a.text(hint, 16, SECONDARY, role="body"), HINT_Y)
         elif selected_action == "new_game":
             hint = ("CHƠI MỚI: xóa sạch ải, sao, chu kỳ, Sổ tay, kỷ lục, thành tựu - như mới cài game. "
                     "Cài đặt giữ nguyên; file cũ được sao lưu.")
-            blit_center(surface, fit_text(a, hint, 15, DANGER, PANEL.width - 40, role="body"), 529)
+            blit_center(surface, fit_text(a, hint, 15, DANGER, PANEL.width - 40, role="body"), HINT_Y)
         elif selected_action == "new_cycle":
             hint = (f"Vòng lặp tín hiệu: chơi lại từ ải 1, địch mạnh hơn (+{round(config.CYCLE_HP_STEP * 100)}% máu "
                     "mỗi chu kỳ). Giữ nguyên Sổ tay, kỷ lục, Hỏa ngục.")
-            blit_center(surface, fit_text(a, hint, 15, ACCENT, PANEL.width - 40, role="body"), 529)
+            blit_center(surface, fit_text(a, hint, 15, ACCENT, PANEL.width - 40, role="body"), HINT_Y)
         criteria = "1 sao: qua ải · 2 sao: mất tối đa 1 mạng · 3 sao: không mất mạng nào"
-        blit_center(surface, a.text(criteria, 15, MUTED, role="body"), 559)
+        blit_center(surface, a.text(criteria, 15, MUTED, role="body"), HINT_Y + 30)
         for i, button in enumerate(self.buttons, LEVEL_COUNT):
             if button.action == "new_game":
                 self._draw_danger(surface, a, button, i == self.menu.selected)
@@ -209,17 +226,21 @@ class LevelSelectScene(Scene):
 
         color = ACCENT if selected else TEXT if unlocked else MUTED
         surface.blit(a.text(f"ẢI {level.number}", 21, color, role="ui"), (rect.x + 10, rect.y + 4))
+        if self.hidden(level.number):                 # Hồi IV chưa lộ diện: không tiết lộ tên ải
+            surface.blit(a.text("???", 18, MUTED, role="ui"), (rect.x + 10, rect.y + 46))
+            draw_lock(surface, (rect.centerx, rect.bottom - 20))
+            return
         if level.boss:
-            tag = a.text("MINI-BOSS" if level.boss in ("nest", "cruiser") else "BOSS", 11,
+            tag = a.text("MINI-BOSS" if level.boss in MINI_BOSSES else "BOSS", 11,
                          DANGER if unlocked else LOCKED, role="label")
             surface.blit(tag, tag.get_rect(midright=(rect.right - 10, rect.y + 18)))
-        for j, row in enumerate(wrap_text(a, level.name, 14, rect.width - 20, role="ui")):
-            surface.blit(a.text(row, 14, TEXT if unlocked else MUTED, role="ui"), (rect.x + 10, rect.y + 45 + j * 19))
+        for j, row in enumerate(wrap_text(a, level.name, 13, rect.width - 20, role="ui")[:2]):
+            surface.blit(a.text(row, 13, TEXT if unlocked else MUTED, role="ui"), (rect.x + 10, rect.y + 41 + j * 17))
         if not unlocked:
-            label = a.text("KHÓA", 15, MUTED, role="label")
-            surface.blit(label, label.get_rect(midleft=(rect.centerx - 13, rect.bottom - 23)))
-            draw_lock(surface, (rect.centerx - 25, rect.bottom - 23))
+            label = a.text("KHÓA", 14, MUTED, role="label")
+            surface.blit(label, label.get_rect(midleft=(rect.centerx - 13, rect.bottom - 17)))
+            draw_lock(surface, (rect.centerx - 25, rect.bottom - 17))
             return
         stars = self.game.save.level_stars.get(level.number, 0)
         for s in range(3):
-            draw_star(surface, (rect.centerx - 28 + s * 28, rect.bottom - 24), 10, s < stars)
+            draw_star(surface, (rect.centerx - 26 + s * 26, rect.bottom - 18), 9, s < stars)

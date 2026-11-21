@@ -81,6 +81,7 @@ MUSIC: Dict[str, Tuple[str, float]] = {
     "act1": ("music/act1.ogg", 1.0),
     "act2": ("music/act2.ogg", 1.0),
     "act3": ("music/act3.ogg", 1.0),
+    "act4": ("music/act3.ogg", 1.0),           # Hồi IV: tạm dùng nhạc Hồi III, sẽ thay bằng nhạc riêng
     "final_boss": ("music/final_boss.ogg", 1.0),
     "ending": ("music/ending.ogg", 1.0),
 }

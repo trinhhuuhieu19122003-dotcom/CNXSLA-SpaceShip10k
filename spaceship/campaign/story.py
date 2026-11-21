@@ -13,7 +13,7 @@ KX, ARIA, CMD = "KX-17", "ARIA", "CHỈ HUY"
 PORTRAITS = {KX: "portrait_kx17", ARIA: "portrait_aria", CMD: "portrait_commander"}
 SPEAKER_COLORS = {KX: (0, 255, 255), ARIA: (120, 220, 255), CMD: (255, 70, 70)}
 
-ACTS = {1: "HỒI I · LẠC LỐI", 2: "HỒI II · BÃI THA MA", 3: "HỒI III · TRỞ VỀ"}
+ACTS = {1: "HỒI I · LẠC LỐI", 2: "HỒI II · BÃI THA MA", 3: "HỒI III · TRỞ VỀ", 4: "HỒI IV · NGUỒN TÍN HIỆU"}
 
 # --- Đoạn hội thoại trước mỗi ải ---------------------------------------------------------
 INTROS = {
@@ -77,6 +77,46 @@ INTROS = {
         (ARIA, "Từ giây đầu tiên."),
         (KX, "...Vậy thì tôi sẽ đưa họ về nhà. Theo cách duy nhất còn lại."),
     ],
+    # ===== HỒI IV · NGUỒN TÍN HIỆU (docs/design/hoi-4.md) =====
+    11: [
+        (ARIA, "...Khoan. Có một tín hiệu mới vừa xuất hiện.", "glitch"),
+        (ARIA, "Không phải mã tàu mẹ. Nó đang phát lại... nhật ký bay của anh."),
+        (KX, "Nhật ký bay của tôi? Ai đọc được nó?"),
+        (ARIA, "Thứ gì đó đã quan sát anh. Từ rất lâu rồi."),
+        (KX, "Vậy thì để nó xem cho kỹ."),
+    ],
+    12: [
+        (ARIA, "Tín hiệu sự sống. Bốn mươi... đúng bốn mươi."),
+        (KX, "Từ đâu?"),
+        (ARIA, "Khoang ngủ đông khẩn cấp của tàu mẹ. Chúng tách ra trước khi tàu mẹ bị nuốt."),
+        (KX, "Họ còn sống... Đưa tôi tới đó."),
+        (ARIA, "Bốn tàu cứu sinh, mười người mỗi chiếc. Tôi mở đường, anh giữ họ an toàn."),
+    ],
+    13: [
+        (ARIA, "Tín hiệu phát từ phía sau một hố đen."),
+        (KX, "Phía sau? Không gì thoát ra từ đó được."),
+        (ARIA, "Trừ tín hiệu này. Nó... đang gọi tôi."),
+        (KX, "Gọi cô?"),
+        (ARIA, "Gọi chúng ta. Tôi nói nhầm."),
+    ],
+    14: [
+        (ARIA, "Phía trước là vùng câm. Không sóng nào đi qua được."),
+        (KX, "Kể cả kênh của cô?"),
+        (ARIA, "Kể cả kênh của tôi. Anh sẽ phải bay một mình."),
+        (KX, "Tôi đã bay một mình từ ải đầu tiên. Cô là thứ duy nhất khiến tôi thấy không phải vậy."),
+        (ARIA, "...KX-17. Ra khỏi vùng câm, có chuyện tôi phải nói với anh."),
+    ],
+    15: [
+        (KX, "ARIA. Đoạn ghi âm đó."),
+        (ARIA, "Là thật. Tôi là mẫu vật số 7, một mảnh của Đàn mà tàu mẹ bắt được."),
+        (ARIA, "Họ dạy tôi nói, dạy tôi bay, dạy tôi... quan tâm."),
+        (KX, "Cô biết tín hiệu là giả. Từ đầu."),
+        (ARIA, "Tôi nghe nó từ đầu. Tôi sợ nếu nói ra, anh sẽ tắt tôi."),
+        (KX, "..."),
+        (KX, "Trái Tim Đàn ở phía trước?"),
+        (ARIA, "Ngay phía trước. Và nó đang gọi tôi về."),
+        (KX, "Vậy thì đừng trả lời."),
+    ],
 }
 
 # --- Thoại ngay trong trận (không dừng game) -------------------------------------------------
@@ -107,6 +147,32 @@ RADIO = {
     10: {("boss", 0): [(ARIA, "Không còn đường quay lại.")],
          ("phase", 2): [(CMD, "KX-17... nó đang... dùng tôi... bắn đi!")],
          ("phase", 3): [(CMD, "Kết thúc... đi... con.")]},
+    # ===== HỒI IV =====
+    11: {("wave", 1): [(ARIA, "Tín hiệu đó đang dò theo đường bay của anh. Đừng đứng yên một chỗ.")],
+         ("wave", 5): [(ARIA, "Chúng đến từ mọi phía. Đổi hướng liên tục.")],
+         ("clear", 0): [(KX, "Nó học nhanh thật."), (ARIA, "Nhanh hơn lần trước."),
+                        (KX, "Lần trước?"), (ARIA, "...Không có gì.")]},
+    12: {("wave", 1): [(ARIA, "Tàu cứu sinh đang tới. Dọn đường cho họ.")],
+         ("wave", 2): [(ARIA, "Ký Sinh ngửi thấy người sống. Bắn chặn từ xa!")],
+         ("wave", 3): [(KX, "ARIA, sao cô biết tọa độ khoang ngủ đông? Nó không có trong dữ liệu phi đội."),
+                       (ARIA, "...Tôi đoán.")],
+         ("clear", 0): [(ARIA, "Các khoang ngủ đông đã an toàn."), (KX, "Lần này không bỏ lại ai.")]},
+    13: {("wave", 1): [(ARIA, "Lực hút đang kéo mọi thứ về phía hố đen. Giữ chắc tay lái.")],
+         ("boss", 0): [(ARIA, "Mắt Bão. Nó sống bên trong lực hút.")],
+         ("phase", 2): [(ARIA, "Tôi nghe thấy nó... rất rõ."),
+                        (KX, "Cô nghe thấy thứ tôi không nghe được, ARIA?")],
+         ("clear", 0): [(ARIA, "Giếng trọng lực đã ổn định. Phía sau nó... là im lặng.")]},
+    14: {("wave", 2): [(ARIA, "---anh--- nghe--- tôi---", "glitch")],
+         ("wave", 3): [(CMD, "Nó nói dối con đấy, KX-17. Từ giây đầu tiên.", "glitch")],
+         ("boss", 0): [(ARIA, "------", "glitch")],
+         ("clear", 0): [(CMD, "Nhật ký nghiên cứu... Mẫu vật số 7 của Đàn. Đã thuần hóa. Đặt tên: ARIA.", "glitch"),
+                        (KX, "ARIA... cô là gì?")]},
+    15: {("boss", 0): [(CMD, "Con về rồi, KX-17. Lần thứ bao nhiêu rồi nhỉ?", "glitch")],
+         ("phase", 2): [(CMD, "Nhìn xem ai đến đón con này."),
+                        (ARIA, "Phi đội... và những vòng lặp trước của anh.")],
+         ("phase", 3): [(ARIA, "Về... với... Đàn...", "glitch"), (KX, "ARIA!"),
+                        (ARIA, "Không. Tôi chọn anh."),
+                        (ARIA, "Đã cắt kết nối. Lõi của nó lộ rồi. Tôi dồn hết năng lượng cho anh: chụm tay đi!")]},
 }
 
 # --- Kết thúc ----------------------------------------------------------------------------------
@@ -117,6 +183,25 @@ ENDING = [
     (ARIA, "Đủ cho một chuyến đi rất dài."),
     (KX, "Vậy thì từ giờ... tôi là tàu mẹ."),
     (ARIA, "...Đã ghi nhận, Chỉ huy."),
+]
+
+#: Đuôi đoạn kết ải 10: tín hiệu mới -> mở Hồi IV (thay cho "vòng lặp thứ 2" của bản trước).
+AFTER_MAIN = [
+    (ARIA, "...Khoan. Có một tín hiệu mới vừa xuất hiện.", "glitch"),
+    (ARIA, "Không phải mã tàu mẹ. Nó đang phát lại nhật ký bay của anh."),
+    (KX, "Vậy thì chuyến đi rất dài đó... bắt đầu từ đây."),
+]
+
+#: Kết thúc thật (sau ải 15): tín hiệu tắt, vòng lặp bị phá, ARIA mất ký ức.
+TRUE_ENDING = [
+    (ARIA, "Tín hiệu... đã tắt."),
+    (ARIA, "Không còn vòng lặp nào trong nhật ký bay."),
+    (KX, "ARIA? Cô còn đó không?"),
+    (ARIA, "Xin chào. Tôi là ARIA. Anh là... chỉ huy của tôi?"),
+    (KX, "..."),
+    (KX, "Ừ. Và lần này, tôi sẽ là người dẫn đường."),
+    (ARIA, "Ghi nhận, Chỉ huy. Chúng ta đi đâu?"),
+    (KX, "Đưa tất cả bọn họ về nhà."),
 ]
 
 # --- Vòng lặp tín hiệu (chu kỳ mới sau khi phá đảo) -----------------------------------------------

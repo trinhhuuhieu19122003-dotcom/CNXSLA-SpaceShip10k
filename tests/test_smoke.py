@@ -83,8 +83,9 @@ class SmokeTest(unittest.TestCase):
             self.assertLess(len(w.enemy_bullets), 1500, mode)   # đạn được dọn, không rò rỉ
 
     def test_bot_clears_whole_campaign(self):
-        """Bot "bất tử" chơi lần lượt 10 ải: phải qua hết, mở hết ải, xem đoạn kết, mở khóa Hỏa ngục."""
-        from spaceship.campaign.levels import LEVEL_COUNT
+        """Bot "bất tử" chơi lần lượt 15 ải: qua ải 10 xem đoạn kết + mở Hỏa ngục và Hồi IV, qua ải 15 xem
+        kết thúc thật + xong chu kỳ."""
+        from spaceship.campaign.levels import LEVEL_COUNT, MAIN_LEVELS
         from spaceship.scenes.cutscene import CutsceneScene
         g = self.game
         loadout = None
@@ -105,11 +106,19 @@ class SmokeTest(unittest.TestCase):
                     break
             self.assertEqual(w.outcome, "victory", f"ải {number}")
             loadout = play.loadout()
-            if number == LEVEL_COUNT:
+            if number in (MAIN_LEVELS, LEVEL_COUNT):
                 self.assertIsInstance(g.scene, CutsceneScene)
                 g.scene.skip()
                 self.run_ticks(60)
             self.assertIsInstance(g.scene, ResultScene)
+            if number == MAIN_LEVELS:
+                self.assertTrue(g.save.campaign_cleared)              # Hỏa ngục mở
+                self.assertFalse(g.save.cycle_complete)               # chu kỳ mới chỉ mở sau kết thúc thật
+                self.assertEqual(g.save.unlocked_level, MAIN_LEVELS + 1)
+                self.assertEqual(g.scene.ending, "main")
+                self.assertIn("next", [b.action for b in g.scene.buttons])
+        self.assertEqual(g.scene.ending, "true")
+        self.assertTrue(g.save.cycle_complete)
         self.assertTrue(g.save.campaign_cleared)
         self.assertEqual(g.save.unlocked_level, LEVEL_COUNT)
         self.assertGreaterEqual(loadout["drones"], 2)

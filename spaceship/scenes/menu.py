@@ -5,7 +5,7 @@ import math
 
 import pygame
 
-from spaceship.campaign.levels import LEVEL_COUNT
+from spaceship.campaign.levels import LEVEL_COUNT, MAIN_LEVELS
 from spaceship.config import HEIGHT, WIDTH, GameMode
 from spaceship.core.scene import Scene
 from spaceship.ui import glow
@@ -156,7 +156,8 @@ class MenuScene(Scene):
 
     def _draw_status(self, surface: pygame.Surface) -> None:
         a, save = self.game.assets, self.game.save
-        stars = a.text(f"{save.total_stars} / {LEVEL_COUNT * 3}", 15, TEXT, role="label")
+        shown = LEVEL_COUNT if (save.campaign_cleared or save.unlocked_level > MAIN_LEVELS) else MAIN_LEVELS
+        stars = a.text(f"{save.total_stars} / {shown * 3}", 15, TEXT, role="label")
         star_value = stars.get_rect(midright=(WIDTH - 26, 31))
         surface.blit(stars, star_value)
         draw_star(surface, (star_value.x - 13, star_value.centery), 8, True)

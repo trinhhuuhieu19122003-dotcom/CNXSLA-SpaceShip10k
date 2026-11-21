@@ -170,7 +170,7 @@ FORMATION_FLOOR = 360
 RETREAT_AFTER_TICKS = 840
 #: "Ngân sách đe dọa" cùng lúc trên màn (lính = 1, Ký Sinh = 0,75, Lính Khiên/Pháo/Tàu nhiễm = 2, Đẻ Trứng = 3).
 #: Đủ ngân sách thì địch tiếp theo xếp hàng chờ. Theo hồi; mỗi chu kỳ Vòng lặp +1.
-THREAT_CAP = {1: 9, 2: 12, 3: 14}
+THREAT_CAP = {1: 9, 2: 12, 3: 14, 4: 15}
 THREAT_CAP_PER_CYCLE = 1
 #: Nghỉ giữa các wave; sau mỗi 2 wave nghỉ dài hơn.
 WAVE_BREATH_TICKS = 110

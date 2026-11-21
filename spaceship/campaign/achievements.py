@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from typing import Callable, List, Optional
 
 from spaceship.campaign.bestiary import BESTIARY
-from spaceship.campaign.levels import LEVEL_COUNT, get_level
+from spaceship.campaign.levels import LEVEL_COUNT, MAIN_LEVELS, get_level
 from spaceship.config import GameMode
 
 
@@ -59,7 +59,7 @@ def _counter(save, run, key: str, field: str) -> int:
 
 def _cleared(save, run, number: int) -> bool:
     return (run is not None and run.cleared and run.level == number) or number in save.level_stars \
-        or (save.campaign_cleared and number <= LEVEL_COUNT)
+        or (save.campaign_cleared and number <= MAIN_LEVELS)
 
 
 def _survived(save, run, mode: GameMode, seconds: float) -> bool:

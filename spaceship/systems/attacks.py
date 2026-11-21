@@ -253,8 +253,10 @@ def _inferno(world: World, boss: Boss, ratio: float) -> int:
 
 
 BOSS_PATTERNS = {"crab": _crab, "octopus": _octopus, "spider": _spider, "nest": _nest,
-                 "cruiser": _cruiser, "mothership": _mothership}
-SHIELD_REGEN_KINDS = {"octopus", "spider", "cruiser", "mothership"}
+                 "cruiser": _cruiser, "mothership": _mothership,
+                 # Hồi IV - tạm mượn kiểu đánh có sẵn cho tới đợt làm cơ chế riêng
+                 "storm_eye": _octopus, "listener": _nest, "swarm_heart": _mothership}
+SHIELD_REGEN_KINDS = {"octopus", "spider", "cruiser", "mothership", "storm_eye", "swarm_heart"}
 
 
 def boss_attack(world: World, boss: Boss) -> None:

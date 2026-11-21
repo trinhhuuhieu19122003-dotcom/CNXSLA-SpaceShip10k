@@ -7,7 +7,7 @@
   <img src="https://img.shields.io/badge/Python-3.10–3.13-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python">
   <img src="https://img.shields.io/badge/pygame-2.5+-2b9348?style=flat-square" alt="pygame">
   <img src="https://img.shields.io/badge/MediaPipe-Hands-4285F4?style=flat-square&logo=google&logoColor=white" alt="MediaPipe">
-  <img src="https://img.shields.io/badge/test-156_passed-success?style=flat-square" alt="Test">
+  <img src="https://img.shields.io/badge/test-165_passed-success?style=flat-square" alt="Test">
 </p>
 
 <p align="center">
@@ -65,7 +65,7 @@
 | **Đồ họa phát sáng** | Đạn neon, vụ nổ có sóng xung kích, địch nháy khi trúng đạn, nền cuộn theo từng hồi. Chữ vẽ lại ở độ phân giải màn hình nên toàn màn hình 1080p/2K/4K vẫn sắc nét. |
 | **Cảm giác đánh** | Khựng hình khi trúng đòn, rung theo độ nặng, viền đỏ khi trúng đạn / máu thấp kèm tiếng tim, lính cảm tử báo trước khi lao, hủy đạn khi hạ boss; tắt bớt được trong Cài đặt. |
 | **Có chiều sâu** | 4 súng, mỗi súng một dạng tối thượng ở cấp 6 và một kỹ năng Nộ riêng; 3 mức độ khó; chấm 1–3 sao mỗi ải; chuỗi hạ nhân điểm tới x4, sát đạn; 21 huy hiệu và Bảng điểm 5 ván cao nhất mỗi chế độ. |
-| **Mã nguồn sạch, có test** | Chia module rõ ràng, dữ liệu ải tách khỏi logic, 156 test tự động, có bot tự chơi hết chiến dịch. |
+| **Mã nguồn sạch, có test** | Chia module rõ ràng, dữ liệu ải tách khỏi logic, 165 test tự động, có bot tự chơi hết chiến dịch. |
 
 ## Cốt truyện
 
@@ -159,7 +159,7 @@ Muốn tự kiểm tra từng tính năng mới: [docs/choi-thu.md](docs/choi-th
 
 | Chế độ | Mô tả |
 |---|---|
-| **Vượt ải** | 10 ải có cốt truyện. Chọn ải và độ khó **Dễ / Thường / Khó**; mỗi ải chấm **1–3 sao** (qua ải · mất tối đa 1 mạng · không mất mạng). Tiến độ được lưu. |
+| **Vượt ải** | 10 ải có cốt truyện, phá đảo mở thêm **Hồi IV** (5 ải, kết thúc thật; đang làm theo đợt, xem [docs/design/hoi-4.md](docs/design/hoi-4.md)). Chọn ải và độ khó **Dễ / Thường / Khó**; mỗi ải chấm **1–3 sao** (qua ải · mất tối đa 1 mạng · không mất mạng). Tiến độ được lưu. |
 | **Vô tận** | Sống sót càng lâu càng tốt. Càng về sau càng nhiều loại địch; boss đổi loại mỗi 60 giây. |
 | **Hỏa ngục** | *Mở khóa sau khi phá đảo.* Mưa đạn, ít máu, không rơi khiên, boss mỗi 45 giây. |
 | **Chơi mới** | Nút **CHƠI MỚI** ở màn Chọn ải (chọn 2 lần): xóa sạch ải, sao, chu kỳ, Sổ tay, kỷ lục, Bảng điểm, huy hiệu như mới cài game. Cài đặt giữ nguyên; file cũ tự sao lưu thành `save_backup_<ngày giờ>.json`. |
