@@ -188,6 +188,21 @@ class HandScenesTest(unittest.TestCase):
         self.assertIsInstance(self.game.scene, GameplayScene)
         self.assertIs(self.game.scene.mode, GameMode.INFERNO)
 
+    def test_hand_menu_off_ignores_hand(self):
+        self.game.settings.hand_menu = False
+        try:
+            opts = self.go(OptionsScene(self.game))
+            before = (opts.menu.selected, self.game.settings.auto_fire)
+            x, y = opts.buttons[0].rect.center
+            self.pinch(x, y)
+            self.steps(int(config.PINCH_HOLD_SECONDS * config.TICK_RATE) * 3)
+            self.assertEqual((opts.menu.selected, self.game.settings.auto_fire), before)
+            self.key(pygame.K_RETURN)                    # bàn phím vẫn dùng được
+            self.assertNotEqual(self.game.settings.auto_fire, before[1])
+        finally:
+            self.game.settings.hand_menu = True
+            self.game.settings.auto_fire = True
+
     def test_pinch_in_options_activates_once_until_release(self):
         opts = self.go(OptionsScene(self.game))
         x, y = opts.buttons[0].rect.center

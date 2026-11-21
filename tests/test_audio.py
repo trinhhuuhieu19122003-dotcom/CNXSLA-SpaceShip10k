@@ -153,16 +153,17 @@ class GameAudioTest(unittest.TestCase):
         g = self.game
         scene = self.go(OptionsScene(g))
         g.settings.music_volume = 0.7
-        scene.menu.select(2)                                # NHẠC NỀN
+        actions = [b.action for b in scene.buttons]
+        scene.menu.select(actions.index("music"))
         scene.handle_event(key(pygame.K_RIGHT))
         self.assertAlmostEqual(g.settings.music_volume, 0.8)
         self.assertAlmostEqual(g.audio.music_volume, 0.8)
         self.assertEqual(json.loads(g.settings.path.read_text(encoding="utf-8"))["music_volume"], 0.8)
         g.settings.sfx_volume = 1.0
-        scene.menu.select(3)                                # HIỆU ỨNG: chọn (chụm tay) quá 100% thì về 0
+        scene.menu.select(actions.index("sfx"))             # chọn (chụm tay) quá 100% thì về 0
         scene.handle_event(key(pygame.K_RETURN))
         self.assertEqual(g.settings.sfx_volume, 0.0)
-        self.assertIn("0%", scene.buttons[3].text)
+        self.assertIn("0%", scene.buttons[actions.index("sfx")].text)
 
 
 if __name__ == "__main__":

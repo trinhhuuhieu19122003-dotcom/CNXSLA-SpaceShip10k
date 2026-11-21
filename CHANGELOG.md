@@ -16,6 +16,8 @@
 ### Sửa lỗi khi chơi thử thật
 - Game tự tắt sau vài giây: tay đặt trên bàn trỏ vào mục THOÁT và bị đọc nhầm thành chụm tay. THOÁT giờ phải
   chọn 2 lần (lần đầu hiện "THOÁT?", tự hủy sau 3 giây).
+- Cài đặt thêm **Chọn menu bằng tay: Bật/Tắt** (lưu `hand_menu` trong `settings.json`). Tắt thì menu chỉ dùng
+  phím/chuột, trong trận vẫn lái tàu bằng tay.
 - `requirements.txt` chỉ dùng ASCII: pip cũ trên Windows đọc theo cp1252 và báo `UnicodeDecodeError`.
 
 ## [2.1.0-dev] – Màn Hướng dẫn mới & Sổ tay chiến đấu

@@ -1,4 +1,4 @@
-"""Màn Cài đặt: tự động bắn, độ nhạy tay, âm lượng nhạc/hiệu ứng, hiệu chỉnh lại tay."""
+"""Màn Cài đặt: tự động bắn, độ nhạy tay, điều khiển menu bằng tay, âm lượng, hiệu chỉnh lại tay."""
 from __future__ import annotations
 
 import pygame
@@ -10,13 +10,14 @@ from spaceship.ui.menu_list import MenuList
 from spaceship.ui.widgets import MUTED, SECONDARY, TEXT, Button, blit_center, draw_panel, fit_text
 
 PANEL = pygame.Rect(60, 60, WIDTH - 120, 580)
-BTN_W, BTN_H = 420, 44
-BTN_TOP, BTN_STEP = 162, 76
+BTN_W, BTN_H = 420, 40
+BTN_TOP, BTN_STEP = 156, 68
 VOLUME_STEP = 0.1
 VOLUME_NOTE = "Phím trái/phải: chỉnh 10% · Enter / chụm tay: +10% (quá 100% về 0)."
 NOTES = (
     "Tàu tự bắn liên tục, tay chỉ cần lái. Tắt: giơ 1 ngón trỏ / giữ Space để bắn.",
     "Cao = nhích tay ít đã đi xa (đỡ mỏi). Thấp = chính xác hơn, phải vung rộng hơn.",
+    "Tắt: menu chỉ dùng phím / chuột (trong trận vẫn lái tàu bằng tay).",
     VOLUME_NOTE,
     VOLUME_NOTE,
     "Đặt lại tư thế nghỉ của tay (chỗ ứng với giữa màn hình).",
@@ -31,7 +32,7 @@ class OptionsScene(Scene):
     def __init__(self, game) -> None:
         super().__init__(game)
         x = WIDTH // 2 - BTN_W // 2
-        rows = (("", "auto_fire"), ("", "sensitivity"), ("", "music"), ("", "sfx"),
+        rows = (("", "auto_fire"), ("", "sensitivity"), ("", "hand_menu"), ("", "music"), ("", "sfx"),
                 ("HIỆU CHỈNH LẠI TAY", "calibrate"), ("VỀ MENU", "menu"))
         self.buttons = [Button(text, pygame.Rect(x, BTN_TOP + i * BTN_STEP, BTN_W, BTN_H), action)
                         for i, (text, action) in enumerate(rows)]
@@ -40,10 +41,15 @@ class OptionsScene(Scene):
 
     def _refresh(self) -> None:
         s = self.game.settings
-        self.buttons[0].text = f"TỰ ĐỘNG BẮN: {'BẬT' if s.auto_fire else 'TẮT'}"
-        self.buttons[1].text = f"ĐỘ NHẠY TAY: {config.HAND_SENSITIVITY_LABELS[s.sensitivity]}"
-        self.buttons[2].text = f"NHẠC NỀN: {round(s.music_volume * 100)}%"
-        self.buttons[3].text = f"HIỆU ỨNG: {round(s.sfx_volume * 100)}%"
+        texts = {
+            "auto_fire": f"TỰ ĐỘNG BẮN: {'BẬT' if s.auto_fire else 'TẮT'}",
+            "sensitivity": f"ĐỘ NHẠY TAY: {config.HAND_SENSITIVITY_LABELS[s.sensitivity]}",
+            "hand_menu": f"CHỌN MENU BẰNG TAY: {'BẬT' if s.hand_menu else 'TẮT'}",
+            "music": f"NHẠC NỀN: {round(s.music_volume * 100)}%",
+            "sfx": f"HIỆU ỨNG: {round(s.sfx_volume * 100)}%",
+        }
+        for button in self.buttons:
+            button.text = texts.get(button.action, button.text)
 
     def _change_volume(self, action: str, step: float, wrap: bool) -> None:
         s = self.game.settings
@@ -74,6 +80,8 @@ class OptionsScene(Scene):
             s.auto_fire = not s.auto_fire
         elif action == "sensitivity":
             s.cycle_sensitivity()
+        elif action == "hand_menu":
+            s.hand_menu = not s.hand_menu
         elif action in VOLUMES:
             self._change_volume(action, VOLUME_STEP, wrap=True)
             return

@@ -73,6 +73,9 @@ class MenuList:
                     return
 
     def update(self, controls, *, enabled: bool = True) -> None:
+        if not self.game.settings.hand_menu:          # Cài đặt: tắt điều khiển menu bằng tay
+            self._pinching, self._hand_position, self.progress = False, None, 0.0
+            return
         pinching = controls.gesture is Gesture.PINCH
         if controls.gesture not in (Gesture.NONE, Gesture.PINCH):
             self.game.menu_pinch_consumed = False
