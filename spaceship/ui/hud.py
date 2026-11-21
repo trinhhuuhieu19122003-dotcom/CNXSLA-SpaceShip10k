@@ -66,6 +66,8 @@ def _status_line(world: World, director) -> str:
     score = f"ĐIỂM {world.score:,}".replace(",", " ")
     if world.combo_mult > 1:
         score += f" x{world.combo_mult}"
+    if world.combo >= 2:                                    # khung hẹp không có bảng bên: hiện chuỗi ở dải trên
+        score += f"  ·  CHUỖI {world.combo}"
     if world.level is not None:
         cycle = f"CHU KỲ {world.cycle} · " if world.cycle > 1 else ""
         parts = [score, f"{cycle}ẢI {world.level.number}", progress]

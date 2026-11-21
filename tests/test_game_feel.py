@@ -283,6 +283,7 @@ class ComboTest(unittest.TestCase):
         w = world()
         w.combo, w.combo_timer = 23, 60
         self.assertIn("x3", _status_line(w, None))
+        self.assertIn("CHUỖI 23", _status_line(w, None))           # khung hẹp: chuỗi ở dải trên
         surface = pygame.Surface((560, 700))
         sidebar.draw_status_panel(surface, Assets(), pygame.Rect(0, 0, 280, 700), w)
 
