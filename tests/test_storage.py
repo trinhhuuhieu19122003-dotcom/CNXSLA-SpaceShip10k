@@ -38,6 +38,22 @@ class StorageTest(unittest.TestCase):
         self.path.write_text(json.dumps(raw), encoding="utf-8")
         self.assertEqual(self.load().modes[GameMode.ENDLESS].best_combo, 0)
 
+    def test_top_runs_keep_best_five_and_survive_bad_data(self):
+        data = self.load()
+        for score in (300, 900, 100, 700, 500, 800, 0):
+            data.record(GameResult(GameMode.INFERNO, score, 5, 0, 60, best_combo=score // 100))
+        runs = self.load().modes[GameMode.INFERNO].top_runs
+        self.assertEqual([r["score"] for r in runs], [900, 800, 700, 500, 300])   # ván 0 điểm không ghi
+        self.assertEqual(runs[0]["combo"], 9)
+        self.assertEqual(len(runs[0]["date"]), 10)
+        data.record(GameResult(GameMode.CAMPAIGN, 50, 5, 0, 60, victory=True, level=3))
+        self.assertEqual(self.load().modes[GameMode.CAMPAIGN].top_runs[0]["level"], 3)
+        raw = json.loads(self.path.read_text(encoding="utf-8"))
+        raw["modes"][GameMode.INFERNO.value]["top_runs"] = ["rác", {"x": 1}, {"score": 5}]
+        self.path.write_text(json.dumps(raw), encoding="utf-8")
+        loaded = self.load()
+        self.assertTrue(all(isinstance(r, dict) and "score" in r for m in loaded.modes.values() for r in m.top_runs))
+
     def test_new_record_flag(self):
         data = self.load()
         self.assertTrue(data.record(GameResult(GameMode.CAMPAIGN, 10, 1, 0, 5)))

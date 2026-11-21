@@ -146,7 +146,8 @@ chóng mặt chọn **Cài đặt → Rung & nháy màn hình: Nhẹ / Tắt** (
 
 **Chuỗi hạ địch:** hạ liên tiếp (mỗi lần cách nhau dưới 2,5 giây) để nhân điểm: 10 lần x2, 20 lần x3, 30 lần x4.
 Bị trúng đạn là mất chuỗi; để đạn **sượt sát** qua tàu (không trúng) được thêm điểm và giữ chuỗi. **Lính cảm tử** khựng lại, hiện vòng đỏ + vạch ngắm trước khi lao: hạ ngay hoặc né ngang.
-Hạ boss / boss đổi pha thì đạn địch trên màn biến thành điểm thưởng.
+Hạ boss / boss đổi pha thì đạn địch trên màn biến thành điểm thưởng. Màn **Thành tựu → Bảng điểm** giữ 5 ván
+điểm cao nhất mỗi chế độ.
 
 **Toàn màn hình:** chữ được vẽ lại ở độ phân giải màn hình nên vẫn sắc nét ở 1080p/2K/4K
 ([docs/design/chu-sac-net.md](docs/design/chu-sac-net.md)).

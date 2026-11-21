@@ -222,14 +222,15 @@ def draw_badge_icon(surface: pygame.Surface, icon: str, center, color, r: int = 
             pygame.draw.line(surface, color, (x + dx * k, y - 7 * k), (x + dx * k, y - 1 * k), 1)
 
 
-ACH_TABS = ("HUY HIỆU", "THỐNG KÊ")
+ACH_TABS = ("HUY HIỆU", "THỐNG KÊ", "BẢNG ĐIỂM")
 ACH_BACK = pygame.Rect(WIDTH // 2 - 130, PANEL.bottom - 40, 260, 30)
 BADGE_AREA = pygame.Rect(PANEL.x + 20, PANEL.y + 122, PANEL.width - 40, 418)
 BADGE_COLOR = (255, 210, 90)
 
 
 class AchievementsScene(Scene):
-    """Thành tựu: thẻ HUY HIỆU (lưới huy hiệu, đạt/chưa đạt, cách đạt, ngày đạt, tiến độ) và thẻ THỐNG KÊ."""
+    """Thành tựu: thẻ HUY HIỆU (lưới huy hiệu, đạt/chưa đạt, cách đạt, ngày đạt, tiến độ), thẻ THỐNG KÊ và
+    thẻ BẢNG ĐIỂM (5 ván điểm cao nhất mỗi chế độ)."""
 
     music = "menu"
     COLUMNS = (("SỐ VÁN", 290), ("QUÁI", 390), ("BOSS", 480), ("ĐIỂM CAO", 585), ("LÂU NHẤT", 690))
@@ -297,8 +298,10 @@ class AchievementsScene(Scene):
                 pygame.draw.line(surface, ACCENT, (spot.x, y - 2), (spot.right, y - 2), 3)
         if self.tab == 0:
             self._draw_badges(surface, a)
-        else:
+        elif self.tab == 1:
             self._draw_stats(surface, a)
+        else:
+            self._draw_board(surface, a)
         back_focused = self.menu.selected == len(self.tabs)
         label = a.text("ESC · VỀ MENU", 15, ACCENT if back_focused else MUTED, role="label")
         surface.blit(label, label.get_rect(center=ACH_BACK.center))
@@ -352,6 +355,40 @@ class AchievementsScene(Scene):
                 pygame.draw.rect(surface, SECONDARY, (bar.x, bar.y, bar.w * min(1, cur / goal), bar.h))
             if footer:
                 surface.blit(a.text(footer, 11, BADGE_COLOR if got else MUTED, role="label"), (tx, card.bottom - 18))
+
+    def _draw_board(self, surface, a) -> None:
+        """5 ván điểm cao nhất của mỗi chế độ, mỗi chế độ một cột."""
+        save = self.game.save
+        top = PANEL.y + 126
+        width = (PANEL.width - 40 - 2 * 12) // 3
+        for i, mode in enumerate(GameMode):
+            col = pygame.Rect(PANEL.x + 20 + i * (width + 12), top, width, 400)
+            draw_panel(surface, col, header_height=40)
+            surface.blit(a.text(mode.label.upper(), 18, ACCENT, role="ui"), (col.x + 14, col.y + 9))
+            runs = save.modes[mode].top_runs
+            if not runs:
+                blit_center(surface, a.text("Chưa có ván nào", 15, MUTED, role="body"), col.y + 70, x=col.centerx)
+                continue
+            for rank, run in enumerate(runs):
+                y = col.y + 52 + rank * 69
+                rank_color = BADGE_COLOR if rank == 0 else (SECONDARY if rank < 3 else MUTED)
+                surface.blit(a.text(f"{rank + 1}.", 18, rank_color, role="display"), (col.x + 14, y))
+                score = fit_text(a, f"{run['score']:,}".replace(",", " "), 22, ACCENT if rank == 0 else TEXT,
+                                 width - 60, role="display")
+                surface.blit(score, (col.x + 44, y - 2))
+                where = f"Ải {run['level']}" if run.get("level") else format_time(run.get("time", 0))
+                bits = [where]
+                if run.get("combo", 0) >= 2:
+                    bits.append(f"chuỗi {run['combo']}")
+                date = str(run.get("date", ""))
+                if len(date) == 10:                                  # yyyy-mm-dd -> dd/mm
+                    bits.append(f"{date[8:10]}/{date[5:7]}")
+                detail = fit_text(a, " · ".join(bits), 14, SECONDARY, width - 58, role="label")
+                surface.blit(detail, (col.x + 44, y + 28))
+                if rank < len(runs) - 1:
+                    pygame.draw.line(surface, FRAME, (col.x + 14, y + 58), (col.right - 14, y + 58))
+        note = "Mỗi chế độ giữ 5 ván điểm cao nhất · chuỗi = chuỗi hạ liên tiếp dài nhất trong ván."
+        blit_center(surface, fit_text(a, note, 14, MUTED, PANEL.width - 50, role="body"), PANEL.bottom - 64)
 
     def _draw_stats(self, surface, a) -> None:
         save = self.game.save

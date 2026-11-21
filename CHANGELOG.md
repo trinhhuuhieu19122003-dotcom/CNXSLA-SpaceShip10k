@@ -17,9 +17,12 @@
 - **Sát đạn (graze)**: đạn địch sượt qua trong 34 px mà không trúng → +2 điểm (nhân theo chuỗi), tia sáng nhỏ,
   tiếng "xẹt", và giữ chuỗi hạ không bị đứt. Không tính khi đang bất tử.
 - **Thống kê**: lưu chuỗi hạ dài nhất của từng chế độ (`ModeRecord.best_combo`), hiện dưới Điểm cao.
+- **Bảng điểm** (thẻ thứ 3 ở màn Thành tựu): 5 ván điểm cao nhất mỗi chế độ, kèm ải / thời gian, chuỗi dài nhất,
+  ngày chơi (`ModeRecord.top_runs`; file lưu cũ / dữ liệu lạ vẫn nạp được).
+- Bảng trái màn rộng hiện số lần **sát đạn**; mất chuỗi từ 10 trở lên hiện chữ đỏ **"MẤT CHUỖI N"**.
 - **Tiếng mới** (tổng hợp bằng numpy): `lock_on`, `heartbeat` (khớp nhịp viền đỏ khi máu thấp), `bullet_cancel`,
   `graze`.
-- 23 test mới (`tests/test_crisp.py`, thêm vào `tests/test_game_feel.py`, `tests/test_storage.py`), tổng 147. Chạy thử ngẫu nhiên dài
+- 25 test mới (`tests/test_crisp.py`, thêm vào `tests/test_game_feel.py`, `tests/test_storage.py`), tổng 149. Chạy thử ngẫu nhiên dài
   (10 ải + Vô tận + Hỏa ngục, 1 phút mỗi chế độ, 6 cỡ cửa sổ) không lỗi.
 
 ## [2.1.0-dev] – Cảm giác đánh

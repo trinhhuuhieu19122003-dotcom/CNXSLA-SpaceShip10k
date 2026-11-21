@@ -20,6 +20,8 @@ from typing import Dict, Iterable, Optional
 
 from spaceship.config import PROJECT_DIR, GameMode
 
+TOP_RUNS = 5                             # số ván lưu ở Bảng điểm mỗi chế độ
+
 log = logging.getLogger(__name__)
 
 SAVE_VERSION = 5
@@ -47,6 +49,16 @@ class ModeRecord:
     games_played: int = 0
     best_time: float = 0.0
     best_combo: int = 0                 # chuỗi hạ liên tiếp dài nhất
+    #: 5 ván điểm cao nhất: {"score", "time", "kills", "combo", "level", "victory", "date"}
+    top_runs: list = field(default_factory=list)
+
+    def __post_init__(self) -> None:
+        runs = self.top_runs if isinstance(self.top_runs, list) else []
+        clean = []
+        for run in runs:                                    # file lưu sửa tay / hỏng một phần: bỏ dòng lạ
+            if isinstance(run, dict) and isinstance(run.get("score"), (int, float)):
+                clean.append(run)
+        self.top_runs = sorted(clean, key=lambda r: -r["score"])[:TOP_RUNS]
 
 
 @dataclass
@@ -58,6 +70,7 @@ class GameResult:
     survival_time: float
     victory: bool = False
     best_combo: int = 0
+    level: Optional[int] = None         # Vượt ải: ải vừa chơi
 
 
 @dataclass
@@ -157,6 +170,14 @@ class SaveData:
         rec.best_score = max(rec.best_score, result.score)
         rec.best_time = max(rec.best_time, round(result.survival_time, 1))
         rec.best_combo = max(rec.best_combo, result.best_combo)
+        if result.score > 0:
+            rec.top_runs.append({
+                "score": int(result.score), "time": round(result.survival_time, 1), "kills": int(result.kills),
+                "combo": int(result.best_combo), "level": result.level, "victory": bool(result.victory),
+                "date": datetime.date.today().isoformat(),
+            })
+            rec.top_runs.sort(key=lambda r: -r["score"])        # sort ổn định: bằng điểm thì ván cũ đứng trước
+            del rec.top_runs[TOP_RUNS:]
         new_record = result.score > self.highscore
         if new_record:
             self.highscore = result.score
