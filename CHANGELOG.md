@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.1.0-dev] – Bản đồ hành trình (thay màn radar)
+- Đoạn hội thoại mở đầu **mọi ải** dùng **bản đồ hành trình** (`ui/journey_map.py`): 10 ải là 10 điểm sao chia
+  3 cụm theo hồi; ải đã qua sáng xanh kèm sao, ải sắp chơi nhấp nháy đỏ, ải chưa tới mờ; dấu thoi đỏ ở ải có
+  boss; bóng Tàu Mẹ sau ải 10. Tàu bay từ ải trước tới ải này theo đường cong. Nền là ảnh của hồi phóng to chậm
+  + lưới chiến thuật. Câu "nhiều mục tiêu áp sát" làm hiện bầy chấm đỏ quây quanh điểm ải.
+- Chân dung có "chất tín hiệu" theo người nói: ARIA (AI) sọc quét + thỉnh thoảng lệch dòng; Chỉ huy (ở xa) nhiễu hạt,
+  chập chờn; KX-17 hình sạch.
+- 1 test mới (mọi ải có bản đồ, tàu bay tới nơi, bầy chấm đỏ hiện đúng câu thoại), tổng 103.
+
 ## [2.1.0-dev] – Đạn đẹp hơn, drone có ích
 - **Tia Sét** vẽ lại: quầng sáng cộng sáng, thân vàng lõi trắng, 1-2 nhánh rẽ xanh điện, rung nhấp nháy, chớp sáng ở
   điểm trúng; tồn tại lâu hơn (10 tick) nên nhìn thấy liên tục. Bão Sét và màn Hướng dẫn dùng chung kiểu mới.

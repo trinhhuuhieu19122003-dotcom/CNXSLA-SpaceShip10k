@@ -98,3 +98,31 @@ class CycleGameTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class JourneyMapTest(unittest.TestCase):
+    def test_every_level_intro_shows_map_and_ship_arrives(self):
+        from spaceship.input.controls import ControlState
+
+        folder = Path(tempfile.mkdtemp())
+        game = Game(camera=False, seed=1, save=SaveData.load(folder / "save.json"),
+                    settings=Settings(path=folder / "settings.json"))
+        game.calibrated = True
+        for number in range(1, LEVEL_COUNT + 1):
+            start_level(game, number)
+            game._apply_pending_scene()
+            intro = game.scene
+            self.assertIsInstance(intro, CutsceneScene)
+            self.assertIsNotNone(intro.journey)
+            for _ in range(160):
+                intro.update(ControlState())
+            intro.draw(game.screen)
+            self.assertTrue(intro.journey.arrived)
+        start_level(game, 1)
+        game._apply_pending_scene()
+        intro = game.scene
+        for _ in range(60 * 30):                                 # tới câu thoại "nhiều mục tiêu áp sát"
+            intro.update(ControlState())
+            if intro.journey.blips or game.scene is not intro:
+                break
+        self.assertTrue(intro.journey.blips)

@@ -1,7 +1,7 @@
-"""Đoạn hội thoại giữa các ải: chân dung người nói, chữ gõ máy, nhiễu sóng, radar.
+"""Đoạn hội thoại giữa các ải: chân dung người nói, chữ gõ máy, nhiễu sóng, bản đồ hành trình.
 
-Phông nền (``backdrop``): ``"radar"`` (màn hình radar - mở đầu game), tên một ảnh
-nền hồi (``"bg_act2"``...) hoặc ``"ending"`` (ảnh kết thúc).
+Phông nền (``backdrop``): ``"map"`` (bản đồ hành trình trên ảnh nền của hồi - mở đầu mọi ải, xem
+ui/journey_map.py), ``"radar"`` (radar cũ, giữ để tương thích), tên một ảnh nền hoặc ``"ending"`` (ảnh kết thúc).
 
 Sửa lỗi bản cũ: bấm SPACE đặt ``fade_state = "OUT"`` — trạng thái không tồn tại
 (đúng phải là ``"FADE_OUT"``), nên phím tua không hoạt động. Ngoài ra mọi bộ
@@ -10,6 +10,7 @@ Sửa lỗi bản cũ: bấm SPACE đặt ``fade_state = "OUT"`` — trạng th�
 from __future__ import annotations
 
 import math
+import random
 from dataclasses import dataclass
 from typing import Callable, List, Optional
 
@@ -18,6 +19,8 @@ import pygame
 from spaceship.campaign import story
 from spaceship.config import HEIGHT, TICK_RATE, WHITE, WIDTH
 from spaceship.core.scene import Scene
+from spaceship.ui import journey_map
+from spaceship.ui.journey_map import JourneyMap
 from spaceship.ui.widgets import ACCENT, DANGER, MUTED, TEXT, blit_center, dim, draw_panel, fit_text, wrap_text
 
 
@@ -85,8 +88,12 @@ class Typewriter:
 
 class CutsceneScene(Scene):
     def __init__(self, game, script, next_scene: Callable[[], Scene], backdrop: str = "radar",
-                 title: str = "", subtitle: str = "", music: str = "briefing") -> None:
+                 title: str = "", subtitle: str = "", music: str = "briefing",
+                 level_number: Optional[int] = None, background: Optional[str] = None) -> None:
         super().__init__(game)
+        # backdrop "map": bản đồ hành trình trên nền ảnh của hồi (background)
+        self.journey = JourneyMap(level_number, game.save.level_stars) if backdrop == "map" and level_number else None
+        self.background = background
         self.music = music
         self._typed = 0                 # đếm ký tự đã gõ: cứ 2 ký tự phát 1 tiếng cho đỡ dày
         self.script: List[Line] = list(script) if script and isinstance(script[0], Line) else make_script(script)
@@ -128,7 +135,9 @@ class CutsceneScene(Scene):
             self.game.audio.play(line.sound)
         if line.effect == "glitch":
             self.game.audio.play("glitch")
-        if line.radar_contacts:
+        if line.radar_contacts and self.journey is not None:
+            self.journey.contacts()
+        elif line.radar_contacts:
             rng = self.game.rng
             cx, cy = RADAR_CENTER
             self.radar_dots = [[cx - 110 + rng.randint(0, 220), cy - 100 - rng.randint(0, 120), rng.uniform(0.6, 1.4)]
@@ -146,6 +155,8 @@ class CutsceneScene(Scene):
     # --- Logic --------------------------------------------------------------------------
     def update(self, controls) -> None:
         self.ticks += 1
+        if self.journey is not None:            # tàu trên bản đồ bay ngay cả lúc màn đang hiện dần
+            self.journey.update()
         if self.fade == "in":
             self.fade_alpha = max(0, self.fade_alpha - FADE_STEP)
             if self.fade_alpha == 0:
@@ -188,7 +199,32 @@ class CutsceneScene(Scene):
         if self.fade_alpha > 0:
             dim(surface, self.fade_alpha)
 
+    def _draw_map(self, surface: pygame.Surface) -> None:
+        """Ảnh nền của hồi phóng to rất chậm (kiểu phim), tối đi; lưới chiến thuật mờ; bản đồ hành trình."""
+        a = self.game.assets
+        surface.fill((4, 8, 14))
+        image = a.raw(self.background) if self.background else None
+        if image is not None:
+            k = 1.0 + min(0.07, self.ticks / 4500)
+            cover = max(WIDTH / image.get_width(), HEIGHT / image.get_height()) * k
+            size = (int(image.get_width() * cover), int(image.get_height() * cover))
+            if getattr(self, "_bg_cache", (None,))[0] != size:
+                self._bg_cache = (size, pygame.transform.smoothscale(image, size))
+            scaled = self._bg_cache[1]
+            surface.blit(scaled, scaled.get_rect(center=(WIDTH // 2, HEIGHT // 2)))
+            dim(surface, 165)
+        grid = (16, 30, 42)
+        for x in range(24, WIDTH, 48):
+            pygame.draw.line(surface, grid, (x, 72), (x, HEIGHT - 222))
+        for y in range(72, HEIGHT - 222, 48):
+            pygame.draw.line(surface, grid, (24, y), (WIDTH - 24, y))
+        journey_map.draw_frame(surface, a, "BẢN ĐỒ HÀNH TRÌNH · TÍN HIỆU TÀU MẸ")
+        self.journey.draw(surface, a)
+
     def _draw_backdrop(self, surface: pygame.Surface) -> None:
+        if self.journey is not None:
+            self._draw_map(surface)
+            return
         if self.backdrop == "radar":
             surface.fill((5, 10, 15))
             self._draw_radar(surface)
@@ -234,6 +270,30 @@ class CutsceneScene(Scene):
                 pygame.draw.circle(surface, WHITE, (int(x), int(y)), 6)
             pygame.draw.circle(surface, (255, 0, 0), (int(x), int(y)), 4)
 
+    def _portrait_signal(self, surface, speaker: str, rect: pygame.Rect, portrait: pygame.Surface) -> None:
+        """Mỗi người nói một "chất tín hiệu": ARIA là AI -> sọc quét + thỉnh thoảng lệch dòng;
+        Chỉ huy ở rất xa -> nhiễu hạt + chập chờn. KX-17 ở ngay buồng lái: hình sạch."""
+        t = self.ticks
+        if speaker == story.ARIA:
+            lines = pygame.Surface(rect.size, pygame.SRCALPHA)
+            for y in range(0, rect.height, 3):
+                pygame.draw.line(lines, (0, 0, 0, 70), (0, y), (rect.width, y))
+            band = (t * 2) % (rect.height + 30) - 15                          # vạch sáng quét dọc
+            pygame.draw.rect(lines, (120, 230, 255, 40), (0, band, rect.width, 6))
+            surface.blit(lines, rect)
+            if t % 110 < 5:                                                    # lệch dòng ngắn
+                y = random.randint(0, rect.height - 14)
+                slice_rect = pygame.Rect(0, y, rect.width, random.randint(6, 14))
+                surface.blit(portrait, (rect.x + random.choice((-6, 6)), rect.y + y), slice_rect)
+        elif speaker == story.CMD:
+            noise = pygame.Surface(rect.size, pygame.SRCALPHA)
+            for _ in range(160):
+                c = random.randint(120, 255)
+                noise.set_at((random.randrange(rect.width), random.randrange(rect.height)), (c, c, c, 120))
+            surface.blit(noise, rect)
+            if t % 150 < 4:                                                    # tín hiệu chập chờn
+                dim(surface.subsurface(rect), 140)
+
     def _draw_dialog(self, surface: pygame.Surface) -> None:
         line = self.line
         color = story.SPEAKER_COLORS.get(line.speaker, TEXT) if line else ACCENT
@@ -248,6 +308,7 @@ class CutsceneScene(Scene):
             if line.effect == "glitch" and self.glitch:                       # chân dung cũng nhiễu
                 px += rng.randint(-4, 4)
             surface.blit(portrait, (px, py))
+            self._portrait_signal(surface, line.speaker, pygame.Rect(BOX.x + 14, py, PORTRAIT, PORTRAIT), portrait)
             pygame.draw.rect(surface, color, (BOX.x + 14, py, PORTRAIT, PORTRAIT), 1)
             tx = BOX.x + PORTRAIT + 32
         surface.blit(a.text(line.speaker.upper(), 22, color, role="ui"), (tx, BOX.y + 7))
