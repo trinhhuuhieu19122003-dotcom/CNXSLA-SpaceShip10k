@@ -26,7 +26,8 @@
   khi ván lọt top 5 (mà chưa phá kỷ lục chung).
 - **3 huy hiệu mới** (tổng 21): Bậc thầy chuỗi (chuỗi 30), Luồn lách (150 lần sát đạn trong một ván), Dọn sạch
   bầu trời (hủy 30 viên đạn cùng lúc). Thẻ huy hiệu thấp hơn để đủ 7 hàng: ngày đạt / tiến độ nằm bên phải tên.
-- Bảng trái màn rộng hiện số lần **sát đạn**; mất chuỗi từ 10 trở lên hiện chữ đỏ **"MẤT CHUỖI N"**.
+- Bảng trái màn rộng hiện số lần **sát đạn**; mất chuỗi từ 10 trở lên hiện chữ đỏ **"MẤT CHUỖI N"**. Khung hẹp
+  (cửa sổ 800x700) hiện "CHUỖI n" trên dải điểm kèm vạch vàng ngắn dần (thời gian còn lại để giữ chuỗi).
 - **Tiếng mới** (tổng hợp bằng numpy): `lock_on`, `heartbeat` (khớp nhịp viền đỏ khi máu thấp), `bullet_cancel`,
   `graze`.
 - 27 test mới (`tests/test_crisp.py`, thêm vào `tests/test_game_feel.py`, `tests/test_storage.py`,
