@@ -93,3 +93,21 @@ class StorageTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class BoardRankTest(unittest.TestCase):
+    def test_last_rank_and_result_line(self):
+        from spaceship.app import Game
+        from spaceship.scenes.result import ResultScene
+
+        game = Game(camera=False, seed=1)
+        game.save = save = SaveData(path=Path(tempfile.mkdtemp()) / "save.json")
+        for score in (500, 300):
+            save.record(GameResult(GameMode.INFERNO, score, 1, 0, 10))
+        result = GameResult(GameMode.INFERNO, 400, 1, 0, 10)
+        save.record(result)
+        self.assertEqual(save.last_rank, 1)
+        scene = ResultScene(game, None, result, False)
+        self.assertEqual(scene.board_rank, 1)
+        save.record(GameResult(GameMode.INFERNO, 0, 0, 0, 1))
+        self.assertIsNone(save.last_rank)

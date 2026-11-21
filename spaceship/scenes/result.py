@@ -30,12 +30,22 @@ class ResultScene(Scene):
         self.gameplay = gameplay
         self.result = result
         self.new_record = new_record
+        self.board_rank = self._board_rank(game, result)
         self.level, self.stars, self.loadout, self.ending = level, stars, loadout, ending
         self.music = "ending" if ending else None      # đoạn kết: giữ nhạc kết thúc
         self._jingle_played = False
         self.ticks = 0
         self.buttons = self._make_buttons()
         self.menu = MenuList.for_buttons(game, self.buttons, self._do)
+
+    @staticmethod
+    def _board_rank(game, result: GameResult) -> Optional[int]:
+        """Hạng của ván này trong Bảng điểm (chỉ khi đúng là ván vừa ghi)."""
+        rank = getattr(game.save, "last_rank", None)
+        runs = game.save.modes[result.mode].top_runs
+        if rank is None or rank >= len(runs) or runs[rank].get("score") != result.score:
+            return None
+        return rank
 
     def on_enter(self) -> None:
         if not self._jingle_played:                   # không phát lại khi quay về từ màn khác
@@ -170,6 +180,9 @@ class ResultScene(Scene):
             surface.blit(record, rect)
             draw_star(surface, (rect.left - 16, rect.centery), 7, True)
             draw_star(surface, (rect.right + 16, rect.centery), 7, True)
+        elif self.board_rank is not None:                     # lọt Bảng điểm của chế độ này
+            text = f"HẠNG {self.board_rank + 1} BẢNG ĐIỂM {self.result.mode.label.upper()}"
+            blit_center(surface, fit_text(a, text, 16, SECONDARY, PANEL.width - 60, role="ui"), y)
         earned = getattr(self.gameplay, "new_achievements", [])
         if earned and self.ticks >= BADGES_AT:                 # huy hiệu đạt trong ván này: thẻ có biểu tượng
             self._draw_badges(surface, a, earned, y + 52)

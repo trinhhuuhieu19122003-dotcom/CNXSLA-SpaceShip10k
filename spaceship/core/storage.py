@@ -161,6 +161,9 @@ class SaveData:
         return backup
 
     # --- Ghi nhận ván chơi --------------------------------------------------------
+    #: hạng (0 = nhất) của ván vừa ghi trong Bảng điểm chế độ đó; None = không lọt top (không lưu vào file)
+    last_rank: Optional[int] = field(default=None, repr=False, compare=False)
+
     def record(self, result: GameResult) -> bool:
         """Cộng dồn kết quả một ván, lưu file. Trả về True nếu phá kỷ lục chung."""
         rec = self.modes[result.mode]
@@ -176,8 +179,12 @@ class SaveData:
                 "combo": int(result.best_combo), "level": result.level, "victory": bool(result.victory),
                 "date": datetime.date.today().isoformat(),
             })
+            run = rec.top_runs[-1]
             rec.top_runs.sort(key=lambda r: -r["score"])        # sort ổn định: bằng điểm thì ván cũ đứng trước
             del rec.top_runs[TOP_RUNS:]
+            self.last_rank = next((i for i, r in enumerate(rec.top_runs) if r is run), None)
+        else:
+            self.last_rank = None
         new_record = result.score > self.highscore
         if new_record:
             self.highscore = result.score
