@@ -74,6 +74,17 @@ class CrispSurface(pygame.Surface):
                 keep.append(record)
         self.records = keep
 
+    def bake_outside(self, regions) -> None:
+        """Chữ không nằm trọn trong vùng nào (vd. tràn qua ranh giới 2 bảng bên) thì vẽ thường ngay, để không bị
+        bỏ sót khi mỗi vùng được phóng và vẽ lại chữ riêng."""
+        keep = []
+        for record in getattr(self, "records", []):
+            if any(region.contains(record[1]) for region in regions):
+                keep.append(record)
+            else:
+                self._draw_record(record)
+        self.records = keep
+
     # --- Chuyển chữ từ tấm phụ sang tấm chính ---------------------------------------------------
     def take(self, rect: pygame.Rect, target) -> List[tuple]:
         """Tấm phụ (vd. ô HUD góc) sắp được dán lên ``target``. Nếu ``target`` đang ghi chữ: lấy các chữ trong

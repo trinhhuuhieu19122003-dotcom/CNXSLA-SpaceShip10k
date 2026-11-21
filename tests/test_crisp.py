@@ -175,3 +175,19 @@ class UpscaleTest(unittest.TestCase):
         big = upscale(src, (2468, 2160))                        # 4K: nhân điểm ảnh thẳng, không làm mượt
         row = [big.get_at((x, 100))[0] for x in range(1230, 1250)]
         self.assertTrue(set(row) <= {0, 255})
+
+
+class BakeOutsideTest(unittest.TestCase):
+    def test_text_crossing_regions_is_drawn_normally(self):
+        assets = Assets()
+        surf = CrispSurface((200, 50)).setup()
+        surf.fill((0, 0, 0))
+        surf.begin(True)
+        inside = assets.text("A", 20, WHITE, role="ui")
+        across = assets.text("WWWW", 20, WHITE, role="ui")
+        surf.blit(inside, (5, 5))
+        surf.blit(across, (100 - across.get_width() // 2, 5))   # nằm vắt qua ranh giới x = 100
+        surf.bake_outside((pygame.Rect(0, 0, 100, 50), pygame.Rect(100, 0, 100, 50)))
+        self.assertEqual([r[0] for r in surf.records], [inside])
+        self.assertGreater(pygame.transform.average_color(surf, (100 - across.get_width() // 2, 5,
+                                                                 *across.get_size()))[0], 10)

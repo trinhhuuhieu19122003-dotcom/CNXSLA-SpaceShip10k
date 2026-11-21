@@ -315,6 +315,7 @@ class Game:
             canvas.fill(SIDEBAR_BG)
             left, right = pygame.Rect(0, 0, side, config.HEIGHT), pygame.Rect(side, 0, side, config.HEIGHT)
             self.scene.draw_sidebars(canvas, left, right)
+            canvas.bake_outside((left, right))
             images = []
             for r in (left, right):
                 image = upscale(canvas.subsurface(r), (side_w, height)).copy()
