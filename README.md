@@ -144,6 +144,13 @@ giây** (một chùm đạn không rút sạch máu); máu dưới 30% viền đ
 chóng mặt chọn **Cài đặt → Rung & nháy màn hình: Nhẹ / Tắt** (viền đỏ báo trúng đạn vẫn giữ). Chi tiết:
 [docs/design/cam-giac-danh.md](docs/design/cam-giac-danh.md).
 
+**Chuỗi hạ địch:** hạ liên tiếp (mỗi lần cách nhau dưới 2,5 giây) để nhân điểm: 10 lần x2, 20 lần x3, 30 lần x4.
+Bị trúng đạn là mất chuỗi. **Lính cảm tử** khựng lại, hiện vòng đỏ + vạch ngắm trước khi lao: hạ ngay hoặc né ngang.
+Hạ boss / boss đổi pha thì đạn địch trên màn biến thành điểm thưởng.
+
+**Toàn màn hình:** chữ được vẽ lại ở độ phân giải màn hình nên vẫn sắc nét ở 1080p/2K/4K
+([docs/design/chu-sac-net.md](docs/design/chu-sac-net.md)).
+
 ## Chế độ chơi
 
 | Chế độ | Mô tả |

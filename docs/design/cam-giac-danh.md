@@ -55,6 +55,42 @@ Giờ sau mỗi lần trúng đạn được bất tử `MERCY_TICKS` = 30 tick 
 `ĐẦY ĐỦ` (×1) · `NHẸ` (×0,4) · `TẮT` (×0), áp cho rung và chớp sáng. Viền đỏ là **thông tin** nên vẫn giữ;
 chỉ nhịp đập là đứng yên khi `TẮT`. Hướng dẫn trợ năng của nhiều game đều khuyên có tùy chọn này.
 
+## 6. Lính cảm tử báo trước khi lao (telegraph)
+
+**Trước:** lính cảm tử còn dưới 40% máu là lập tức bám theo tàu, tốc độ 8 px/tick, bẻ lái tức thời. Muốn sống
+thì chỉ có cách hạ nó; né thì không được.
+
+**Giờ:** đọc được và né được.
+
+1. **Khóa mục tiêu** 30 tick (0,5 giây). Thân rung, vòng đỏ co dần, vòng vàng nhấp nháy, vạch đứt khúc chỉ hướng
+   sẽ lao, kèm tiếng bíp `lock_on`.
+2. **Lao.** Trong 20 tick đầu chỉ bẻ lái được 1°/tick, sau đó bay thẳng. Lao trượt ra khỏi màn thì bị dọn.
+
+Thử nghiệm (có test): người chơi đứng yên thì vẫn bị đâm; né ngang 250 px ngay khi nó lao thì trượt.
+
+## 7. Hủy đạn khi hạ boss / boss đổi pha
+
+Đạn địch còn trên màn biến thành tia sáng vàng, +5 điểm mỗi viên, kèm tiếng `bullet_cancel`. Đây là cách các game
+bắn tàu Nhật (dòng "bullet hell") thưởng cho người chơi. Nó cũng tránh chết oan vì đạn sót lại đúng lúc khung cảnh
+đang đổi. Boss sang pha mới (66% và 33% máu) cũng dọn đạn, tạo một nhịp thở ngắn trước kiểu bắn mới.
+
+## 8. Chuỗi hạ địch
+
+Hạ liên tiếp, mỗi lần cách nhau dưới 2,5 giây, để nhân điểm: 10 lần x2, 20 lần x3, 30 lần x4. **Trúng đạn là mất
+chuỗi.** Vì vậy chơi liều để giữ chuỗi có lợi về điểm, nhưng một lần sơ sẩy là mất hết.
+
+Chuỗi hiện ở mấy chỗ:
+
+* "CHUỖI xN" nổi lên trên tàu lúc lên bậc.
+* Dải điểm trên cùng.
+* Bảng trái ở màn rộng, kèm thanh thời gian còn lại.
+* Màn Kết quả ghi chuỗi dài nhất.
+
+## 9. Tim đập
+
+Khi máu ≤ 30%, tiếng `heartbeat` ("thịch-thịch" trầm) phát đúng nhịp viền đỏ (1,3 nhịp/giây). Viền đậm nhất ngay
+lúc tim đập.
+
 ## Tham khảo
 
 * Mark Brown (Game Maker's Toolkit), *Secrets of Game Feel and Juice*, tổng hợp từ talk của Jan Willem Nijman

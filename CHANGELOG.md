@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.1.0-dev] – Chữ sắc nét, chuỗi hạ địch, kamikaze báo trước
+- **Chữ sắc nét khi toàn màn hình** (`ui/crisp.py`): `Assets.text` trả về `TextSurface` nhớ chữ/cỡ/màu; tấm vẽ
+  800x700 và tấm 2 bảng bên là `CrispSurface`. Khi phóng > 1,05 lần, chữ được ghi lại rồi vẽ lại bằng font cỡ lớn
+  ngay trên ảnh đã phóng (chọn cỡ có bề rộng khớp nhất). Vật vẽ đè lên chữ thì chữ được vẽ thường trước, giữ đúng
+  thứ tự (bảng Tạm dừng, Kết quả phủ lên trận). Hình ảnh vẫn phóng như cũ.
+- **Hết giật hình ở menu toàn màn hình**: nền mờ 2 bên làm tối trên ảnh 40x35 trước khi phóng (trước đây làm tối
+  3 triệu điểm ảnh, ~27 ms, mỗi 4 hình). Menu 1080p ~19 ms → ~10 ms mỗi hình.
+- **Kamikaze báo trước**: khựng 0,5 giây "khóa mục tiêu" (thân rung, vòng đỏ co lại, vạch ngắm, tiếng bíp), rồi lao;
+  chỉ bẻ lái 1°/tick trong 20 tick đầu rồi bay thẳng. Đứng yên vẫn bị đâm, né ngang kịp thì trượt.
+- **Hủy đạn**: hạ boss hoặc boss sang pha mới → đạn địch trên màn thành tia sáng vàng, +5 điểm mỗi viên.
+- **Chuỗi hạ địch**: hạ liên tiếp (cách nhau < 2,5 giây), mỗi 10 lần +1 bậc nhân điểm, tối đa x4; bị trúng đạn mất
+  chuỗi. Hiện "CHUỖI xN" trên tàu, trên dải điểm, ở bảng trái màn rộng; màn Kết quả ghi chuỗi dài nhất.
+- **Tiếng mới** (tổng hợp bằng numpy): `lock_on`, `heartbeat` (khớp nhịp viền đỏ khi máu thấp), `bullet_cancel`.
+- 20 test mới (`tests/test_crisp.py`, thêm vào `tests/test_game_feel.py`), tổng 144. Chạy thử ngẫu nhiên dài
+  (10 ải + Vô tận + Hỏa ngục, 1 phút mỗi chế độ, 6 cỡ cửa sổ) không lỗi.
+
 ## [2.1.0-dev] – Cảm giác đánh
 - **Rung kiểu trauma** (`World.shake` / `tick_feel`): mỗi cú cộng trauma 0..1, độ lệch = 12 px × trauma², giảm dần.
   Cú nhẹ chỉ hơi nhích, hạ boss giật mạnh; thay cho rung ±8 px cố định.
