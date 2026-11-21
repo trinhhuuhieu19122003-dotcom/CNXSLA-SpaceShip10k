@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# Dữ liệu người chơi (bản mới lưu ở thư mục người dùng, không lưu trong repo)
+highscore.txt
+stats.json
+save.json
+
+# Model MediaPipe tải về khi chạy
+*.task
+
+# IDE / hệ điều hành
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

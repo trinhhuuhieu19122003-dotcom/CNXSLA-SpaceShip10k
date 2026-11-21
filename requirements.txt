@@ -1,4 +1,10 @@
-pygame>=2.5.0
-opencv-python>=4.8.0
-numpy>=1.24.0
-mediapipe>=0.10.0
+# Python 3.10 – 3.13
+pygame>=2.5,<3
+numpy>=1.24,<3
+opencv-python>=4.8,<5
+# Game tự chọn API phù hợp với bản MediaPipe đã cài:
+#  - <= 0.10.21: dùng mp.solutions.hands (API cũ)
+#  - >= 0.10.31: mp.solutions đã bị xóa -> dùng HandLandmarker (Tasks API),
+#    model ~7.5MB được tải tự động một lần vào thư mục dữ liệu người dùng.
+# Đã chạy thử thực tế với 0.10.32.
+mediapipe>=0.10.9,<0.11

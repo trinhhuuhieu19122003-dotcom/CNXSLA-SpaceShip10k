@@ -1,0 +1,115 @@
+"""Hằng số và thông số cân bằng game, gom về một chỗ để chỉnh dễ dàng.
+
+Mọi giá trị "theo tick" ở đây tính trên bước cập nhật cố định 1/60 giây
+(xem ``spaceship.app``), nên game chạy đúng tốc độ trên mọi máy.
+"""
+from __future__ import annotations
+
+from enum import Enum
+from pathlib import Path
+
+# --- Màn hình & vòng lặp -----------------------------------------------------
+TITLE = "Spaceship 10k"
+WIDTH, HEIGHT = 800, 700
+TICK_RATE = 60                     # số lần cập nhật logic mỗi giây (cố định)
+TICK = 1.0 / TICK_RATE
+MAX_FRAME_TIME = 0.25              # chặn "spiral of death" khi máy bị đứng hình
+
+# --- Đường dẫn ---------------------------------------------------------------
+PACKAGE_DIR = Path(__file__).resolve().parent
+PROJECT_DIR = PACKAGE_DIR.parent
+ASSETS_DIR = PROJECT_DIR / "assets"
+IMAGES_DIR = ASSETS_DIR / "images"
+AUDIO_DIR = ASSETS_DIR / "audio"
+
+# --- Màu -----------------------------------------------------------------------
+BLACK = (10, 10, 15)
+WHITE = (255, 255, 255)
+GRAY = (100, 100, 100)
+YELLOW = (255, 255, 0)
+NEON_GREEN = (57, 255, 20)
+NEON_RED = (255, 0, 50)
+NEON_CYAN = (0, 255, 255)
+NEON_ORANGE = (255, 120, 0)
+NEON_MAGENTA = (255, 0, 255)
+PLASMA_COLOR = (0, 150, 255)
+LASER_COLOR = (255, 50, 50)
+HOMING_COLOR = (200, 0, 255)
+
+FONT_NAMES = "tahoma,segoeui,arial,dejavusans"
+
+
+class GameMode(str, Enum):
+    CAMPAIGN = "CAMPAIGN"
+    ENDLESS = "ENDLESS"
+    INFERNO = "INFERNO"
+
+    @property
+    def label(self) -> str:
+        return {"CAMPAIGN": "VƯỢT ẢI", "ENDLESS": "VÔ TẬN", "INFERNO": "HỎA NGỤC"}[self.value]
+
+    @property
+    def is_timed(self) -> bool:
+        return self is not GameMode.CAMPAIGN
+
+
+# --- Người chơi -------------------------------------------------------------
+PLAYER_MAX_HP = 100
+PLAYER_LIVES = 3
+PLAYER_MAX_RAGE = 100
+PLAYER_KEYBOARD_SPEED = 7          # px/tick khi điều khiển bằng phím
+PLAYER_HAND_FOLLOW = 0.25          # hệ số bám theo tay mỗi tick (0..1)
+PLAYER_HITBOX = 15
+RESPAWN_INVINCIBLE_TICKS = 180
+RAGE_PER_HIT = 5
+MAX_WEAPON_LEVEL = 6
+MAX_BONUS_DAMAGE = 30
+
+WEAPON_BASE_DAMAGE = {"plasma": 6, "laser": 10, "homing": 4}
+PIERCING_LASER_DAMAGE = 15         # laser cấp 6 (tia xuyên thấu)
+DRONE_DAMAGE = 2
+DRONE_COOLDOWN_TICKS = 60
+NUKE_DAMAGE = 20
+
+# --- Kẻ địch -------------------------------------------------------------------
+KAMIKAZE_SPEED = 8                 # bản cũ: 15 px/tick, gần như không né được
+BURN_DAMAGE_PER_SECOND = 6         # bản cũ: 1.5/s, gần như vô dụng
+ENEMY_BULLET_DAMAGE = {"normal": 15}
+ENEMY_BULLET_DAMAGE_DEFAULT = 25
+COLLISION_DAMAGE = 20
+HEAVY_COLLISION_DAMAGE = 30        # va vào boss / thiên thạch
+
+# --- Điểm số -------------------------------------------------------------------
+SCORE_ENEMY = 10
+SCORE_METEOR = 20
+SCORE_BOSS_PER_STAGE = 250         # bản cũ: boss chỉ +10 như lính thường
+
+# --- Vật phẩm -------------------------------------------------------------------
+HEAL_AMOUNT = {GameMode.CAMPAIGN: 30, GameMode.ENDLESS: 30, GameMode.INFERNO: 5}
+SHIELD_TICKS = {GameMode.CAMPAIGN: 180, GameMode.ENDLESS: 180, GameMode.INFERNO: 60}
+RANDOM_DROP_CHANCE = {GameMode.ENDLESS: 0.45, GameMode.INFERNO: 0.20}
+ITEM_PICKUP_RADIUS = 30
+
+# --- Chế độ chơi ---------------------------------------------------------------
+CAMPAIGN_WAVES = {1: 5, 2: 7, 3: 10}
+CAMPAIGN_STAGES = 3
+STAGE_INTRO_TICKS = 60
+STAGE_CLEAR_TICKS = 180
+ENDLESS_BOSS_INTERVAL = 60.0       # giây (thật, nhờ bước cập nhật cố định)
+INFERNO_BOSS_INTERVAL = 45.0
+
+# --- Điều khiển bằng tay -------------------------------------------------------
+CAMERA_INDEX = 0
+CAMERA_SIZE = (640, 480)
+# Vùng điều khiển trong khung hình camera (x0, y0, x1, y1, tỉ lệ 0..1).
+# Tay di chuyển trong vùng này đã đủ đưa tàu chạm mép màn hình,
+# không cần đưa tay ra sát mép camera (dễ mất dấu tay).
+HAND_ACTIVE_ZONE = (0.15, 0.12, 0.85, 0.80)
+ONE_EURO_MIN_CUTOFF = 1.2          # nhỏ hơn = mượt hơn khi tay đứng yên
+ONE_EURO_BETA = 4.0                # lớn hơn = ít trễ hơn khi tay di chuyển nhanh
+GESTURE_STABLE_FRAMES = 3          # cử chỉ phải giữ ổn định N khung mới được nhận
+HAND_LOST_TIMEOUT = 0.35           # giây: quá thời gian này mới coi là mất tay
+HAND_LANDMARKER_URL = (
+    "https://storage.googleapis.com/mediapipe-models/hand_landmarker/"
+    "hand_landmarker/float16/latest/hand_landmarker.task"
+)
