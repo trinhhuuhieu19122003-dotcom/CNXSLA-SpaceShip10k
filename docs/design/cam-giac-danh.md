@@ -52,6 +52,16 @@ Vì sao không dài hơn? Đã cho một bot né đạn đơn giản chơi 2 ph�
 | Bất tử 0,5 giây | 0,26 | 4,07 |
 
 0,5 giây làm game dễ đi quá nhiều, mất cái "cay" của bản gốc. 0,25 giây chỉ bỏ đi những lần chết oan.
+
+Cho bot chơi thật (3 mạng, không gian lận, 5 ván mỗi chế độ), thời gian sống trung bình:
+
+| | Vô tận | Hỏa ngục |
+|---|---|---|
+| Bản trước | 114 giây | 20 giây |
+| Bản này | 137 giây | 33 giây |
+
+Vô tận dễ hơn chút (+20%). Hỏa ngục vẫn rất khó (bot chỉ trụ được hơn nửa phút) nhưng bớt cảnh chết trong vài giây
+vì dính cả chùm đạn.
 Lính cảm tử báo trước gần như không làm bot chết ít đi (bot vốn tránh xa địch); nó chỉ giúp người chơi đọc được
 tình huống. Lúc bất tử tàu chỉ ẩn 1/4 thời gian
 (trước là 1/2), vì đang né đạn mà tàu biến mất thì càng dễ chết oan.
