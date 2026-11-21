@@ -86,7 +86,15 @@ Chuỗi hiện ở mấy chỗ:
 * Bảng trái ở màn rộng, kèm thanh thời gian còn lại.
 * Màn Kết quả ghi chuỗi dài nhất.
 
-## 9. Tim đập
+## 9. Sát đạn (graze)
+
+Đạn địch bay sượt qua trong 34 px quanh tâm tàu mà không trúng (vùng trúng chỉ 15 px) thì được +2 điểm (nhân
+theo chuỗi), có tia sáng nhỏ, tiếng "xẹt", và **giữ chuỗi hạ không bị đứt**. Mỗi viên chỉ tính một lần. Lúc đang
+bất tử thì không tính, để không "cày" điểm được. Cơ chế này lấy từ các game bắn tàu như Touhou và Psyvariar:
+thưởng cho người dám luồn lách sát đạn thay vì luôn né thật xa, và hợp với chế độ **né chậm** (nắm tay / Shift)
+vốn đã hiện vùng trúng thật của tàu.
+
+## 10. Tim đập
 
 Khi máu ≤ 30%, tiếng `heartbeat` ("thịch-thịch" trầm) phát đúng nhịp viền đỏ (1,3 nhịp/giây). Viền đậm nhất ngay
 lúc tim đập.

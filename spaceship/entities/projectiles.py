@@ -143,6 +143,7 @@ class EnemyBullet:
     """``kind``: normal | blue_bullet | boss_homing | laser | purple_laser."""
 
     HOMING_TRACK_TICKS = 45
+    grazed = False                  # đã tính "sát đạn" một lần chưa
 
     def __init__(self, x, y, angle_deg: float, kind: str = "normal") -> None:
         self.x, self.y, self.kind = x, y, kind

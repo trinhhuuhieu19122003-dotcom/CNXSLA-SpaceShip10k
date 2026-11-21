@@ -162,7 +162,10 @@ def resolve_enemy_bullets(world: World) -> None:
             world.enemy_bullets.remove(bullet)
             world.sparks(bullet.x, bullet.y, (200, 200, 200), 2)
             continue
-        if math.hypot(player.x - bullet.x, player.y - bullet.y) >= PLAYER_BULLET_RADIUS:
+        dist = math.hypot(player.x - bullet.x, player.y - bullet.y)
+        if dist >= PLAYER_BULLET_RADIUS:
+            if dist < config.GRAZE_RADIUS and not bullet.grazed and player.invincible_timer <= 0:
+                _graze(world, bullet)
             continue
         if player.shield_active:
             world.enemy_bullets.remove(bullet)
@@ -173,6 +176,17 @@ def resolve_enemy_bullets(world: World) -> None:
             damage_player(world, config.ENEMY_BULLET_DAMAGE.get(bullet.kind, config.ENEMY_BULLET_DAMAGE_DEFAULT))
             if world.outcome:
                 return
+
+
+def _graze(world: World, bullet) -> None:
+    """Đạn sượt qua tàu: thưởng điểm (theo hệ số chuỗi), giữ chuỗi sống, tia sáng nhỏ."""
+    bullet.grazed = True
+    world.grazes += 1
+    world.score += config.GRAZE_SCORE * world.combo_mult
+    if world.combo:
+        world.combo_timer = config.COMBO_WINDOW_TICKS
+    world.sparks(bullet.x, bullet.y, (255, 255, 255), 2)
+    world.play("graze")
 
 
 def resolve_body_collisions(world: World) -> None:

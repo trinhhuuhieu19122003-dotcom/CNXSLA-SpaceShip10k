@@ -60,6 +60,8 @@ class World:
     combo: int = 0
     combo_timer: int = 0
     best_combo: int = 0
+    #: số lần đạn địch sượt qua tàu (sát đạn)
+    grazes: int = 0
     banner: str = ""
     banner_ticks: int = 0
     #: chu kỳ Vượt ải (Vòng lặp tín hiệu); chế độ khác luôn 1

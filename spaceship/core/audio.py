@@ -238,6 +238,11 @@ class Audio:
         shimmer = (np.sin(phase) * (0.6 + 0.4 * np.sin(2 * np.pi * 28 * t))
                    * self._envelope(len(t), rate, 0.005, 0.25)) * 0.55
         sounds["bullet_cancel"] = (self._to_sound(shimmer), 0.4, Sfx("", 0, 1, 400))
+
+        # Sát đạn: tiếng "xẹt" rất ngắn, cao (đạn sượt qua)
+        t = t_axis(0.06)
+        zip_ = np.sin(2 * np.pi * (2600 - 9000 * t) * t) * np.exp(-t * 60) * 0.5
+        sounds["graze"] = (self._to_sound(zip_), 0.18, Sfx("", 0, 2, 60))
         return sounds
 
     # --- Âm lượng ---------------------------------------------------------------------------

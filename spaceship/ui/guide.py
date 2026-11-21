@@ -150,7 +150,8 @@ def draw_modes(surface, assets, body: pygame.Rect, campaign_cleared: bool) -> No
          "1 sao: qua ải · 2 sao: mất tối đa 1 mạng · 3 sao: không mất mạng nào."),
         ("Sống sót càng lâu càng tốt. Độ khó tăng dần và càng về sau càng nhiều loại địch.",
          f"Boss đổi loại sau mỗi {config.ENDLESS_BOSS_INTERVAL:g} giây. "
-         f"Hạ liên tiếp để nhân điểm (chuỗi tới x{config.COMBO_MAX_MULT}); trúng đạn là mất chuỗi."),
+         f"Hạ liên tiếp để nhân điểm (chuỗi tới x{config.COMBO_MAX_MULT}); trúng đạn là mất chuỗi, "
+         "để đạn sượt sát tàu thì giữ được chuỗi."),
         (f"Mưa đạn, ít máu, không rơi khiên. Boss xuất hiện sau mỗi {config.INFERNO_BOSS_INTERVAL:g} giây.",
          "Mở khóa sau khi phá đảo Vượt ải."),
     )

@@ -211,3 +211,7 @@ BULLET_CANCEL_SCORE = 5
 COMBO_WINDOW_TICKS = 150
 COMBO_STEP = 10
 COMBO_MAX_MULT = 4
+#: Sát đạn (graze): đạn địch bay sượt qua trong bán kính này (nhưng không trúng) -> +điểm, tia sáng nhỏ và
+#: giữ chuỗi hạ không bị đứt. Thưởng cho người dám luồn lách thay vì né thật xa.
+GRAZE_RADIUS = 34
+GRAZE_SCORE = 2

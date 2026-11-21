@@ -12,8 +12,12 @@
 - **Hủy đạn**: hạ boss hoặc boss sang pha mới → đạn địch trên màn thành tia sáng vàng, +5 điểm mỗi viên.
 - **Chuỗi hạ địch**: hạ liên tiếp (cách nhau < 2,5 giây), mỗi 10 lần +1 bậc nhân điểm, tối đa x4; bị trúng đạn mất
   chuỗi. Hiện "CHUỖI xN" trên tàu, trên dải điểm, ở bảng trái màn rộng; màn Kết quả ghi chuỗi dài nhất.
-- **Tiếng mới** (tổng hợp bằng numpy): `lock_on`, `heartbeat` (khớp nhịp viền đỏ khi máu thấp), `bullet_cancel`.
-- 20 test mới (`tests/test_crisp.py`, thêm vào `tests/test_game_feel.py`), tổng 144. Chạy thử ngẫu nhiên dài
+- **Sát đạn (graze)**: đạn địch sượt qua trong 34 px mà không trúng → +2 điểm (nhân theo chuỗi), tia sáng nhỏ,
+  tiếng "xẹt", và giữ chuỗi hạ không bị đứt. Không tính khi đang bất tử.
+- **Thống kê**: lưu chuỗi hạ dài nhất của từng chế độ (`ModeRecord.best_combo`), hiện dưới Điểm cao.
+- **Tiếng mới** (tổng hợp bằng numpy): `lock_on`, `heartbeat` (khớp nhịp viền đỏ khi máu thấp), `bullet_cancel`,
+  `graze`.
+- 23 test mới (`tests/test_crisp.py`, thêm vào `tests/test_game_feel.py`, `tests/test_storage.py`), tổng 147. Chạy thử ngẫu nhiên dài
   (10 ải + Vô tận + Hỏa ngục, 1 phút mỗi chế độ, 6 cỡ cửa sổ) không lỗi.
 
 ## [2.1.0-dev] – Cảm giác đánh

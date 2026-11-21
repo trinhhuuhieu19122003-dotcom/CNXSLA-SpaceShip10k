@@ -34,7 +34,7 @@ class AudioUnitTest(unittest.TestCase):
         for track, (file, _gain) in audio_mod.MUSIC.items():
             self.assertTrue((AUDIO_DIR / file).exists(), track)
         for name in ("boss_siren", "radar", "glitch", "blip_kx", "blip_aria", "blip_cmd", "radio_cmd",
-                     "lock_on", "heartbeat", "bullet_cancel"):
+                     "lock_on", "heartbeat", "bullet_cancel", "graze"):
             self.assertTrue(self.audio.has(name), name)
         self.assertTrue(self.audio.has("beep"))          # tên cũ vẫn dùng được
 

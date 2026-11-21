@@ -282,3 +282,32 @@ class ComboTest(unittest.TestCase):
         self.assertIn("x3", _status_line(w, None))
         surface = pygame.Surface((560, 700))
         sidebar.draw_status_panel(surface, Assets(), pygame.Rect(0, 0, 280, 700), w)
+
+
+class GrazeTest(unittest.TestCase):
+    def test_near_miss_scores_once_and_keeps_combo(self):
+        w = world()
+        p = w.player
+        p.invincible_timer = 0
+        w.combo, w.combo_timer = 5, 3
+        bullet = EnemyBullet(p.x + config.PLAYER_HITBOX + 8, p.y, 90)
+        w.enemy_bullets.append(bullet)
+        score = w.score
+        combat.resolve_enemy_bullets(w)
+        combat.resolve_enemy_bullets(w)                  # cùng viên: chỉ tính một lần
+        self.assertEqual(w.score - score, config.GRAZE_SCORE)
+        self.assertEqual(w.grazes, 1)
+        self.assertEqual(w.combo_timer, config.COMBO_WINDOW_TICKS)
+        self.assertEqual(p.hp, p.max_hp)                 # sượt qua, không trúng
+        self.assertIn("graze", w.sounds)
+
+    def test_no_graze_while_invincible_or_far(self):
+        w = world()
+        p = w.player
+        p.invincible_timer = 0
+        w.enemy_bullets.append(EnemyBullet(p.x + config.GRAZE_RADIUS + 5, p.y, 90))
+        combat.resolve_enemy_bullets(w)
+        p.invincible_timer = 30
+        w.enemy_bullets.append(EnemyBullet(p.x + config.PLAYER_HITBOX + 8, p.y, 90))
+        combat.resolve_enemy_bullets(w)
+        self.assertEqual(w.grazes, 0)
