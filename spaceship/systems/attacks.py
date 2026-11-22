@@ -257,6 +257,28 @@ def _mothership(world: World, boss: Boss, ratio: float) -> int:
     return 26
 
 
+def _storm_eye(world: World, boss: Boss, ratio: float) -> int:
+    """MẮT BÃO (ải 13): ngồi giữa hố đen. Vòng xoắn 8 tia - lực hút + xoáy uốn đạn thành cánh quạt.
+    Pha 2 (dưới 50%): nhịp hút 3 giây gọi Ký Sinh (xem GravityWell); bắn thêm loạt ngắm 3 viên."""
+    b = world.enemy_bullets
+    boss.spiral_angle += 11
+    rim = 60
+    for i in range(8):
+        ang = boss.spiral_angle + i * 45
+        rad = math.radians(ang)
+        bullet = EnemyBullet(boss.x + math.cos(rad) * rim, boss.y + math.sin(rad) * rim, ang, "blue_bullet")
+        bullet.from_well = True
+        b.append(bullet)
+    if ratio < 0.5:
+        a = aim(boss, world.player)
+        for off in (-10, 0, 10):
+            bullet = EnemyBullet(boss.x, boss.y + rim, a + off, "normal")
+            bullet.from_well = True
+            b.append(bullet)
+        return 26
+    return 18
+
+
 def _inferno(world: World, boss: Boss, ratio: float) -> int:
     boss.spiral_angle += 20
     world.enemy_bullets.extend(EnemyBullet(boss.x, boss.y, boss.spiral_angle + i * 45, "normal") for i in range(8))
@@ -268,8 +290,8 @@ def _inferno(world: World, boss: Boss, ratio: float) -> int:
 BOSS_PATTERNS = {"crab": _crab, "octopus": _octopus, "spider": _spider, "nest": _nest,
                  "cruiser": _cruiser, "mothership": _mothership,
                  # Hồi IV - tạm mượn kiểu đánh có sẵn cho tới đợt làm cơ chế riêng
-                 "storm_eye": _octopus, "listener": _nest, "swarm_heart": _mothership}
-SHIELD_REGEN_KINDS = {"octopus", "spider", "cruiser", "mothership", "storm_eye", "swarm_heart"}
+                 "storm_eye": _storm_eye, "listener": _nest, "swarm_heart": _mothership}
+SHIELD_REGEN_KINDS = {"octopus", "spider", "cruiser", "mothership", "swarm_heart"}
 
 
 def boss_attack(world: World, boss: Boss) -> None:

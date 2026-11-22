@@ -29,7 +29,7 @@ from spaceship.ui import glow
 
 class Mechanic:
     hud_text = ""
-    body_cover = False          # True: thân tàu người chơi chặn đạn địch (ải hộ tống)
+    cover_radius = 0            # > 0: thân tàu người chơi (bán kính này) chặn đạn địch - ải hộ tống
 
     def update(self, world: World) -> None:
         pass
@@ -135,7 +135,7 @@ class Escort(Mechanic):
     * Chấm sao theo số người cứu; mất cả 4 tàu là thua.
     """
 
-    body_cover = True
+    cover_radius = 34           # cỡ thân + cánh tàu
 
     def __init__(self) -> None:
         self.boats: List[Lifeboat] = []
@@ -225,7 +225,209 @@ class Escort(Mechanic):
             boat.draw(surface, assets)
 
 
-MECHANICS = {"escort": Escort}
+# --- Ải 13 · Giếng trọng lực ---------------------------------------------------------------------
+WELL_START = (400.0, 260.0)
+WELL_RIM = 40                       # chạm vành: mất 30 máu, bị hất ra
+WELL_RIM_DAMAGE = 30
+WELL_DRIFT = 150                    # biên độ trôi ngang
+WELL_PULL_FAR, WELL_PULL_NEAR = 0.6, 2.2   # px/tick kéo tàu bạn: ở xa / sát vành
+WELL_PULL_RANGE = 520
+WELL_BULLET_G = 0.06                # gia tốc kéo đạn (px/tick²), giảm dần ngoài 120 px
+WELL_SWIRL = 0.7                    # tỉ lệ lực xoáy (vuông góc) so với lực hút: đạn bay cong thành cánh quạt
+WELL_PULSE_PERIOD = 240             # wave 4: 4 giây một nhịp đập ...
+WELL_PULSE_BOSS = 180               # ... Mắt Bão pha 2: 3 giây
+WELL_PULSE_WARN = 60                # vòng sáng co lại 1 giây ...
+WELL_PULSE_STRONG = 60              # ... rồi lực hút gấp đôi 1 giây
+WELL_COLOR = (255, 150, 70)
+WELL_EDGE = (170, 110, 255)
+
+
+class GravityWell(Mechanic):
+    """Ải 13: hố đen ở nửa trên màn kéo tàu bạn, đạn (cả của bạn và của địch) và địch về tâm.
+
+    * Kéo tàu 0,6 px/tick khi ở xa, tối đa 2,2 px/tick khi sát vành; chạm vành mất 30 máu và bị hất ra.
+    * Đạn bay cong (hút + xoáy) - bắn vòng qua Lính Khiên được; đạn rơi vào vành thì mất.
+    * Địch bị hút vào vành thì tan biến: không được điểm, nhưng cũng không mất chuỗi.
+    * Từ wave 4: hố đen đập theo nhịp (vòng sáng co lại 1 giây báo trước, rồi lực hút gấp đôi 1 giây).
+    * Mắt Bão nằm ngay tâm và trôi theo hố đen; pha 2 đập nhịp 3 giây, mỗi nhịp gọi 4 Ký Sinh từ vành.
+    """
+
+    def __init__(self) -> None:
+        self.x, self.y = WELL_START
+        self.t = 0
+        self.pulse_t = 0
+        self.just_pulsed = False         # tick bắt đầu lực hút mạnh (Mắt Bão gọi Ký Sinh đúng lúc này)
+        self.swallowed = 0
+        self._period = 1
+
+    # --- Trạng thái ----------------------------------------------------------------------------
+    def _boss(self, world: World):
+        return next((e for e in world.enemies if e.is_boss and e.kind == "storm_eye"), None)
+
+    def pulse_period(self, world: World) -> int:
+        boss = self._boss(world)
+        if boss is not None and boss.hp_ratio < 0.5:
+            return WELL_PULSE_BOSS
+        return WELL_PULSE_PERIOD if world.wave >= 4 or boss is not None else 0
+
+    @property
+    def warning(self) -> float:
+        """0..1 trong 1 giây báo trước (vòng sáng co lại); 0 nếu không."""
+        if self.pulse_t <= 0:
+            return 0.0
+        phase = self.pulse_t % self._period
+        start = self._period - WELL_PULSE_WARN - WELL_PULSE_STRONG
+        return (phase - start) / WELL_PULSE_WARN if start <= phase < start + WELL_PULSE_WARN else 0.0
+
+    @property
+    def strong(self) -> bool:
+        if self.pulse_t <= 0:
+            return False
+        return self.pulse_t % self._period >= self._period - WELL_PULSE_STRONG
+
+    def strength(self, world: World) -> float:
+        base = 0.7 if world.wave <= 1 and self._boss(world) is None else 1.0     # wave 1: hút nhẹ để làm quen
+        return base * (2.0 if self.strong else 1.0)
+
+    # --- Mỗi tick ------------------------------------------------------------------------------
+    def update(self, world: World) -> None:
+        self.t += 1
+        if world.wave >= 2 or self._boss(world) is not None:                     # wave 1 đứng yên
+            self.x = WELL_START[0] + math.sin(self.t / 360) * WELL_DRIFT
+        period = self.pulse_period(world)
+        self._period = max(1, period)
+        was_strong = self.strong
+        self.pulse_t = self.pulse_t + 1 if period else 0
+        self.just_pulsed = self.strong and not was_strong
+        if self.just_pulsed:
+            world.play("boss_phase")
+            world.shake(4)
+        k = self.strength(world)
+        self._pull_player(world, k)
+        self._bend_bullets(world, k)
+        self._pull_enemies(world, k)
+        boss = self._boss(world)
+        if boss is not None:
+            boss.dx = 0
+            boss.x = self.x
+            if boss.y >= self.y - 1:
+                boss.y = self.y
+            if boss.hp_ratio < 0.5 and self.just_pulsed:
+                self._spawn_parasites(world)
+
+    def _unit(self, x: float, y: float):
+        dx, dy = self.x - x, self.y - y
+        d = math.hypot(dx, dy) or 1e-6
+        return dx / d, dy / d, d
+
+    def _pull_player(self, world: World, k: float) -> None:
+        from spaceship.systems import combat
+
+        p = world.player
+        ux, uy, d = self._unit(p.x, p.y)
+        near = max(0.0, 1 - d / WELL_PULL_RANGE) ** 2
+        pull = (WELL_PULL_FAR + (WELL_PULL_NEAR - WELL_PULL_FAR) * near) * k
+        p.x = max(20, min(WIDTH - 20, p.x + ux * pull))
+        p.y = max(50, min(config.HEIGHT - 50, p.y + uy * pull))
+        if d < WELL_RIM + 14:                                        # chạm vành: hất ra ngoài + mất máu
+            p.x = max(20, min(WIDTH - 20, self.x - ux * (WELL_RIM + 90)))
+            p.y = max(50, min(config.HEIGHT - 50, self.y - uy * (WELL_RIM + 90)))
+            world.particles.append(_ring(self.x, self.y, WELL_COLOR, WELL_RIM + 60))
+            if not p.shield_active and p.invincible_timer <= 0:
+                combat.damage_player(world, WELL_RIM_DAMAGE)
+
+    def _bend_bullets(self, world: World, k: float) -> None:
+        g = WELL_BULLET_G * k
+        keep = []
+        for b in world.enemy_bullets:
+            ux, uy, d = self._unit(b.x, b.y)
+            if d < WELL_RIM and not getattr(b, "from_well", False):
+                continue                                             # rơi vào hố đen
+            if b.kind not in ("laser", "purple_laser"):
+                a = g * min(1.0, 120 / d)
+                b.dx += (ux - uy * WELL_SWIRL) * a
+                b.dy += (uy + ux * WELL_SWIRL) * a
+            keep.append(b)
+        world.enemy_bullets[:] = keep
+        keep = []
+        for b in world.bullets:
+            ux, uy, d = self._unit(b.x, b.y)
+            if d < WELL_RIM:
+                world.sparks(b.x, b.y, WELL_EDGE, 1)
+                continue
+            if b.kind != "homing" and not b.is_piercing_laser:
+                a = g * 1.4 * min(1.0, 120 / d)
+                b.dx += (ux - uy * WELL_SWIRL) * a
+                b.vy -= (uy + ux * WELL_SWIRL) * a                   # vy dương = bay lên
+            keep.append(b)
+        world.bullets[:] = keep
+
+    def _pull_enemies(self, world: World, k: float) -> None:
+        for e in list(world.enemies):
+            if e.is_boss or e.is_obstacle or getattr(e, "ai", None) == "turret" or e.y < 0:
+                continue
+            grace = getattr(e, "well_grace", 0)
+            if grace > 0:                                            # vừa chui ra từ vành: chưa bị hút lại
+                e.well_grace = grace - 1
+                continue
+            ux, uy, d = self._unit(e.x, e.y)
+            pull = (0.35 + 1.2 * max(0.0, 1 - d / 400) ** 2) * k
+            e.x += ux * pull
+            e.y += uy * pull
+            if hasattr(e, "base_x"):
+                e.base_x += ux * pull
+            if d < WELL_RIM + e.radius * 0.5:                       # bị nuốt: không điểm, không mất chuỗi
+                world.enemies.remove(e)
+                self.swallowed += 1
+                world.burst(e.x, e.y, WELL_EDGE, 8, speed_scale=0.4)
+                world.particles.append(_ring(self.x, self.y, WELL_EDGE, WELL_RIM + 24))
+
+    def _spawn_parasites(self, world: World) -> None:
+        if sum(isinstance(e, Parasite) for e in world.enemies) >= 20:
+            return
+        for i in range(4):
+            ang = math.radians(30 + i * 40)                          # nửa dưới vành
+            p = Parasite(world.hp_mult, self.x + math.cos(ang) * (WELL_RIM + 50),
+                         self.y + math.sin(ang) * (WELL_RIM + 50), rng=world.rng)
+            p.well_grace = 45
+            world.enemies.append(p)
+        world.particles.append(_ring(self.x, self.y, WELL_EDGE, WELL_RIM + 70))
+
+    # --- Vẽ ----------------------------------------------------------------------------------------
+    def draw_back(self, surface: pygame.Surface, world: World, assets, fx: float = 1.0) -> None:
+        x, y = self.x, self.y
+        spin = self.t * 0.02
+        boost = 1.0 + (0.5 if self.strong else 0.0)
+        glow.add(surface, glow.soft_halo(glow.scale(WELL_EDGE, 0.55 if self.strong else 0.38), 150), (x, y))
+        for i, (r, color, k) in enumerate(((118, WELL_EDGE, 0.35), (88, WELL_COLOR, 0.55), (62, (255, 220, 160), 0.8))):
+            rect = pygame.Rect(0, 0, int(r * 2), int(r * 1.25))           # đĩa bồi tụ nghiêng (elip)
+            rect.center = (int(x), int(y))
+            for j in range(3):
+                a0 = spin * (1.4 - i * 0.3) + j * 2.1
+                pygame.draw.arc(surface, glow.scale(color, k * boost), rect, a0, a0 + 1.3, 3)
+        pygame.draw.circle(surface, (0, 0, 0), (int(x), int(y)), WELL_RIM)  # lõi đen: hút cả ánh sáng
+        pygame.draw.circle(surface, glow.scale(WELL_COLOR, 0.9 * boost), (int(x), int(y)), WELL_RIM, 2)
+        warn = self.warning
+        if warn > 0:                                                  # vòng sáng co lại: sắp hút mạnh
+            r = int(WELL_RIM + 260 * (1 - warn))
+            c = glow.scale((255, 230, 180), 0.4 + 0.6 * warn)
+            pygame.draw.circle(surface, glow.scale(WELL_COLOR, 0.4), (int(x), int(y)), r + 3, 6)
+            pygame.draw.circle(surface, c, (int(x), int(y)), r, 2)
+        if self.strong and fx > 0:
+            for i in range(6):                                        # vệt sáng bị hút vào
+                a = spin * 3 + i * math.pi / 3
+                r0 = 200 - (self.t * 6 + i * 30) % 160
+                sx, sy = x + math.cos(a) * r0, y + math.sin(a) * r0 * 0.7
+                glow.glow_line(surface, glow.scale(WELL_EDGE, 0.7), (sx, sy),
+                               (x + math.cos(a) * (r0 - 26), y + math.sin(a) * (r0 - 26) * 0.7), 2)
+
+
+def _ring(x, y, color, radius):
+    from spaceship.entities.effects import Shockwave
+    return Shockwave(x, y, color, max_radius=radius, life=16)
+
+
+MECHANICS = {"escort": Escort, "gravity": GravityWell}
 
 
 def create_mechanic(level) -> Optional[Mechanic]:

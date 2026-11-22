@@ -159,7 +159,9 @@ RADIO = {
                        (ARIA, "...Tôi đoán.")],
          # ("clear", 0): thoại có số người cứu được - xem systems/mechanics.py Escort.radio
          },
-    13: {("wave", 1): [(ARIA, "Lực hút đang kéo mọi thứ về phía hố đen. Giữ chắc tay lái.")],
+    13: {("wave", 1): [(ARIA, "Lực hút kéo tàu về tâm. Giữ tay lệch ngược lại để đứng vững.")],
+         ("wave", 2): [(ARIA, "Đạn bay cong theo hố đen. Đừng đứng giữa nó và địch.")],
+         ("wave", 4): [(ARIA, "Hố đen đang đập theo nhịp. Mỗi khi vòng sáng co lại, lực hút mạnh gấp đôi.")],
          ("boss", 0): [(ARIA, "Mắt Bão. Nó sống bên trong lực hút.")],
          ("phase", 2): [(ARIA, "Tôi nghe thấy nó... rất rõ."),
                         (KX, "Cô nghe thấy thứ tôi không nghe được, ARIA?")],

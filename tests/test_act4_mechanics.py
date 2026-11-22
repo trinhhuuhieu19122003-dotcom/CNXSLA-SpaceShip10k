@@ -217,3 +217,119 @@ class EscortTest(unittest.TestCase):
         s.save()
         self.assertEqual(SaveData.load(path).rescued, 30)
         self.assertIsNone(SaveData(path=Path(tempfile.mkdtemp()) / "x.json").rescued)
+
+
+class GravityWellTest(unittest.TestCase):
+    def setUp(self):
+        from spaceship.systems.mechanics import GravityWell
+        self.w = world(13)
+        self.m = GravityWell()
+        self.w.mechanic = self.m
+        self.w.wave = 2
+
+    def test_pulls_player_far_gently_near_strongly(self):
+        from spaceship.systems.mechanics import WELL_PULL_FAR, WELL_PULL_NEAR
+        import math
+        p = self.w.player
+        self.m.x = 400
+        p.x, p.y = 21.0, 649.0
+        self.m.update(self.w)
+        far = math.hypot(p.x - 21.0, p.y - 649.0)
+        p.x, p.y = self.m.x, self.m.y + 70
+        before = p.y
+        self.m.update(self.w)
+        near = before - p.y
+        self.assertAlmostEqual(far, WELL_PULL_FAR, delta=0.15)
+        self.assertGreater(near, WELL_PULL_NEAR * 0.8)
+
+    def test_touching_rim_hurts_and_throws_out(self):
+        from spaceship.systems.mechanics import WELL_RIM, WELL_RIM_DAMAGE
+        import math
+        p = self.w.player
+        p.x, p.y = self.m.x + 10, self.m.y + 20
+        self.m.update(self.w)
+        self.assertEqual(p.hp, p.max_hp - WELL_RIM_DAMAGE)
+        self.assertGreater(math.hypot(p.x - self.m.x, p.y - self.m.y), WELL_RIM + 60)
+
+    def test_bullets_curve_and_fall_in(self):
+        from spaceship.entities.projectiles import Bullet, EnemyBullet
+        b = EnemyBullet(self.m.x - 150, self.m.y + 150, 0)        # bay ngang sang phải
+        self.w.enemy_bullets.append(b)
+        for _ in range(10):
+            self.m.update(self.w)
+            b.update()
+        self.assertLess(b.dy, 0)                                   # bị kéo lên về phía hố đen (cong)
+        mine = Bullet(self.m.x + 100, self.m.y + 200, "plasma", angle=90)
+        self.w.bullets.append(mine)
+        for _ in range(5):
+            self.m.update(self.w)
+            mine.update()
+        self.assertLess(mine.dx, 0)                                 # đạn của bạn cũng bị bẻ cong
+        inside = EnemyBullet(self.m.x + 5, self.m.y, 90)
+        self.w.enemy_bullets.append(inside)
+        self.m.update(self.w)
+        self.assertNotIn(inside, self.w.enemy_bullets)
+
+    def test_swallowed_enemies_give_no_score_and_keep_combo(self):
+        from spaceship.entities.enemies import Parasite
+        self.w.combo = 7
+        e = Parasite(1.0, self.m.x, self.m.y + 10)
+        self.w.enemies.append(e)
+        self.m.update(self.w)
+        self.assertNotIn(e, self.w.enemies)
+        self.assertEqual(self.w.score, 0)
+        self.assertEqual(self.w.combo, 7)
+        self.assertEqual(self.m.swallowed, 1)
+
+    def test_wave_4_pulses_with_one_second_warning(self):
+        self.w.wave = 4
+        seen_warn = seen_strong = False
+        order_ok = True
+        for _ in range(300):
+            self.m.update(self.w)
+            self.w.player.x, self.w.player.y = 60, 640               # tránh xa hố đen
+            if self.m.warning > 0:
+                seen_warn = True
+            if self.m.strong:
+                order_ok = order_ok and seen_warn
+                seen_strong = True
+        self.assertTrue(seen_warn and seen_strong and order_ok)
+        self.w.wave = 2
+        m2 = type(self.m)()
+        for _ in range(300):
+            m2.update(self.w)
+            self.w.player.x, self.w.player.y = 60, 640
+            self.assertFalse(m2.strong)                              # trước wave 4: không đập
+
+    def test_storm_eye_sits_in_the_well_and_calls_parasites_in_phase_2(self):
+        from spaceship.entities.enemies import Boss, Parasite
+        boss = Boss(1.0, kind="storm_eye")
+        boss.y = 260
+        self.w.enemies.append(boss)
+        for _ in range(30):
+            self.m.update(self.w)
+            self.w.player.x, self.w.player.y = 60, 640
+            boss.update(self.w.player)
+        self.assertAlmostEqual(boss.x, self.m.x)
+        boss.hp = boss.max_hp * 0.4
+        born = 0
+        for _ in range(400):
+            before = sum(isinstance(e, Parasite) for e in self.w.enemies)
+            self.m.update(self.w)
+            born += max(0, sum(isinstance(e, Parasite) for e in self.w.enemies) - before)
+            for e in self.w.enemies:
+                if isinstance(e, Parasite):
+                    e.update(self.w.player)
+            self.w.player.x, self.w.player.y = 60, 640
+        self.assertGreaterEqual(born, 8)                              # 2 nhịp × 4 Ký Sinh
+        self.assertLess(self.m.swallowed, born)                       # chúng thoát ra được, không bị nuốt ngay
+        attacks.boss_attack(self.w, boss)                           # mẫu đạn riêng (không lỗi)
+
+    def test_draws(self):
+        from spaceship.core.assets import Assets
+        surface = pygame.Surface((800, 700))
+        self.w.wave = 4
+        for _ in range(300):
+            self.m.update(self.w)
+            self.w.player.x, self.w.player.y = 60, 640
+            self.m.draw_back(surface, self.w, Assets())

@@ -18,7 +18,7 @@ chỉ cần sửa dữ liệu ở đây, không đụng tới logic.
 | 10 | Tàu Mẹ | BOSS CUỐI (phá đảo: mở Hỏa ngục) |
 | 11 | Tiếng Vọng | Hồi IV: Bóng KX lặp lại đường bay của bạn |
 | 12 | Khoang Ngủ Đông | Hộ tống 4 tàu cứu sinh, sao theo số người cứu |
-| 13 | Giếng Trọng Lực | Lực hút, mini-boss Mắt Bão (đợt 4) |
+| 13 | Giếng Trọng Lực | Hố đen kéo tàu, đạn bay cong, mini-boss Mắt Bão |
 | 14 | Tín Hiệu Câm | Màn tối, mini-boss Kẻ Nghe (đợt 5) |
 | 15 | Trái Tim Đàn | BOSS CUỐI THẬT (đợt 6) |
 
@@ -231,7 +231,7 @@ LEVELS: Tuple[Level, ...] = (
         wave(swarm(16, every=8), meteors(3, at=40, every=60)),
         wave(shields([200, 400, 600]), grunts(3, 3, at=90, kamikaze=0.3)),
         wave(turrets([200, 600]), allies(2, at=60)),
-    ), boss="storm_eye", reward="upgrade_universal", hint="Mini-boss: Mắt Bão"),
+    ), boss="storm_eye", reward="upgrade_universal", mechanic="gravity", hint="Hố đen kéo tàu · Mini-boss: Mắt Bão"),
     Level(14, 4, "TÍN HIỆU CÂM", "bg_act4", 2.0, (
         wave(grunts(3, 3)),
         wave(swarm(9, side="left", every=10), swarm(9, at=40, side="right", every=10)),

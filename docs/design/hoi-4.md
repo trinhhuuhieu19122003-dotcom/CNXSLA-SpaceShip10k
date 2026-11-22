@@ -36,7 +36,7 @@ lặp lại. Cuối hồi là **kết thúc thật**: tín hiệu tắt, vòng l
 | 1 | Khung: dữ liệu 5 ải (địch tạm), toàn bộ thoại mở đầu, màn Chọn ải 3 hàng (Hồi IV hiện "???" tới khi phá đảo), bản đồ hành trình riêng, đoạn kết ải 10 mở Hồi IV, kết thúc thật sau ải 15, ảnh tạm | Xong |
 | 2 | Bóng KX: lặp lại x của tàu 2/3/4 giây trước, bắn thẳng xuống mỗi 0,8 giây bằng màu súng của bạn; ải 11 (5 wave theo thiết kế), ải 14 wave 3, ải 15 wave 1 | Xong |
 | 3 | Hộ tống: 4 tàu cứu sinh (máu 100, bay ngang y≈470, 0,8 px/tick), mỗi wave 1 tàu và wave sau chờ tàu bay xong; Ký Sinh + lính cảm tử nhắm tàu cứu sinh; thân tàu bạn che đạn (kể cả lúc bất tử); "ĐÃ CỨU N/40"; sao theo người cứu; mất cả 4 = thua; nhớ số người cứu cho câu cuối kết thúc thật | Xong |
-| 4 | Lực hút + Mắt Bão | Chưa |
+| 4 | Hố đen trôi ngang kéo tàu (0,6 → 2,2 px/tick), đạn hai phía bay cong (hút + xoáy), địch bị nuốt không điểm, chạm vành -30 máu + hất ra, wave 4 đập nhịp (báo 1 giây, hút gấp đôi 1 giây); Mắt Bão ngồi giữa hố đen, xoắn 8 tia, pha 2 nhịp 3 giây gọi 4 Ký Sinh | Xong |
 | 5 | Màn tối + Kẻ Nghe | Chưa |
 | 6 | Trái Tim Đàn 3 pha, khoảnh khắc ARIA, 3 huy hiệu, "Mô phỏng ký ức" | Chưa |
 
