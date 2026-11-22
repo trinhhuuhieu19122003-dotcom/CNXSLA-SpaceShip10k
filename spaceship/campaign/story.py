@@ -148,8 +148,9 @@ RADIO = {
          ("phase", 2): [(CMD, "KX-17... nó đang... dùng tôi... bắn đi!")],
          ("phase", 3): [(CMD, "Kết thúc... đi... con.")]},
     # ===== HỒI IV =====
-    11: {("wave", 1): [(ARIA, "Tín hiệu đó đang dò theo đường bay của anh. Đừng đứng yên một chỗ.")],
-         ("wave", 5): [(ARIA, "Chúng đến từ mọi phía. Đổi hướng liên tục.")],
+    11: {("wave", 1): [(ARIA, "Mục tiêu lạ... nó bay đúng đường anh vừa bay."), (KX, "Nó bắt chước tôi?"),
+                       (ARIA, "Nó đang học anh. Đừng đứng yên.")],
+         ("wave", 5): [(ARIA, "Ba bóng, mỗi cái trễ một nhịp. Đổi hướng liên tục.")],
          ("clear", 0): [(KX, "Nó học nhanh thật."), (ARIA, "Nhanh hơn lần trước."),
                         (KX, "Lần trước?"), (ARIA, "...Không có gì.")]},
     12: {("wave", 1): [(ARIA, "Tàu cứu sinh đang tới. Dọn đường cho họ.")],

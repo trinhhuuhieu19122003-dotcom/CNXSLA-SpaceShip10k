@@ -16,7 +16,7 @@ chỉ cần sửa dữ liệu ở đây, không đụng tới logic.
 | 8 | Trạm Tiền Tiêu | Pháo tháp, tàu đồng minh bị nhiễm |
 | 9 | Hạm Đội Hộ Tống | Mini-boss Tàu Hộ Tống -> Drone thứ hai |
 | 10 | Tàu Mẹ | BOSS CUỐI (phá đảo: mở Hỏa ngục) |
-| 11 | Tiếng Vọng | Hồi IV: Bóng KX (đợt 2) |
+| 11 | Tiếng Vọng | Hồi IV: Bóng KX lặp lại đường bay của bạn |
 | 12 | Khoang Ngủ Đông | Hộ tống tàu cứu sinh (đợt 3) |
 | 13 | Giếng Trọng Lực | Lực hút, mini-boss Mắt Bão (đợt 4) |
 | 14 | Tín Hiệu Câm | Màn tối, mini-boss Kẻ Nghe (đợt 5) |
@@ -32,7 +32,7 @@ from typing import Callable, List, Optional, Tuple
 
 from spaceship import config
 from spaceship.config import WIDTH
-from spaceship.entities.enemies import Breeder, Enemy, InfectedAlly, Meteor, Parasite, ShieldBug, Turret, Wreck
+from spaceship.entities.enemies import Breeder, Enemy, InfectedAlly, Meteor, Parasite, ShadowKX, ShieldBug, Turret, Wreck
 from spaceship.systems.spawning import formation
 
 Event = Tuple[int, Callable]
@@ -111,6 +111,13 @@ def meteors(count: int, at: int = 0, every: int = 30) -> List[Event]:
 def wreck(x: int, variant: int = 1, at: int = 0, carries: Optional[str] = None) -> List[Event]:
     return [(at, lambda world: world.enemies.append(Wreck(world.hp_mult, x, rng=world.rng, variant=variant,
                                                           carries=carries)))]
+
+
+def shadows(delays, at: int = 0, every: int = 30) -> List[Event]:
+    """Bóng KX (Hồi IV): mỗi con trễ một nhịp ``delays`` giây so với đường bay của bạn, xếp hàng trên cùng."""
+    return [(at + i * every,
+             lambda world, d=d, i=i: world.enemies.append(ShadowKX(world.hp_mult, d, row=i, rng=world.rng)))
+            for i, d in enumerate(delays)]
 
 
 def wave(*parts: List[Event]) -> Wave:
@@ -201,12 +208,12 @@ LEVELS: Tuple[Level, ...] = (
     ), boss="mothership", hint="BOSS CUỐI"),
     # ===== HỒI IV · NGUỒN TÍN HIỆU (mở sau khi qua ải 10) =====
     Level(11, 4, "TIẾNG VỌNG", "bg_act4", 1.9, (
-        wave(grunts(3, 1)),
-        wave(swarm(14, every=8)),
-        wave(shields([250, 550]), grunts(3, 2, at=90)),
+        wave(grunts(3, 1), shadows([2], at=120)),
+        wave(swarm(14, every=8), shadows([2], at=40)),
+        wave(shields([250, 550]), shadows([2, 3], at=60, every=40)),
         wave(grunts(3, 4, kamikaze=0.3), allies(2, at=90)),
-        wave(turrets([200, 600]), swarm(10, at=60, every=10)),
-    ), hint="Đàn đang học cách bạn lái"),
+        wave(shadows([2, 3, 4], every=40), turrets([200, 600], at=90)),
+    ), hint="Bóng KX: Đàn đang học cách bạn lái"),
     Level(12, 4, "KHOANG NGỦ ĐÔNG", "bg_act4", 1.9, (
         wave(grunts(3, 2)),
         wave(swarm(12, every=10)),
@@ -222,11 +229,11 @@ LEVELS: Tuple[Level, ...] = (
     Level(14, 4, "TÍN HIỆU CÂM", "bg_act4", 2.0, (
         wave(grunts(3, 3)),
         wave(swarm(9, side="left", every=10), swarm(9, at=40, side="right", every=10)),
-        wave(breeders([250, 550]), grunts(3, 2, at=90)),
+        wave(breeders([250, 550]), shadows([2, 3, 4], at=60, every=40)),
         wave(turrets([150, 400, 650])),
     ), boss="listener", fog=True, hint="Mini-boss: Kẻ Nghe"),
     Level(15, 4, "TRÁI TIM ĐÀN", "bg_heart", 2.1, (
-        wave(grunts(3, 4, kamikaze=0.3), shields([200, 600], at=60)),
+        wave(grunts(3, 4, kamikaze=0.3), shields([200, 600], at=60), shadows([2, 3], at=150, every=40)),
         wave(breeders([250, 550]), turrets([150, 650], at=60), swarm(12, at=120, every=10)),
     ), boss="swarm_heart", hint="BOSS CUỐI THẬT"),
 )

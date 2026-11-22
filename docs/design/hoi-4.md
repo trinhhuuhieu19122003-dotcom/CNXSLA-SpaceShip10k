@@ -34,7 +34,7 @@ lặp lại. Cuối hồi là **kết thúc thật**: tín hiệu tắt, vòng l
 | Đợt | Nội dung | Trạng thái |
 |---|---|---|
 | 1 | Khung: dữ liệu 5 ải (địch tạm), toàn bộ thoại mở đầu, màn Chọn ải 3 hàng (Hồi IV hiện "???" tới khi phá đảo), bản đồ hành trình riêng, đoạn kết ải 10 mở Hồi IV, kết thúc thật sau ải 15, ảnh tạm | Xong |
-| 2 | Bóng KX | Chưa |
+| 2 | Bóng KX: lặp lại x của tàu 2/3/4 giây trước, bắn thẳng xuống mỗi 0,8 giây bằng màu súng của bạn; ải 11 (5 wave theo thiết kế), ải 14 wave 3, ải 15 wave 1 | Xong |
 | 3 | Hộ tống tàu cứu sinh + chấm sao riêng | Chưa |
 | 4 | Lực hút + Mắt Bão | Chưa |
 | 5 | Màn tối + Kẻ Nghe | Chưa |

@@ -16,7 +16,7 @@ from spaceship import config
 from spaceship.config import HEIGHT, TICK, TICK_RATE, WIDTH, GameMode
 from spaceship.core.scene import Scene
 from spaceship.core.storage import GameResult
-from spaceship.entities.enemies import FINAL_BOSSES, Boss, Breeder, Enemy, InfectedAlly, Meteor, Parasite, ShieldBug, Turret, Wreck
+from spaceship.entities.enemies import FINAL_BOSSES, Boss, Breeder, Enemy, InfectedAlly, Meteor, Parasite, ShadowKX, ShieldBug, Turret, Wreck
 from spaceship.input.hand_tracker import PREVIEW_SIZE
 from spaceship.systems import attacks, combat, weapons
 from spaceship.systems.spawning import create_director
@@ -30,7 +30,7 @@ FOG_BAND = 470                      # sương mù chỉ phủ phần trên màn 
 ENCOUNTER_TICKS = 3 * TICK_RATE
 ENEMY_KEYS = {
     Parasite: "parasite", ShieldBug: "shield", Breeder: "breeder", Turret: "turret",
-    InfectedAlly: "ally", Meteor: "meteor", Wreck: "wreck",
+    InfectedAlly: "ally", Meteor: "meteor", Wreck: "wreck", ShadowKX: "shadow",
 }
 
 

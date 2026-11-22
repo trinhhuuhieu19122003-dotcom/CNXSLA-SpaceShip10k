@@ -134,6 +134,14 @@ def kill_enemy(world: World, enemy: EnemyBase) -> None:
         world.freeze(config.HITSTOP_BOSS)
         world.defeated_bosses.append(enemy)
         return
+    if enemy.death_fx == "dissolve":              # Bóng KX: tan thành hạt tím, không nổ lửa
+        world.play("glitch")
+        world.burst(enemy.x, enemy.y, (170, 110, 255), 14, speed_scale=0.7)
+        world.burst(enemy.x, enemy.y, (230, 200, 255), 6, speed_scale=0.4)
+        world.sparks(enemy.x, enemy.y, (200, 160, 255), 5)
+        if enemy.counts_as_kill:
+            world.kills += 1
+        return
     big = enemy.is_meteor or enemy.is_obstacle or enemy.radius >= 28   # Lính Khiên, Kẻ Đẻ Trứng, Pháo tháp...
     world.play("explode_big" if big else "explode_small")
     if big and not enemy.is_meteor and not enemy.is_obstacle:
@@ -146,7 +154,8 @@ def kill_enemy(world: World, enemy: EnemyBase) -> None:
         world.drop(enemy.x, enemy.y, enemy.carries)
     if enemy.counts_as_kill:
         world.kills += 1
-        world.drop(enemy.x, enemy.y, loot.drop_for_kill(world))
+        if enemy.drops:
+            world.drop(enemy.x, enemy.y, loot.drop_for_kill(world))
     elif world.rng.random() < 0.05 * world.drop_mult:
         world.drop(enemy.x, enemy.y, loot.boss_chunk_drop(world))
 

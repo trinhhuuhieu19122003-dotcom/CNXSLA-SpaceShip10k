@@ -171,14 +171,17 @@ class Bullet:
 
 
 class EnemyBullet:
-    """``kind``: normal | blue_bullet | boss_homing | laser | purple_laser."""
+    """``kind``: normal | blue_bullet | boss_homing | laser | purple_laser | shadow (Bóng KX)."""
 
     HOMING_TRACK_TICKS = 45
     grazed = False                  # đã tính "sát đạn" một lần chưa
 
-    def __init__(self, x, y, angle_deg: float, kind: str = "normal") -> None:
+    SPEED = {"normal": 6, "blue_bullet": 6, "boss_homing": 5, "shadow": 8}
+
+    def __init__(self, x, y, angle_deg: float, kind: str = "normal", tint=None) -> None:
         self.x, self.y, self.kind = x, y, kind
-        self.speed = 6 if kind in ("normal", "blue_bullet") else (5 if kind == "boss_homing" else 18)
+        self.tint = tint                # đạn Bóng KX: màu súng người chơi đang cầm
+        self.speed = self.SPEED.get(kind, 18)
         self.dx = math.cos(math.radians(angle_deg)) * self.speed
         self.dy = math.sin(math.radians(angle_deg)) * self.speed
         self.track_time = self.HOMING_TRACK_TICKS if kind == "boss_homing" else 0
@@ -204,6 +207,12 @@ class EnemyBullet:
     }
 
     def draw(self, surface: pygame.Surface) -> None:
+        if self.kind == "shadow":                     # viên nang màu súng của bạn, viền tím tối: "đạn của chính mình"
+            color = self.tint or (200, 120, 255)
+            pygame.draw.line(surface, (40, 0, 60), (self.x, self.y - 12), (self.x, self.y + 12), 11)
+            glow.add(surface, glow.streak(color, 22, 6), (self.x, self.y))
+            pygame.draw.line(surface, (230, 200, 255), (self.x, self.y - 12), (self.x, self.y + 12), 1)
+            return
         if self.kind in self.STYLE:
             dark, color, outer, inner = self.STYLE[self.kind]
             center = (int(self.x), int(self.y))

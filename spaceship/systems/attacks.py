@@ -113,8 +113,20 @@ def turret_fire(world: World, enemy) -> None:
         enemy.warning = enemy.WARN_TICKS
 
 
+def shadow_fire(world: World, enemy) -> None:
+    """Bóng KX: bắn thẳng xuống theo nhịp cố định (đạn màu súng của bạn)."""
+    if not enemy.arrived:
+        return
+    enemy.shoot_timer -= 1
+    if enemy.shoot_timer > 0 or _hold_fire(world, enemy):
+        return
+    from spaceship.entities.player import WEAPON_COLORS
+    world.enemy_bullets.append(EnemyBullet(enemy.x, enemy.y + 22, 90, "shadow", tint=WEAPON_COLORS[enemy.weapon]))
+    enemy.shoot_timer = _cooldown(world, config.SHADOW_FIRE_TICKS)
+
+
 ENEMY_AI = {"grunt": grunt_fire, "shield": shield_fire, "ally": ally_fire,
-            "breeder": breeder_spawn, "turret": turret_fire}
+            "breeder": breeder_spawn, "turret": turret_fire, "shadow": shadow_fire}
 
 
 # --- Boss ---------------------------------------------------------------------------------

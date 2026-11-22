@@ -100,9 +100,16 @@ SKILL_NAMES = {"laser": "ĐẠI PHÁO", "plasma": "VÒNG PLASMA", "homing": "MƯ
 # --- Kẻ địch -------------------------------------------------------------------
 KAMIKAZE_SPEED = 8                 # bản cũ: 15 px/tick, gần như không né được
 BURN_DAMAGE_PER_SECOND = 6         # bản cũ: 1.5/s, gần như vô dụng
-ENEMY_BULLET_DAMAGE = {"normal": 15}
+ENEMY_BULLET_DAMAGE = {"normal": 15, "shadow": 15}
 ENEMY_BULLET_DAMAGE_DEFAULT = 25
 COLLISION_DAMAGE = 20
+
+# --- Hồi IV · Bóng KX: lặp lại đường bay ngang của bạn N giây trước, bắn thẳng xuống -----------------
+SHADOW_HOVER_Y = 130
+SHADOW_FIRE_TICKS = 48             # 0,8 giây một viên
+SHADOW_MAX_DELAY_TICKS = 4 * 60    # trễ tối đa 4 giây
+SHADOW_HP = 60
+SHADOW_SCORE = 40
 HEAVY_COLLISION_DAMAGE = 30        # va vào boss / thiên thạch
 
 # --- Điểm số -------------------------------------------------------------------

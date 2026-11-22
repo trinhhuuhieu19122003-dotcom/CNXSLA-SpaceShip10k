@@ -27,7 +27,7 @@ import pygame
 
 from spaceship import config
 from spaceship.config import HEIGHT, NEON_GREEN, NEON_MAGENTA, NEON_RED, WIDTH
-from spaceship.ui import shields
+from spaceship.ui import glow, shields
 
 _ids = itertools.count(1)
 
@@ -47,6 +47,8 @@ class EnemyBase:
     sprite_width = ENEMY_WIDTH
     score = config.SCORE_ENEMY
     counts_as_kill = True        # tính vào "quái diệt"
+    drops = True                 # có rơi đồ khi chết
+    death_fx = "explode"         # "explode" | "dissolve" (tan thành hạt, không nổ lửa)
 
     def __init__(self, hp: float, radius: int) -> None:
         self.id = next(_ids)
@@ -370,6 +372,70 @@ class InfectedAlly(EnemyBase):
         else:
             self.y += 0.35
         self.x = max(40, min(WIDTH - 40, self.base_x + math.sin(self.age * 0.035 + self.phase) * 150))
+
+
+# --- Hồi IV · Bóng KX --------------------------------------------------------------------------
+SHADOW_COLOR = (170, 110, 255)
+
+
+class ShadowKX(EnemyBase):
+    """Bóng KX: Đàn học cách bạn lái. Bay ở hàng trên và lặp lại ĐÚNG vị trí ngang của tàu bạn ``delay`` giây
+    trước, bắn thẳng xuống mỗi 0,8 giây (đạn cùng màu súng bạn đang cầm). Đứng yên quá ``delay`` giây = nó nằm
+    ngay trên đầu bạn. Không rơi đồ, chết thì tan thành hạt tím."""
+
+    ai = "shadow"
+    threat = 1.5
+    sprite = "shadow_kx"
+    sprite_width = 84
+    score = config.SHADOW_SCORE
+    drops = False
+    death_fx = "dissolve"
+
+    def __init__(self, difficulty: float, delay_seconds: float = 2.0, row: int = 0, rng=random) -> None:
+        super().__init__(hp=config.SHADOW_HP * difficulty, radius=22)
+        self.rx, self.ry = 34, 22
+        self.delay = max(1, min(config.SHADOW_MAX_DELAY_TICKS, int(delay_seconds * config.TICK_RATE)))
+        self.hover_y = config.SHADOW_HOVER_Y + row * 24
+        self.x, self.y = WIDTH / 2, -50.0
+        self.shoot_timer = config.SHADOW_FIRE_TICKS + rng.randint(0, 20)
+        self.weapon = "laser"
+        self.trail: list = []           # vài vị trí cũ để vẽ bóng mờ đuổi theo (cảm giác "tiếng vọng")
+
+    @property
+    def arrived(self) -> bool:
+        return self.y >= self.hover_y - 1
+
+    def replay_x(self, player) -> float:
+        hist = player.x_history
+        if not hist:
+            return player.x
+        return hist[-self.delay] if len(hist) >= self.delay else hist[0]
+
+    def update(self, player=None) -> None:
+        self.age += 1
+        if self.y < self.hover_y:
+            self.y = min(self.hover_y, self.y + 4)
+        if player is not None:
+            self.x = self.replay_x(player)
+            self.weapon = player.weapon
+        if self.age % 3 == 0:
+            self.trail.append((self.x, self.y))
+            del self.trail[:-4]
+
+    def draw(self, surface: pygame.Surface, assets) -> None:
+        sprite = assets.image(self.sprite, self.sprite_width)
+        for i, (tx, ty) in enumerate(self.trail[:-1]):          # bóng mờ phía sau: tiếng vọng của đường bay
+            if sprite is not None and abs(tx - self.x) > 3:
+                ghost = sprite.copy()
+                ghost.set_alpha(30 + 25 * i)
+                surface.blit(ghost, ghost.get_rect(center=(int(tx), int(ty))))
+        glow.add(surface, glow.orb(glow.scale(SHADOW_COLOR, 0.45), 26, core=0.0, halo=1.4), (self.x, self.y))
+        self._draw_sprite(surface, assets)
+        self._draw_hp_bar(surface, 34, 30)
+
+    def draw_halo(self, surface: pygame.Surface) -> None:
+        """Quầng tím mờ (vẽ trên lớp tối ở ải 14: thấy lờ mờ bóng trong bóng tối)."""
+        glow.add(surface, glow.orb(glow.scale(SHADOW_COLOR, 0.5), 22, core=0.25, halo=1.5), (self.x, self.y))
 
 
 # --- Chướng ngại -----------------------------------------------------------------------------

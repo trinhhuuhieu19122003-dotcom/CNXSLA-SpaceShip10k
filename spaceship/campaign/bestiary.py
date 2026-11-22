@@ -86,4 +86,10 @@ BESTIARY = {
         "Ngôi nhà mà KX-17 tìm kiếm suốt hành trình.",
         "Pha 3: con mắt bắn laser tím theo bạn, luôn di chuyển.",
     ),
+    "shadow": BestiaryEntry(
+        "BÓNG KX", "shadow_kx",
+        "Đàn ghi lại đường bay của bạn rồi phát lại: Bóng bay đúng vị trí ngang của bạn vài giây trước "
+        "và bắn thẳng xuống bằng chính màu súng của bạn.",
+        "Đừng đứng yên. Đường bạn đi lúc nãy chính là đường nó bắn bây giờ: đổi hướng liên tục.",
+    ),
 }

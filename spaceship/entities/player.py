@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import math
 import random
+from collections import deque
 from typing import List
 
 import pygame
@@ -54,6 +55,7 @@ class Player:
         self.shield_timer = 0
         self.shield_age = 0             # số tick khiên đã bật (hiệu ứng nở ra, ô lục giác lóe)
         self.shield_ended = False       # khiên vừa hết giờ ở tick này -> vỡ mảnh (combat.tick_player_fx)
+        self.x_history: deque = deque(maxlen=config.SHADOW_MAX_DELAY_TICKS + 1)   # x mỗi tick (Bóng KX)
         self.warp_timer = 0             # > 0: đang dịch chuyển về chiến trường sau khi mất mạng
         self.respawn_glow = False       # đang bất tử sau hồi sinh -> vẽ vòng đếm ngược, tàu mờ
         self.fire_cooldown = 0
@@ -125,6 +127,7 @@ class Player:
     def tick_timers(self) -> None:
         if self.has_guard:
             self.guard_angle = (self.guard_angle + config.GUARD_ORBIT_SPEED) % math.tau
+        self.x_history.append(self.x)
         had_shield = self.shield_timer > 0
         for name in ("invincible_timer", "shield_timer", "fire_cooldown", "drone_cooldown", "guard_cooldown",
                      "muzzle", "beam", "warp_timer"):

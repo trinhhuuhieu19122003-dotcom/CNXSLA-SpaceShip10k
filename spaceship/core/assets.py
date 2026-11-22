@@ -35,6 +35,28 @@ PLACEHOLDERS = {
 }
 
 
+def _shadow_kx(base: pygame.Surface) -> pygame.Surface:
+    """Bóng KX: chính tàu người chơi, lật ngược (mũi chĩa xuống), phủ tím, hơi trong suốt."""
+    img = pygame.transform.flip(base, False, True)
+    img.fill((150, 90, 255, 255), special_flags=pygame.BLEND_RGBA_MULT)
+    img.fill((40, 0, 70, 0), special_flags=pygame.BLEND_RGBA_ADD)
+    img.fill((255, 255, 255, 200), special_flags=pygame.BLEND_RGBA_MULT)
+    return img
+
+
+def _ghost_ship(base: pygame.Surface) -> pygame.Surface:
+    """Tàu ma phi đội cũ: tàu người chơi lật ngược, xám bạc, trong suốt."""
+    img = pygame.transform.flip(base, False, True)
+    gray = pygame.transform.grayscale(img) if hasattr(pygame.transform, "grayscale") else img
+    gray.fill((190, 205, 220, 255), special_flags=pygame.BLEND_RGBA_MULT)
+    gray.fill((255, 255, 255, 165), special_flags=pygame.BLEND_RGBA_MULT)
+    return gray
+
+
+#: Ảnh không có file riêng mà dựng từ ảnh khác lúc nạp (không cần vẽ thêm).
+DERIVED = {"shadow_kx": ("player", _shadow_kx), "ghost_ship": ("player", _ghost_ship)}
+
+
 class Assets:
     def __init__(self, images_dir: Path = IMAGES_DIR, *, fonts_dir: Path = FONTS_DIR) -> None:
         self.images_dir = images_dir
@@ -52,6 +74,10 @@ class Assets:
         return path
 
     def _load_raw(self, name: str) -> Optional[pygame.Surface]:
+        if name not in self._raw and name in DERIVED:
+            source, build = DERIVED[name]
+            base = self._load_raw(source)
+            self._raw[name] = build(base) if base is not None else None
         if name not in self._raw:
             path = self._path(name)
             if not path.exists() and name in PLACEHOLDERS:
