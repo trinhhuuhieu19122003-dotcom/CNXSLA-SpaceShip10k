@@ -182,9 +182,8 @@ RADIO = {
     15: {("boss", 0): [(CMD, "Con về rồi, KX-17. Lần thứ bao nhiêu rồi nhỉ?", "glitch")],
          ("phase", 2): [(CMD, "Nhìn xem ai đến đón con này."),
                         (ARIA, "Phi đội... và những vòng lặp trước của anh.")],
-         ("phase", 3): [(ARIA, "Về... với... Đàn...", "glitch"), (KX, "ARIA!"),
-                        (ARIA, "Không. Tôi chọn anh."),
-                        (ARIA, "Đã cắt kết nối. Lõi của nó lộ rồi. Tôi dồn hết năng lượng cho anh: chụm tay đi!")]},
+         # ("phase", 3) và khoảnh khắc ARIA chọn (sau 6 giây): systems/mechanics.py HeartBattle
+         },
 }
 
 # --- Kết thúc ----------------------------------------------------------------------------------
@@ -232,14 +231,20 @@ def cycle_teaser(cycle: int) -> list:
     ]
 
 
-#: Chèn trước đoạn mở đầu ải 1 từ chu kỳ 2 trở đi: KX-17 nhận ra mọi thứ đang lặp lại.
+#: Chèn trước đoạn mở đầu ải 1 từ chu kỳ 2 trở đi. Sau kết thúc thật, vòng lặp đã bị phá: chu kỳ mới là
+#: "Mô phỏng ký ức" - ARIA dựng lại các trận từ nhật ký bay để KX-17 luyện tập (địch mạnh hơn như cũ).
 def cycle_intro(cycle: int) -> list:
     return [
-        (KX, "Tín hiệu này... mình đã nghe nó rồi."),
-        (ARIA, f"Nhật ký bay ghi nhận vòng lặp thứ {cycle}. Mọi thứ đang lặp lại, KX-17.", "glitch"),
-        (KX, "Lần này chúng mạnh hơn. Nhưng mình cũng nhớ đường hơn."),
+        (ARIA, f"Mô phỏng ký ức số {cycle - 1}. Tôi dựng lại các trận từ nhật ký bay của anh."),
+        (KX, "Cô không nhớ những trận đó."),
+        (ARIA, "Không. Nhưng nhật ký thì nhớ. Lần này địch sẽ mạnh hơn - để nếu tín hiệu quay lại, anh đã sẵn sàng."),
+        (KX, "Vậy thì bay thôi, ARIA. Lần này tôi dẫn đường."),
     ]
 
 
-def cycle_label(cycle: int) -> str:
-    return f"CHU KỲ {cycle}" if cycle > 1 else ""
+def memory_label(cycle: int) -> str:
+    """Tên chu kỳ 2+ trên giao diện: "MÔ PHỎNG KÝ ỨC 1", "MÔ PHỎNG KÝ ỨC 2"... (chu kỳ 1: rỗng)."""
+    return f"MÔ PHỎNG KÝ ỨC {cycle - 1}" if cycle > 1 else ""
+
+
+cycle_label = memory_label

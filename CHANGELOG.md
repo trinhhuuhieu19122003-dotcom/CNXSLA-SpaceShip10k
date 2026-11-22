@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.3.0-dev] – Hồi IV · Nguồn Tín Hiệu hoàn chỉnh (đợt 2–6)
+- **Ải 11 · Bóng KX**: Đàn ghi lại đường bay của bạn và phát lại - bóng tím bay đúng vị trí ngang của bạn 2/3/4
+  giây trước, bắn thẳng xuống bằng màu súng bạn đang cầm. Cũng xuất hiện ở ải 14, 15.
+- **Ải 12 · Hộ tống**: 4 tàu cứu sinh (40 người) bay ngang qua màn; thân tàu bạn che đạn cho họ; Ký Sinh và lính
+  cảm tử săn tàu cứu sinh. Sao theo số người cứu (10 / 30 / 40), mất cả 4 tàu là thua. Số người cứu được xuất hiện
+  trong câu cuối của kết thúc thật.
+- **Ải 13 · Giếng trọng lực**: hố đen kéo tàu, uốn cong đạn của cả hai phía, nuốt địch (không điểm, không mất
+  chuỗi); chạm vành mất 30 máu; wave 4 hố đen đập nhịp. Mini-boss **Mắt Bão** ngồi giữa hố đen.
+- **Ải 14 · Màn tối**: chỉ sáng quanh tàu và quanh đạn bạn bắn; dấu hiệu nguy hiểm luôn hiện; Nộ soi sáng 3 giây;
+  ARIA im lặng (ô LIÊN LẠC chỉ còn nhiễu). Mini-boss **Kẻ Nghe**: lộ diện khi tai sáng, pha 2 tách hình giả.
+- **Ải 15 · Trái Tim Đàn** 3 pha: giọng Chỉ huy → 11 tàu ma phi đội + Bóng KX của "các vòng trước" (boss hồi khiên
+  khi còn tàu ma) → màn đỏ, lõi bọc giáp; sau 6 giây ARIA cắt kết nối: hủy đạn, lõi lộ (x2 sát thương), Nộ đầy,
+  "CHỤM TAY · ĐẠI PHÁO" (kỹ năng Nộ kế tiếp luôn là Đại pháo). Pha 1 và 2 kéo dài ít nhất 10 giây.
+- **3 huy hiệu mới** (tổng 24, lưới 4 cột): NGUỒN TÍN HIỆU, KHÔNG BỎ LẠI AI, TÔI CHỌN ANH.
+- **Mô phỏng ký ức**: chu kỳ 2+ đổi tên và lời mở đầu (ARIA dựng lại trận từ nhật ký bay).
+- Sổ tay thêm 5 mục (lưới 4 cột); thoại "nhiễu" dùng chân dung ARIA nhiễu.
+- Khung `systems/mechanics.py`: mỗi ải Hồi IV gắn một cơ chế; ải cũ không đổi.
+- 39 test mới (`tests/test_act4_mechanics.py`); tổng 226. Bot né đạn: ải 11–14 thắng 4–5/5, ải 15 khó nhất.
+
 ## [2.2.2-dev] – Khiên tổ ong, khiên boss vỡ được, hồi sinh dịch chuyển
 - **Khiên tàu** (`ui/shields.py`): bong bóng năng lượng tổ ong (lòng trong suốt, viền phát sáng, ô lục giác lóe
   sáng, 2 vệt sáng chạy quanh viền) thay cho đĩa xanh đục che tàu. Bật lên thì nở ra từ tàu (tiếng "vù"); đỡ

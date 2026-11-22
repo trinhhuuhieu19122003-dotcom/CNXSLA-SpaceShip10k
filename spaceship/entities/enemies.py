@@ -452,6 +452,57 @@ class ShadowKX(EnemyBase):
         glow.add(surface, glow.orb(glow.scale(SHADOW_COLOR, 0.5), 22, core=0.25, halo=1.5), (self.x, self.y))
 
 
+# --- Hồi IV · Tàu ma phi đội cũ (Trái Tim Đàn pha 2) ----------------------------------------------
+GHOST_COLOR = (190, 205, 225)
+
+
+class GhostShip(EnemyBase):
+    """Tàu ma: 11 chiếc phi đội cũ được Đàn dựng lại từ ký ức, bay vào thành hình chữ V rồi bắn ngắm.
+    Còn tàu ma trên màn thì Trái Tim Đàn hồi khiên. Chết thì tan thành hạt xám."""
+
+    ai = "ghost"
+    threat = 1.2
+    sprite = "ghost_ship"
+    sprite_width = 76
+    score = 15
+    drops = False
+    death_fx = "dissolve"
+    dissolve_color = GHOST_COLOR
+
+    def __init__(self, difficulty: float, x: float, target_y: float, delay: int = 0, rng=random) -> None:
+        super().__init__(hp=40 * difficulty, radius=20)
+        self.rx, self.ry = 32, 20
+        self.x, self.y, self.target_y = x, -60 - delay * 2.0, target_y
+        self.shoot_timer = rng.randint(70, 140)
+        self.phase = rng.uniform(0, math.tau)
+
+    @property
+    def arrived(self) -> bool:
+        return self.y >= self.target_y - 1
+
+    def update(self, player=None) -> None:
+        self.age += 1
+        if self.y < self.target_y:
+            self.y = min(self.target_y, self.y + 5)
+        else:
+            self.y = self.target_y + math.sin(self.age / 30 + self.phase) * 6
+
+    def draw(self, surface: pygame.Surface, assets) -> None:
+        glow.add(surface, glow.orb(glow.scale(GHOST_COLOR, 0.25), 18, core=0.0, halo=1.3), (self.x, self.y))
+        self._draw_sprite(surface, assets)
+        self._draw_hp_bar(surface, 30, 28)
+
+
+def ghost_v(difficulty: float, count: int, center_x: float = WIDTH / 2, top: float = 110, rng=random):
+    """Đội hình chữ V (mũi ở giữa, trên cùng): ``count`` tàu ma."""
+    ships = []
+    for i in range(count):
+        rank = (i + 1) // 2
+        side = 0 if i == 0 else (-1 if i % 2 else 1)
+        ships.append(GhostShip(difficulty, center_x + side * rank * 72, top + rank * 36, delay=i * 8, rng=rng))
+    return ships
+
+
 # --- Hồi IV · Kẻ Nghe: hình giả (pha 2) ---------------------------------------------------------
 LISTENER_EAR = (120, 255, 220)
 LISTENER_TELL_TICKS = 36            # tai sáng 0,6 giây trước mỗi loạt
@@ -586,8 +637,8 @@ BOSS_SPECS = {
     # Hồi IV (đợt 1: tạm dùng kiểu đánh của boss cũ, xem docs/design/hoi-4.md)
     "storm_eye": BossSpec("MẮT BÃO", "storm_eye", 240, 1800, 78, 78, 3, hover_y=260),
     "listener": BossSpec("KẺ NGHE", "listener", 300, 1600, 110, 60, 3, hover_y=170),
-    "swarm_heart": BossSpec("TRÁI TIM ĐÀN", "swarm_heart", 480, 4200, 210, 90, 6, shield=1 / 4,
-                            hover_y=185, rages=True),
+    "swarm_heart": BossSpec("TRÁI TIM ĐÀN", "swarm_heart", 480, 4200, 200, 100, 6, shield=1 / 4,
+                            hover_y=185),
 }
 STAGE_KIND = {1: "crab", 2: "octopus", 3: "spider"}
 #: Boss nhỏ giữa hồi (thẻ "MINI-BOSS", dấu thoi nhỏ trên bản đồ)
@@ -615,6 +666,8 @@ class Boss(EnemyBase):
         self.spiral_angle = 0
         self.shield_rotation = 0
         self.free_flight = False        # cơ chế ải tự lái boss (Kẻ Nghe lượn trong tối): coi như đã tới chỗ
+        self.damage_mult = 1.0          # Trái Tim Đàn: lõi bọc giáp 0,25 / lõi lộ ra 2,0
+        self.fire_speed = 1.0           # > 1: bắn dồn dập hơn (Trái Tim Đàn sau khi ARIA cắt kết nối)
         self.fire_at = 0                # Kẻ Nghe: tick sẽ bắn loạt kế tiếp (tai sáng 0,6 giây trước đó)
         self.decoy_cooldown = 0         # Kẻ Nghe pha 2: chờ tách hình giả lần nữa
         self.shield_flash = 0           # > 0: khiên vừa đỡ đòn -> sáng bừng

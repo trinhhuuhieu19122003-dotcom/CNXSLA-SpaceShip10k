@@ -7,12 +7,12 @@
   <img src="https://img.shields.io/badge/Python-3.10–3.13-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python">
   <img src="https://img.shields.io/badge/pygame-2.5+-2b9348?style=flat-square" alt="pygame">
   <img src="https://img.shields.io/badge/MediaPipe-Hands-4285F4?style=flat-square&logo=google&logoColor=white" alt="MediaPipe">
-  <img src="https://img.shields.io/badge/test-187_passed-success?style=flat-square" alt="Test">
+  <img src="https://img.shields.io/badge/test-226_passed-success?style=flat-square" alt="Test">
 </p>
 
 <p align="center">
   <b>Game bắn phi thuyền điều khiển bằng cử chỉ tay qua webcam</b><br>
-  10 ải · 3 hồi · có cốt truyện · 4 loại súng · 5 boss · chơi được cả bằng bàn phím
+  15 ải · 4 hồi · có cốt truyện · 4 loại súng · 9 boss · chơi được cả bằng bàn phím
 </p>
 
 ---
@@ -60,12 +60,12 @@
 | **Điều khiển bằng tay, đỡ mỏi** | Hiệu chỉnh tư thế nghỉ, tì khuỷu tay, nhích tay một gang là lái hết màn hình. Tự động bắn, chụm ngón tung kỹ năng, nắm tay để né chậm, bỏ tay xuống là tự tạm dừng. |
 | **Không cần webcam** | Bàn phím luôn hoạt động song song; máy không có camera vẫn chơi trọn vẹn. |
 | **Chạy mượt trên mọi máy** | Camera và MediaPipe chạy ở luồng riêng; logic game cố định 60 bước/giây, không phụ thuộc tốc độ webcam. |
-| **Chiến dịch có cốt truyện** | 10 ải chia 3 hồi, hội thoại có chân dung nhân vật, thoại ngay trong trận, đoạn kết riêng. |
+| **Chiến dịch có cốt truyện** | 15 ải chia 4 hồi, hội thoại có chân dung nhân vật, thoại ngay trong trận, hai đoạn kết (phá đảo và kết thúc thật). Hồi IV mỗi ải một cơ chế riêng: Bóng KX bắt chước đường bay, hộ tống tàu cứu sinh, hố đen bẻ cong đạn, màn tối, boss cuối 3 pha. |
 | **Âm thanh sống động** | 25 hiệu ứng CC0 + tiếng tổng hợp (còi boss, giọng gõ chữ riêng từng nhân vật); nhạc riêng cho từng hồi, chuyển bài mượt, tự nhỏ lại khi có hội thoại; chỉnh âm lượng nhạc và hiệu ứng riêng. |
 | **Đồ họa phát sáng** | Đạn neon, vụ nổ có sóng xung kích, địch nháy khi trúng đạn, nền cuộn theo từng hồi. Chữ vẽ lại ở độ phân giải màn hình nên toàn màn hình 1080p/2K/4K vẫn sắc nét. |
 | **Cảm giác đánh** | Khựng hình khi trúng đòn, rung theo độ nặng, viền đỏ khi trúng đạn / máu thấp kèm tiếng tim, lính cảm tử báo trước khi lao, hủy đạn khi hạ boss; tắt bớt được trong Cài đặt. |
-| **Có chiều sâu** | 4 súng, mỗi súng một dạng tối thượng ở cấp 6 và một kỹ năng Nộ riêng; 3 mức độ khó; chấm 1–3 sao mỗi ải; chuỗi hạ nhân điểm tới x4, sát đạn; 21 huy hiệu và Bảng điểm 5 ván cao nhất mỗi chế độ. |
-| **Mã nguồn sạch, có test** | Chia module rõ ràng, dữ liệu ải tách khỏi logic, 187 test tự động, có bot tự chơi hết chiến dịch. |
+| **Có chiều sâu** | 4 súng, mỗi súng một dạng tối thượng ở cấp 6 và một kỹ năng Nộ riêng; 3 mức độ khó; chấm 1–3 sao mỗi ải; chuỗi hạ nhân điểm tới x4, sát đạn; 24 huy hiệu và Bảng điểm 5 ván cao nhất mỗi chế độ. |
+| **Mã nguồn sạch, có test** | Chia module rõ ràng, dữ liệu ải tách khỏi logic, 226 test tự động, có bot tự chơi hết chiến dịch. |
 
 ## Cốt truyện
 
@@ -80,6 +80,7 @@ Càng đến gần nhà, KX-17 càng nhận ra tín hiệu ấy có điều gì 
 | **I · Lạc lối** | 1 Vành đai Mất Tín Hiệu · 2 Mưa Thiên Thạch · 3 Ổ Phục Kích |
 | **II · Bãi tha ma** | 4 Bãi Xác Tàu · 5 Tinh vân Đỏ · 6 Tổ Đàn · 7 Lõi Tinh vân |
 | **III · Trở về** | 8 Trạm Tiền Tiêu · 9 Hạm Đội Hộ Tống · 10 Tàu Mẹ |
+| **IV · Nguồn tín hiệu** *(mở sau khi phá đảo)* | 11 Tiếng Vọng · 12 Khoang Ngủ Đông · 13 Giếng Trọng Lực · 14 Tín Hiệu Câm · 15 Trái Tim Đàn |
 
 ## Cài đặt & chạy
 
@@ -159,11 +160,11 @@ Muốn tự kiểm tra từng tính năng mới: [docs/choi-thu.md](docs/choi-th
 
 | Chế độ | Mô tả |
 |---|---|
-| **Vượt ải** | 10 ải có cốt truyện, phá đảo mở thêm **Hồi IV** (5 ải, kết thúc thật; đang làm theo đợt, xem [docs/design/hoi-4.md](docs/design/hoi-4.md)). Chọn ải và độ khó **Dễ / Thường / Khó**; mỗi ải chấm **1–3 sao** (qua ải · mất tối đa 1 mạng · không mất mạng). Tiến độ được lưu. |
+| **Vượt ải** | 10 ải có cốt truyện, phá đảo mở thêm **Hồi IV** (5 ải, mỗi ải một cơ chế mới, kết thúc thật; thiết kế: [docs/design/hoi-4.md](docs/design/hoi-4.md)). Chọn ải và độ khó **Dễ / Thường / Khó**; mỗi ải chấm **1–3 sao** (qua ải · mất tối đa 1 mạng · không mất mạng). Tiến độ được lưu. |
 | **Vô tận** | Sống sót càng lâu càng tốt. Càng về sau càng nhiều loại địch; boss đổi loại mỗi 60 giây. |
 | **Hỏa ngục** | *Mở khóa sau khi phá đảo.* Mưa đạn, ít máu, không rơi khiên, boss mỗi 45 giây. |
-| **Chơi mới** | Nút **CHƠI MỚI** ở màn Chọn ải (chọn 2 lần): xóa sạch ải, sao, chu kỳ, Sổ tay, kỷ lục, Bảng điểm, huy hiệu như mới cài game. Cài đặt giữ nguyên; file cũ tự sao lưu thành `save_backup_<ngày giờ>.json`. |
-| **Vòng lặp tín hiệu** | *Sau khi phá đảo.* Bắt đầu **chu kỳ mới** ở màn Chọn ải: chơi lại từ ải 1, địch +25% máu và bắn nhanh hơn mỗi chu kỳ, có thêm lời thoại. Sổ tay, kỷ lục, Hỏa ngục được giữ. |
+| **Chơi mới** | Nút **CHƠI MỚI** ở màn Chọn ải (chọn 2 lần): xóa sạch ải, sao, mô phỏng, Sổ tay, kỷ lục, Bảng điểm, huy hiệu như mới cài game. Cài đặt giữ nguyên; file cũ tự sao lưu thành `save_backup_<ngày giờ>.json`. |
+| **Mô phỏng ký ức** | *Sau kết thúc thật.* ARIA dựng lại các trận từ nhật ký bay: chơi lại từ ải 1, địch +25% máu và bắn nhanh hơn mỗi lần, có thêm lời thoại. Sổ tay, kỷ lục, Hỏa ngục được giữ. |
 
 **Kẻ địch:** lính thường, kamikaze, Ký Sinh (bầy lượn sóng), Lính Khiên (chặn đạn bắn thẳng), Kẻ Đẻ Trứng,
 pháo tháp (kẻ vạch đỏ trước khi bắn), tàu đồng minh bị nhiễm, thiên thạch, xác tàu (núp được).
@@ -201,8 +202,8 @@ spaceship/
 ├── core/            Hạ tầng: scene, ảnh & font, âm thanh, lưu trữ, cài đặt
 ├── input/           Webcam + MediaPipe (luồng riêng), lọc rung One Euro, nhận dạng cử chỉ, bàn phím
 ├── entities/        Người chơi, kẻ địch, boss, đạn, vật phẩm, hiệu ứng
-├── systems/         Luật chơi: va chạm, vũ khí & kỹ năng, rơi đồ, AI địch/boss, điều phối ải
-├── campaign/        Dữ liệu 10 ải (levels.py) và toàn bộ lời thoại (story.py)
+├── systems/         Luật chơi: va chạm, vũ khí & kỹ năng, rơi đồ, AI địch/boss, điều phối ải, cơ chế Hồi IV
+├── campaign/        Dữ liệu 15 ải (levels.py) và toàn bộ lời thoại (story.py)
 ├── scenes/          Menu, chọn ải, hội thoại, trận đấu, tạm dừng, kết quả, cài đặt, hiệu chỉnh tay
 └── ui/              Hiệu ứng phát sáng, HUD, nút & khung
 assets/              Ảnh, nhạc, âm thanh
@@ -223,7 +224,7 @@ python -m unittest discover -s tests -t .
 
 Test chạy ở chế độ không màn hình và không cần webcam (camera được thay bằng `FakeTracker`), gồm:
 nhận dạng cử chỉ, lọc rung, lưu trữ, luật chiến đấu, điều phối từng ải, điều khiển tay, và một **bot tự chơi
-hết 10 ải tới đoạn kết** cùng hai chế độ Vô tận và Hỏa ngục để bảo đảm game không treo hay rò rỉ đạn.
+hết 15 ải tới kết thúc thật** cùng hai chế độ Vô tận và Hỏa ngục để bảo đảm game không treo hay rò rỉ đạn.
 
 ## Lộ trình
 
@@ -231,6 +232,7 @@ hết 10 ải tới đoạn kết** cùng hai chế độ Vô tận và Hỏa ng
 - [x] Điều khiển tay đỡ mỏi (hiệu chỉnh, độ nhạy, chụm ngón, nắm tay, tự tạm dừng)
 - [x] Hiệu ứng phát sáng, HUD mới
 - [x] Vũ khí mới, kỹ năng Nộ, 10 ải, cốt truyện, chọn ải, độ khó
+- [x] Hồi IV · Nguồn tín hiệu: 5 ải, 3 boss mới, Bóng KX, hộ tống, hố đen, màn tối, kết thúc thật
 - [x] Giao diện mới: font riêng (Chakra Petch, Exo 2), menu điều khiển được bằng tay, đồng bộ phong cách các màn hình
 - [x] Màn Hướng dẫn chia thẻ + Sổ tay chiến đấu
 - [x] Âm thanh: tiếng riêng cho từng sự kiện, nhạc theo từng hồi, chỉnh âm lượng

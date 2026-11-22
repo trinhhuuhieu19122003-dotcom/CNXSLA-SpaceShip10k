@@ -88,7 +88,7 @@ ACHIEVEMENTS: tuple[Achievement, ...] = (
                 lambda s, r: s.campaign_cleared),
     Achievement("all_stars", "TOÀN SAO", f"Đủ {LEVEL_COUNT * 3}/{LEVEL_COUNT * 3} sao trong một chu kỳ", "star",
                 lambda s, r: s.total_stars >= LEVEL_COUNT * 3 or any(v >= LEVEL_COUNT * 3 for v in s.cycle_history.values())),
-    Achievement("loop", "VÒNG LẶP", "Phá đảo chu kỳ 2", "loop",
+    Achievement("loop", "VÒNG LẶP", "Phá đảo Mô phỏng ký ức 1", "loop",
                 lambda s, r: 2 in s.cycle_history),
     Achievement("bestiary", "NHÀ NGHIÊN CỨU", f"Mở đủ {len(BESTIARY)} mục Sổ tay chiến đấu", "book",
                 lambda s, r: len(s.seen_enemies & set(BESTIARY)) >= len(BESTIARY)),
@@ -118,6 +118,14 @@ ACHIEVEMENTS: tuple[Achievement, ...] = (
                 lambda s, r: r is not None and r.grazes >= 150),
     Achievement("cancel30", "DỌN SẠCH BẦU TRỜI", "Hủy 30 viên đạn cùng lúc khi hạ boss", "star",
                 lambda s, r: r is not None and r.best_cancel >= 30),
+    # ===== Hồi IV =====
+    Achievement("true_end", "NGUỒN TÍN HIỆU", "Xem kết thúc thật (qua ải 15)", "flag",
+                lambda s, r: (r is not None and r.true_ending) or LEVEL_COUNT in s.level_stars),
+    Achievement("no_one_left", "KHÔNG BỎ LẠI AI", "Cứu 40/40 người ở ải 12", "shield",
+                lambda s, r: (r is not None and r.cleared and r.level == 12 and r.rescued >= 40)
+                or s.rescued == 40),
+    Achievement("chose_you", "TÔI CHỌN ANH", "Hạ Trái Tim Đàn bằng Đại pháo khi lõi lộ ra", "bolt",
+                lambda s, r: r is not None and r.chose_you),
 )
 BY_KEY = {a.key: a for a in ACHIEVEMENTS}
 

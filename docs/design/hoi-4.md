@@ -38,7 +38,7 @@ lặp lại. Cuối hồi là **kết thúc thật**: tín hiệu tắt, vòng l
 | 3 | Hộ tống: 4 tàu cứu sinh (máu 100, bay ngang y≈470, 0,8 px/tick), mỗi wave 1 tàu và wave sau chờ tàu bay xong; Ký Sinh + lính cảm tử nhắm tàu cứu sinh; thân tàu bạn che đạn (kể cả lúc bất tử); "ĐÃ CỨU N/40"; sao theo người cứu; mất cả 4 = thua; nhớ số người cứu cho câu cuối kết thúc thật | Xong |
 | 4 | Hố đen trôi ngang kéo tàu (0,6 → 2,2 px/tick), đạn hai phía bay cong (hút + xoáy), địch bị nuốt không điểm, chạm vành -30 máu + hất ra, wave 4 đập nhịp (báo 1 giây, hút gấp đôi 1 giây); Mắt Bão ngồi giữa hố đen, xoắn 8 tia, pha 2 nhịp 3 giây gọi 4 Ký Sinh | Xong |
 | 5 | Màn tối (sáng 150 px quanh tàu, mỗi viên đạn soi một vòng, Tia Sét soi rộng, nổ sáng, Nộ soi toàn màn 3 giây); vạch Pháo tháp / vòng cảm tử / quầng Bóng KX / tai Kẻ Nghe luôn hiện; ô LIÊN LẠC chỉ còn nhiễu; Kẻ Nghe lượn trong tối, tai sáng 0,6 giây trước loạt ngắm, pha 2 tách 2 hình giả (không lõi đỏ, trúng là tan); thoại nhiễu dùng chân dung ARIA nhiễu | Xong |
-| 6 | Trái Tim Đàn 3 pha, khoảnh khắc ARIA, 3 huy hiệu, "Mô phỏng ký ức" | Chưa |
+| 6 | Trái Tim Đàn 3 pha (pha 1, 2 tối thiểu 10 giây), 11 tàu ma chữ V + Bóng KX theo số chu kỳ, hồi khiên khi còn tàu ma, màn đỏ + lõi bọc giáp 25%, ARIA chọn sau 6 giây (hủy đạn, lõi x2, Nộ đầy, Đại pháo bắt buộc lần kế, bắn dồn x1,5), kết thúc thật nhắc số người cứu, 3 huy hiệu (24, lưới 4 cột), "Mô phỏng ký ức" | Xong |
 
 ## Ghi chú kỹ thuật (đợt 2-6)
 

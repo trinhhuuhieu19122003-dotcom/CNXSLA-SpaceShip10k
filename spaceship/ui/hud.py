@@ -70,7 +70,7 @@ def _status_line(world: World, director) -> str:
     if world.combo >= 2:                                    # khung hẹp không có bảng bên: hiện chuỗi ở dải trên
         score += f"  ·  CHUỖI {world.combo}"
     if world.level is not None:
-        cycle = f"CHU KỲ {world.cycle} · " if world.cycle > 1 else ""
+        cycle = f"MÔ PHỎNG {world.cycle - 1} · " if world.cycle > 1 else ""   # dải trên hẹp: tên rút gọn
         parts = [score, f"{cycle}ẢI {world.level.number}", progress]
     else:
         parts = [score, format_time(world.survival_time), progress]

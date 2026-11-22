@@ -93,7 +93,7 @@ class AchievementGameTest(unittest.TestCase):
         scene.draw(self.game.screen)
         scene.menu.activate(0)
         self.assertEqual(scene.tab, 0)
-        self.assertEqual(len(achievements.ACHIEVEMENTS), 21)
+        self.assertEqual(len(achievements.ACHIEVEMENTS), 24)                 # + 3 huy hiệu Hồi IV
 
     def test_new_game_wipes_progress_keeps_settings_and_backs_up(self):
         save = self.game.save

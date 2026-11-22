@@ -20,10 +20,10 @@ chỉ cần sửa dữ liệu ở đây, không đụng tới logic.
 | 12 | Khoang Ngủ Đông | Hộ tống 4 tàu cứu sinh, sao theo số người cứu |
 | 13 | Giếng Trọng Lực | Hố đen kéo tàu, đạn bay cong, mini-boss Mắt Bão |
 | 14 | Tín Hiệu Câm | Màn tối (đạn soi đường), mini-boss Kẻ Nghe |
-| 15 | Trái Tim Đàn | BOSS CUỐI THẬT (đợt 6) |
+| 15 | Trái Tim Đàn | BOSS CUỐI THẬT: 3 pha, tàu ma, ARIA chọn |
 
-Hồi IV mở sau khi qua ải 10. Đợt 1 chỉ dựng khung (dữ liệu ải + thoại), địch tạm dùng loại có sẵn;
-thiết kế đầy đủ: docs/design/hoi-4.md.
+Hồi IV mở sau khi qua ải 10; cơ chế riêng từng ải nằm ở systems/mechanics.py (``Level.mechanic``).
+Thiết kế: docs/design/hoi-4.md.
 """
 from __future__ import annotations
 
@@ -241,7 +241,7 @@ LEVELS: Tuple[Level, ...] = (
     Level(15, 4, "TRÁI TIM ĐÀN", "bg_heart", 2.1, (
         wave(grunts(3, 4, kamikaze=0.3), shields([200, 600], at=60), shadows([2, 3], at=150, every=40)),
         wave(breeders([250, 550]), turrets([150, 650], at=60), swarm(12, at=120, every=10)),
-    ), boss="swarm_heart", hint="BOSS CUỐI THẬT"),
+    ), boss="swarm_heart", mechanic="heart", hint="BOSS CUỐI THẬT"),
 )
 
 LEVEL_COUNT = len(LEVELS)

@@ -179,9 +179,9 @@ class MenuScene(Scene):
             if action is GameMode.CAMPAIGN:
                 save = self.game.save
                 if save.cycle_complete:
-                    description = f"Đã phá đảo · mở được chu kỳ {save.cycle + 1}"
+                    description = f"Kết thúc thật · mở được Mô phỏng ký ức {save.cycle}"
                 elif save.cycle > 1:
-                    description = f"10 ải · 3 hồi · chu kỳ {save.cycle}"
+                    description = f"15 ải · 4 hồi · Mô phỏng ký ức {save.cycle - 1}"
             if action == "quit" and self.quit_armed:
                 text, description, color = "THOÁT?", "Chọn lần nữa để thoát (tự hủy sau 3 giây)", DANGER
             label = a.text(text, 25, color, role="ui")

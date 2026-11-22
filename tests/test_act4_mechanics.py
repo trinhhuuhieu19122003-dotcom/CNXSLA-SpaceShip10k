@@ -438,3 +438,123 @@ class ListenerTest(unittest.TestCase):
         self.assertEqual(portrait_for(ARIA), "portrait_aria")
         self.w.say(ARIA, "---", effect="glitch")
         self.assertEqual(self.w.radio[-1].effect, "glitch")
+
+
+class HeartBattleTest(unittest.TestCase):
+    def setUp(self):
+        from spaceship.entities.enemies import Boss
+        from spaceship.systems.mechanics import HeartBattle
+        self.w = world(15)
+        self.m = HeartBattle()
+        self.w.mechanic = self.m
+        self.boss = Boss(1.0, kind="swarm_heart")
+        self.boss.y = self.boss.spec.hover_y
+        self.w.enemies.append(self.boss)
+
+    def tick(self, n, keep_ratio=None):
+        for _ in range(n):
+            if keep_ratio is not None:
+                self.boss.hp = self.boss.max_hp * keep_ratio
+            attacks.boss_attack(self.w, self.boss)
+            self.m.update(self.w)
+
+    def test_phase_2_calls_v_of_eleven_ghosts_and_past_shadows(self):
+        from spaceship.entities.enemies import GhostShip, ShadowKX
+        from spaceship.systems.mechanics import HEART_GHOST_GAP
+        self.w.cycle = 3
+        self.tick(5, keep_ratio=0.6)
+        self.tick(40 + HEART_GHOST_GAP, keep_ratio=0.6)
+        ghosts = [e for e in self.w.enemies if isinstance(e, GhostShip)]
+        self.assertEqual(len(ghosts), 11)
+        self.assertGreaterEqual(sum(isinstance(e, ShadowKX) for e in self.w.enemies), 3)   # = số chu kỳ
+
+    def test_ghosts_alive_regenerate_shield(self):
+        self.tick(80, keep_ratio=0.6)
+        self.boss.shield_hp = 0
+        self.tick(60, keep_ratio=0.6)
+        self.assertGreater(self.boss.shield_hp, 0)
+        self.w.enemies[:] = [e for e in self.w.enemies if e.is_boss]
+        self.boss.shield_hp = 0
+        self.tick(60, keep_ratio=0.6)
+        self.assertEqual(self.boss.shield_hp, 0)                          # hết tàu ma: thôi hồi khiên
+
+    def test_phase_3_armor_then_aria_chooses_after_6_seconds(self):
+        from spaceship.systems.mechanics import CALL_TO_ACTION, HEART_ARMOR, HEART_CHOICE_TICKS, HEART_EXPOSED
+        self.boss.shield_hp = 0
+        self.tick(3, keep_ratio=0.3)
+        self.assertTrue(self.m.red)
+        self.assertEqual(self.boss.damage_mult, HEART_ARMOR)
+        self.boss.shield_hp = 0                                           # (chuyển pha có hồi một lớp khiên)
+        hp = self.boss.hp
+        combat.damage_enemy(self.w, self.boss, 100)
+        self.assertAlmostEqual(hp - self.boss.hp, 25)                     # lõi bọc giáp: 25%
+        self.w.player.rage = 0
+        self.w.enemy_bullets.append(__import__("spaceship.entities.projectiles", fromlist=["x"]).EnemyBullet(1, 1, 90))
+        self.tick(HEART_CHOICE_TICKS + 2, keep_ratio=0.3)
+        self.assertTrue(self.m.chosen)
+        self.assertFalse(self.m.red)
+        self.assertEqual(self.boss.damage_mult, HEART_EXPOSED)
+        self.assertEqual(self.boss.sprite, "swarm_heart_core")
+        self.assertTrue(self.w.player.rage_full)                          # Nộ đầy ngay
+        self.assertEqual(self.w.forced_skill, "laser")
+        self.assertTrue(self.m.call_to_action)
+        self.assertTrue(any("Tôi chọn anh" in line.text for line in self.w.radio))
+        self.assertTrue(CALL_TO_ACTION.startswith("CHỤM TAY"))
+
+    def test_forced_cannon_and_badge(self):
+        from spaceship.systems import weapons
+        from spaceship.systems.weapons import LaserCannon
+        self.boss.shield_hp = 0
+        self.tick(3, keep_ratio=0.3)
+        self.m._aria_chooses(self.w, self.boss)
+        self.w.player.weapon = "plasma"                                    # dù đang cầm plasma...
+        skill = weapons.trigger_skill(self.w)
+        self.assertIsInstance(skill, LaserCannon)                          # ...vẫn là ĐẠI PHÁO
+        self.assertIsNone(self.w.forced_skill)
+        self.m.update(self.w)
+        self.assertFalse(self.m.call_to_action)
+        self.boss.hp = 0
+        combat.reap_dead(self.w)
+        self.m.on_boss_defeated(self.w, self.boss)
+        self.assertTrue(self.m.chose_you)
+
+    def test_normal_kill_gives_no_badge(self):
+        self.boss.shield_hp = 0
+        self.tick(3, keep_ratio=0.3)
+        self.m._aria_chooses(self.w, self.boss)
+        self.boss.hp = 0
+        combat.reap_dead(self.w)
+        self.m.on_boss_defeated(self.w, self.boss)
+        self.assertFalse(self.m.chose_you)
+
+    def test_draws(self):
+        from spaceship.core.assets import Assets
+        surface = pygame.Surface((800, 700))
+        self.boss.shield_hp = 0
+        self.tick(3, keep_ratio=0.3)
+        self.m.draw_overlay(surface, self.w, Assets())
+        self.m._aria_chooses(self.w, self.boss)
+        self.m.draw_overlay(surface, self.w, Assets())
+
+
+class Act4BadgesTest(unittest.TestCase):
+    def test_three_new_badges(self):
+        import tempfile
+        from pathlib import Path
+        from spaceship.campaign import achievements
+        from spaceship.campaign.achievements import RunStats
+        from spaceship.core.storage import SaveData
+        save = SaveData(path=Path(tempfile.mkdtemp()) / "s.json")
+        run = RunStats(GameMode.CAMPAIGN, level=12, cleared=True, rescued=40)
+        got = {a.key for a in achievements.evaluate(save, run)}
+        self.assertIn("no_one_left", got)
+        run = RunStats(GameMode.CAMPAIGN, level=15, cleared=True, true_ending=True, chose_you=True)
+        got = {a.key for a in achievements.evaluate(save, run)}
+        self.assertTrue({"true_end", "chose_you"} <= got)
+        self.assertEqual(len(achievements.ACHIEVEMENTS), 24)
+
+    def test_memory_simulation_naming(self):
+        from spaceship.campaign import story
+        self.assertEqual(story.memory_label(1), "")
+        self.assertEqual(story.memory_label(2), "MÔ PHỎNG KÝ ỨC 1")
+        self.assertIn("Mô phỏng ký ức số 2", story.cycle_intro(3)[0][1])

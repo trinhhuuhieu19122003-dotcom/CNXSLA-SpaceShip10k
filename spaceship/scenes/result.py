@@ -180,7 +180,7 @@ class ResultScene(Scene):
                 unlock = "Đã mở Hỏa ngục · " if self.game.save.cycle == 1 else ""
                 text = f"{unlock}Hồi IV · Nguồn tín hiệu đã mở"
             else:
-                text = f"Chu kỳ {self.game.save.cycle + 1} đã mở ở màn Chọn ải"
+                text = f"Mô phỏng ký ức {self.game.save.cycle} đã mở ở màn Chọn ải"
             blit_center(surface, fit_text(a, text, 17, ACCENT, PANEL.width - 40, role="body"), y)
         elif self.new_record:
             record = a.text("KỶ LỤC MỚI!", 18, ACCENT, role="ui")

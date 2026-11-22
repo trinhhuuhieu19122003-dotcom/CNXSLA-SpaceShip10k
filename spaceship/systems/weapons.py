@@ -473,10 +473,12 @@ def trigger_skill(world: World) -> Optional[Skill]:
         return None
     p.rage = 0
     world.skills_used += 1
-    skill = SKILLS[p.weapon](world)
+    kind = world.forced_skill or p.weapon            # ARIA dồn năng lượng: lần này luôn là ĐẠI PHÁO
+    world.forced_skill = None
+    skill = SKILLS[kind](world)
     world.skills.append(skill)
-    world.announce(config.SKILL_NAMES[p.weapon], 1.2)
-    world.play(f"skill_{p.weapon}")
+    world.announce(config.SKILL_NAMES[kind], 1.2)
+    world.play(f"skill_{kind}")
     world.shake(10)
     return skill
 

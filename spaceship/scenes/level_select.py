@@ -60,7 +60,7 @@ class LevelSelectScene(Scene):
         label = config.DIFFICULTY_LABELS[self.game.settings.difficulty]
         confirming = self.confirm_action if self.confirm else None
         texts = {"difficulty": f"ĐỘ KHÓ: {label}", "menu": "VỀ MENU",
-                 "new_cycle": "CHẮC CHẮN?" if confirming == "new_cycle" else f"CHU KỲ {self.game.save.cycle + 1}",
+                 "new_cycle": "CHẮC CHẮN?" if confirming == "new_cycle" else f"MÔ PHỎNG {self.game.save.cycle}",
                  "new_game": "XÓA HẾT? CHỌN LẠI" if confirming == "new_game" else "CHƠI MỚI"}
         for button in self.buttons:
             button.text = texts[button.action]
@@ -171,7 +171,7 @@ class LevelSelectScene(Scene):
         draw_panel(surface, PANEL, header_height=109)
         save = self.game.save
         blit_center(surface, a.text("CHẾ ĐỘ VƯỢT ẢI", 34, TEXT, role="display"), 20)
-        cycle = f"   ·   CHU KỲ {save.cycle}" if save.cycle > 1 else ""
+        cycle = f"   ·   MÔ PHỎNG KÝ ỨC {save.cycle - 1}" if save.cycle > 1 else ""
         shown = LEVEL_COUNT if self.act4_known else MAIN_LEVELS           # chưa lộ Hồi IV: tính trên 10 ải
         stars = a.text(f"{save.total_stars} / {shown * 3}{cycle}", 18, ACCENT, role="label")
         star_rect = stars.get_rect(center=(WIDTH // 2 + 9, 79))
@@ -193,14 +193,17 @@ class LevelSelectScene(Scene):
                 hint = level.hint if self.unlocked(level.number) else "Qua ải trước để mở khóa"
             blit_center(surface, a.text(hint, 16, SECONDARY, role="body"), HINT_Y)
         elif selected_action == "new_game":
-            hint = ("CHƠI MỚI: xóa sạch ải, sao, chu kỳ, Sổ tay, kỷ lục, thành tựu - như mới cài game. "
+            hint = ("CHƠI MỚI: xóa sạch ải, sao, mô phỏng, Sổ tay, kỷ lục, thành tựu - như mới cài game. "
                     "Cài đặt giữ nguyên; file cũ được sao lưu.")
             blit_center(surface, fit_text(a, hint, 15, DANGER, PANEL.width - 40, role="body"), HINT_Y)
         elif selected_action == "new_cycle":
-            hint = (f"Vòng lặp tín hiệu: chơi lại từ ải 1, địch mạnh hơn (+{round(config.CYCLE_HP_STEP * 100)}% máu "
-                    "mỗi chu kỳ). Giữ nguyên Sổ tay, kỷ lục, Hỏa ngục.")
+            hint = (f"Mô phỏng ký ức: ARIA dựng lại các trận từ nhật ký bay - chơi lại từ ải 1, địch mạnh hơn "
+                    f"(+{round(config.CYCLE_HP_STEP * 100)}% máu mỗi lần). Giữ nguyên Sổ tay, kỷ lục, Hỏa ngục.")
             blit_center(surface, fit_text(a, hint, 15, ACCENT, PANEL.width - 40, role="body"), HINT_Y)
         criteria = "1 sao: qua ải · 2 sao: mất tối đa 1 mạng · 3 sao: không mất mạng nào"
+        if self.menu.selected < LEVEL_COUNT and LEVELS[self.menu.selected].mechanic == "escort" \
+                and not self.hidden(LEVELS[self.menu.selected].number):
+            criteria = "Ải 12 chấm sao theo người cứu: 1 sao ≥ 10 · 2 sao ≥ 30 · 3 sao: cứu đủ 40"
         blit_center(surface, a.text(criteria, 15, MUTED, role="body"), HINT_Y + 30)
         for i, button in enumerate(self.buttons, LEVEL_COUNT):
             if button.action == "new_game":

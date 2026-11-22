@@ -92,4 +92,24 @@ BESTIARY = {
         "và bắn thẳng xuống bằng chính màu súng của bạn.",
         "Đừng đứng yên. Đường bạn đi lúc nãy chính là đường nó bắn bây giờ: đổi hướng liên tục.",
     ),
+    "storm_eye": BestiaryEntry(
+        "MẮT BÃO (MINI-BOSS)", "storm_eye",
+        "Con mắt sống ngay giữa hố đen, trôi theo nó. Đạn bắn ra bị lực hút uốn thành hình cánh quạt.",
+        "Giữ khoảng cách với vành hố đen; pha 2 mỗi nhịp hút gọi thêm Ký Sinh.",
+    ),
+    "listener": BestiaryEntry(
+        "KẺ NGHE (MINI-BOSS)", "listener",
+        "Sinh vật ăng-ten lượn trong vùng câm. Chỉ lộ diện khi hai tai phát sáng, ngay trước mỗi loạt đạn.",
+        "Thấy tai sáng thì né. Pha 2 nó tách 3 hình: chỉ hình thật có lõi đỏ.",
+    ),
+    "ghost": BestiaryEntry(
+        "TÀU MA PHI ĐỘI", "ghost_ship",
+        "Mười một tàu của phi đội cũ, được Đàn dựng lại từ ký ức. Bay thành hình chữ V.",
+        "Còn tàu ma thì Trái Tim Đàn còn hồi khiên: hạ chúng trước.",
+    ),
+    "swarm_heart": BestiaryEntry(
+        "TRÁI TIM ĐÀN (BOSS CUỐI THẬT)", "swarm_heart",
+        "Khối tim - não ghi lại mọi trận bạn từng đánh và phát lại tín hiệu để dụ bạn về. Nói bằng giọng người khác.",
+        "Pha 3 lõi bọc giáp gần như không xuyên được. Chờ ARIA - rồi chụm tay.",
+    ),
 }

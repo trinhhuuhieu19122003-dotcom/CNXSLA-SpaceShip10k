@@ -89,8 +89,8 @@ class CycleGameTest(unittest.TestCase):
         self.game._apply_pending_scene()
         intro = self.game.scene
         self.assertIsInstance(intro, CutsceneScene)
-        self.assertIn("vòng lặp thứ 2", intro.script[1].text)
-        self.assertIn("CHU KỲ 2", intro.subtitle)
+        self.assertIn("Mô phỏng ký ức số 1", intro.script[0].text)     # chu kỳ 2+ = "Mô phỏng ký ức"
+        self.assertIn("MÔ PHỎNG KÝ ỨC 1", intro.subtitle)
         self.game.window = pygame.display.set_mode((1280, 720))
         self.go(play)
         self.game.render()                                             # bảng bên hiện chu kỳ không lỗi

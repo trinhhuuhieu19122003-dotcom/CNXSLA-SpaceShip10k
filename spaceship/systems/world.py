@@ -51,6 +51,8 @@ class World:
     level: Any = None
     #: cơ chế riêng của ải Hồi IV (systems/mechanics.py), None ở các ải khác
     mechanic: Any = None
+    #: kỹ năng Nộ kế tiếp bị ép thành loại này (Trái Tim Đàn: ARIA dồn năng lượng -> ĐẠI PHÁO)
+    forced_skill: Optional[str] = None
 
     #: rung màn hình kiểu trauma (0..1), giảm dần mỗi tick; xem ``shake``
     trauma: float = 0.0

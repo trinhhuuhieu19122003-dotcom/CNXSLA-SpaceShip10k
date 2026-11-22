@@ -66,6 +66,7 @@ def tick_player_fx(world: World) -> None:
 # --- Sát thương ---------------------------------------------------------------------
 def damage_enemy(world: World, enemy: EnemyBase, amount: float, *, crit: bool = False, gain_rage: bool = True) -> None:
     player = world.player
+    amount *= getattr(enemy, "damage_mult", 1.0)  # Trái Tim Đàn pha 3: lõi bọc giáp / lõi lộ ra
     enemy.hit_flash = 4                           # nháy trắng vài tick: cảm giác "trúng"
     enemy.hp_bar_timer = 90
     world.play("hit")
@@ -134,9 +135,9 @@ def kill_enemy(world: World, enemy: EnemyBase) -> None:
         world.freeze(config.HITSTOP_BOSS)
         world.defeated_bosses.append(enemy)
         return
-    if enemy.death_fx == "dissolve":              # Bóng KX: tan thành hạt tím, không nổ lửa
+    if enemy.death_fx == "dissolve":              # Bóng KX / tàu ma: tan thành hạt, không nổ lửa
         world.play("glitch")
-        world.burst(enemy.x, enemy.y, (170, 110, 255), 14, speed_scale=0.7)
+        world.burst(enemy.x, enemy.y, getattr(enemy, "dissolve_color", (170, 110, 255)), 14, speed_scale=0.7)
         world.burst(enemy.x, enemy.y, (230, 200, 255), 6, speed_scale=0.4)
         world.sparks(enemy.x, enemy.y, (200, 160, 255), 5)
         if enemy.counts_as_kill:

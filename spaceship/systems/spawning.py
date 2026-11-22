@@ -213,6 +213,8 @@ class LevelDirector(Director):
                 world.enemies.append(Wreck(world.hp_mult, world.rng.randint(120, WIDTH - 120), rng=world.rng, variant=variant))
 
     def on_boss_defeated(self, world: World, boss: Boss) -> None:
+        if self.mechanic is not None:
+            self.mechanic.on_boss_defeated(world, boss)
         if self.level.reward:
             world.drop(boss.x, boss.y, self.level.reward, magnet=True)
         world.enemy_bullets.clear()

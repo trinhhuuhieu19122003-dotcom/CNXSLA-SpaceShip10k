@@ -47,6 +47,9 @@ class Mechanic:
     def stars(self, world: World) -> Optional[int]:
         return None
 
+    def on_boss_defeated(self, world: World, boss) -> None:
+        """Boss của ải vừa bị hạ (trước khi đếm ngược qua ải)."""
+
     def draw_back(self, surface: pygame.Surface, world: World, assets, fx: float = 1.0) -> None:
         """Vẽ ngay trên nền (dưới địch, đạn)."""
 
@@ -548,12 +551,168 @@ class Darkness(Mechanic):
                 e.draw_halo(surface)
 
 
+# --- Ải 15 · Trái Tim Đàn ------------------------------------------------------------------------
+HEART_GHOST_GAP = 180               # đợt tàu ma thứ hai sau 3 giây
+HEART_SHIELD_REGEN = 1 / 600        # còn tàu ma: hồi khiên (phần của khiên tối đa) mỗi tick
+HEART_CHOICE_TICKS = 6 * 60         # pha 3: 6 giây sau thì ARIA cắt kết nối
+HEART_ARMOR = 0.25                  # lõi bọc giáp: chỉ nhận 25% sát thương
+HEART_EXPOSED = 2.0                 # lõi lộ ra: nhận 200%
+HEART_FRENZY = 1.5                  # sau khi lộ lõi: bắn dồn dập gấp rưỡi
+HEART_MIN_PHASE_TICKS = 10 * 60     # pha 1, 2 kéo dài ít nhất 10 giây (Nộ liên tục không "đốt" mất cả pha)
+HEART_PHASE_FLOOR = {1: 0.67, 2: 0.34}
+CALL_TO_ACTION = "CHỤM TAY · ĐẠI PHÁO"
+
+
+class HeartBattle(Mechanic):
+    """Ải 15: Trái Tim Đàn 3 pha.
+
+    * Pha 2 "Ký ức": gọi 11 tàu ma (chữ V, 2 đợt 6 + 5) và Bóng KX của "các vòng trước" (số chu kỳ + 0, tối
+      đa 4). Còn tàu ma trên màn thì boss hồi khiên.
+    * Pha 3 "ARIA": màn nhuộm đỏ, boss nói bằng giọng ARIA, lõi bọc giáp (25% sát thương). Sau 6 giây ARIA
+      cắt kết nối: hủy mọi đạn địch, hết đỏ, lõi lộ ra (200%), thanh Nộ đầy ngay, kỹ năng Nộ kế tiếp là ĐẠI
+      PHÁO dù đang cầm súng gì; boss bắn dồn dập gấp rưỡi cho tới khi chết.
+    * Hạ boss bằng Đại pháo sau khoảnh khắc đó: huy hiệu TÔI CHỌN ANH.
+    """
+
+    def __init__(self) -> None:
+        self.phase = 1
+        self.t = 0
+        self.ghost_at: List[int] = []    # tick sẽ thả đợt tàu ma
+        self.red_since = None            # tick bắt đầu pha 3 (màn đỏ)
+        self.chosen = False              # ARIA đã cắt kết nối
+        self.chose_you = False           # kết liễu bằng Đại pháo sau khoảnh khắc đó
+        self.call_to_action = False      # đang hiện "CHỤM TAY · ĐẠI PHÁO"
+        self.phase_started = 0
+        self.met = False
+
+    def _boss(self, world: World):
+        return next((e for e in world.enemies if e.is_boss and e.kind == "swarm_heart"), None)
+
+    def update(self, world: World) -> None:
+        self.t += 1
+        boss = self._boss(world)
+        if boss is None:
+            return
+        if not self.met:                                              # boss vừa xuất hiện: pha 1 bắt đầu
+            self.met = True
+            self.phase_started = self.t
+        floor = HEART_PHASE_FLOOR.get(self.phase)
+        if floor is not None and self.t - self.phase_started < HEART_MIN_PHASE_TICKS:
+            boss.hp = max(boss.hp, boss.max_hp * floor)               # chưa đủ 10 giây: chưa sang pha sau
+        if boss.phase != self.phase:
+            self.phase = boss.phase
+            self.phase_started = self.t
+            if self.phase == 2:
+                self.ghost_at = [self.t + 30, self.t + 30 + HEART_GHOST_GAP]
+                self._shadows_of_past(world)
+            elif self.phase == 3 and self.red_since is None:
+                self.red_since = self.t
+                boss.damage_mult = HEART_ARMOR
+                world.play("glitch")
+        for at in [a for a in self.ghost_at if a <= self.t]:
+            self.ghost_at.remove(at)
+            self._ghosts(world, boss, 6 if len(self.ghost_at) else 5)
+        if any(getattr(e, "ai", None) == "ghost" for e in world.enemies) and boss.max_shield > 0:
+            boss.shield_hp = min(boss.max_shield, boss.shield_hp + boss.max_shield * HEART_SHIELD_REGEN)
+        if self.red_since is not None and not self.chosen and self.t - self.red_since >= HEART_CHOICE_TICKS:
+            self._aria_chooses(world, boss)
+        if self.call_to_action and world.skills_used != self._skills_at_choice:
+            self.call_to_action = False
+
+    def on_boss_defeated(self, world: World, boss) -> None:
+        if boss.kind == "swarm_heart":
+            if self.chosen and _cannon_active(world):                # kết liễu bằng Đại pháo: TÔI CHỌN ANH
+                self.chose_you = True
+            self.call_to_action = False
+            for e in [e for e in world.enemies if getattr(e, "ai", None) in ("ghost", "shadow")]:
+                world.enemies.remove(e)                               # ký ức tan theo Trái Tim Đàn
+                world.burst(e.x, e.y, (200, 200, 230), 6, speed_scale=0.5)
+
+    def _ghosts(self, world: World, boss, count: int) -> None:
+        from spaceship.entities.enemies import ghost_v
+
+        cx = max(220, min(WIDTH - 220, world.player.x))
+        world.enemies.extend(ghost_v(world.hp_mult, count, cx, 290 if count == 6 else 320, rng=world.rng))
+        world.play("radar")
+
+    def _shadows_of_past(self, world: World) -> None:
+        from spaceship.entities.enemies import ShadowKX
+
+        count = max(1, min(4, world.cycle))                          # người chơi lâu năm gặp cả "quá khứ"
+        for i in range(count):
+            world.enemies.append(ShadowKX(world.hp_mult, 2 + i * 0.7, row=i, rng=world.rng))
+
+    def _aria_chooses(self, world: World, boss) -> None:
+        self.chosen = True
+        world.cancel_enemy_bullets()
+        boss.damage_mult = HEART_EXPOSED
+        boss.fire_speed = HEART_FRENZY
+        boss.sprite = "swarm_heart_core"
+        boss.attack_cooldown = 90                                     # một nhịp thở trước cơn bắn dồn dập
+        p = world.player
+        p.rage = p.max_rage
+        world.forced_skill = "laser"
+        self.call_to_action = True
+        self._skills_at_choice = world.skills_used
+        world.flash = 6
+        world.shake(14)
+        world.freeze(8)
+        world.play("rage_full")
+        world.radio.clear()
+        world.say("ARIA", "Không. Tôi chọn anh.", 3.0)
+        world.say("ARIA", "Đã cắt kết nối. Lõi của nó lộ rồi. Tôi dồn hết năng lượng cho anh: chụm tay đi!", 5.0)
+
+    def radio(self, world: World, key) -> Optional[list]:
+        if key == ("phase", 3):                                       # 2 câu đầu; 2 câu sau ở _aria_chooses
+            world.radio.clear()                                       # cắt thoại cũ: khoảnh khắc này phải nghe ngay
+            return [("ARIA", "Về... với... Đàn...", "glitch"), ("KX-17", "ARIA!")]
+        return None
+
+    @property
+    def red(self) -> bool:
+        return self.red_since is not None and not self.chosen
+
+    def draw_overlay(self, surface: pygame.Surface, world: World, assets, fx: float = 1.0) -> None:
+        if self.red:                                                  # pha 3: màn nhuộm đỏ (đập theo nhịp)
+            beat = 0.5 + 0.5 * math.sin(self.t / 9)
+            tint = _tint_layer(surface.get_size())
+            tint.set_alpha(int(50 + 40 * beat * (fx if fx > 0 else 0.3)))
+            surface.blit(tint, (0, 0))
+        if self.call_to_action:
+            k = 0.75 + 0.25 * math.sin(self.t / 5)
+            label = assets.text(CALL_TO_ACTION, 46, (255, int(200 * k), 90), role="display")
+            y = config.HEIGHT // 2 + 40
+            shade = pygame.Surface((WIDTH, label.get_height() + 26), pygame.SRCALPHA)
+            shade.fill((0, 0, 0, 140))
+            surface.blit(shade, (0, y - 13))
+            surface.blit(label, (WIDTH // 2 - label.get_width() // 2, y))
+            hint = assets.text("ARIA dồn hết năng lượng cho anh · phím K", 16, (255, 230, 200), role="label")
+            surface.blit(hint, (WIDTH // 2 - hint.get_width() // 2, y + label.get_height() + 2))
+
+
+def _cannon_active(world: World) -> bool:
+    from spaceship.systems.weapons import LaserCannon
+
+    return any(isinstance(s, LaserCannon) for s in world.skills)
+
+
+_tint_cache: dict = {}
+
+
+def _tint_layer(size) -> pygame.Surface:
+    if size not in _tint_cache:
+        s = pygame.Surface(size)
+        s.fill((150, 0, 20))
+        _tint_cache[size] = s
+    return _tint_cache[size]
+
+
 def _ring(x, y, color, radius):
     from spaceship.entities.effects import Shockwave
     return Shockwave(x, y, color, max_radius=radius, life=16)
 
 
-MECHANICS = {"escort": Escort, "gravity": GravityWell, "dark": Darkness}
+MECHANICS = {"escort": Escort, "gravity": GravityWell, "dark": Darkness, "heart": HeartBattle}
 
 
 def create_mechanic(level) -> Optional[Mechanic]:

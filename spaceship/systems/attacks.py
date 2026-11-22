@@ -113,6 +113,17 @@ def turret_fire(world: World, enemy) -> None:
         enemy.warning = enemy.WARN_TICKS
 
 
+def ghost_fire(world: World, enemy) -> None:
+    """Tàu ma: vào hàng rồi bắn ngắm từng viên."""
+    if not enemy.arrived:
+        return
+    enemy.shoot_timer -= 1
+    if enemy.shoot_timer > 0 or _hold_fire(world, enemy):
+        return
+    world.enemy_bullets.append(EnemyBullet(enemy.x, enemy.y + 18, aim(enemy, world.player), "normal"))
+    enemy.shoot_timer = _cooldown(world, world.rng.randint(100, 150))
+
+
 def shadow_fire(world: World, enemy) -> None:
     """Bóng KX: bắn thẳng xuống theo nhịp cố định (đạn màu súng của bạn)."""
     if not enemy.arrived:
@@ -126,7 +137,8 @@ def shadow_fire(world: World, enemy) -> None:
 
 
 ENEMY_AI = {"grunt": grunt_fire, "shield": shield_fire, "ally": ally_fire,
-            "breeder": breeder_spawn, "turret": turret_fire, "shadow": shadow_fire}
+            "breeder": breeder_spawn, "turret": turret_fire, "shadow": shadow_fire,
+            "ghost": ghost_fire}
 
 
 # --- Boss ---------------------------------------------------------------------------------
@@ -302,6 +314,41 @@ def _listener(world: World, boss: Boss, ratio: float) -> int:
     return 1
 
 
+def _swarm_heart(world: World, boss: Boss, ratio: float) -> int:
+    """TRÁI TIM ĐÀN (ải 15). Pha 1 "Giọng Chỉ huy": vòng 12 tia xen kẽ loạt ngắm 3 viên, thỉnh thoảng gọi
+    Bóng KX. Pha 2 "Ký ức": xoắn ốc chậm (tàu ma + Bóng KX do HeartBattle gọi). Pha 3 "ARIA": vòng 16 tia +
+    laser tím ngắm; sau khi ARIA cắt kết nối thì bắn dồn dập gấp rưỡi (``boss.fire_speed``)."""
+    from spaceship.entities.enemies import ShadowKX
+
+    b, rng = world.enemy_bullets, world.rng
+    boss.minion_timer += 1
+    y0 = boss.y + 40
+    if ratio > 0.66:
+        if boss.minion_timer % 2:
+            boss.spiral_angle += 15
+            b += [EnemyBullet(boss.x, y0, boss.spiral_angle + i * 30, "normal") for i in range(12)]
+        else:
+            a = aim(_Point(boss.x, y0), world.player)
+            b += [EnemyBullet(boss.x, y0, a + off, "blue_bullet") for off in (-10, 0, 10)]
+        if boss.minion_timer % 9 == 0 and sum(isinstance(e, ShadowKX) for e in world.enemies) < 2:
+            world.enemies.append(ShadowKX(world.hp_mult, rng.choice((2, 3)), row=rng.randint(0, 2), rng=rng))
+        return 30
+    if ratio > 0.33:
+        boss.spiral_angle += 9
+        for i in range(6):
+            bullet = EnemyBullet(boss.x, y0, boss.spiral_angle + i * 60, "blue_bullet")
+            bullet.dx *= 0.6
+            bullet.dy *= 0.6
+            b.append(bullet)
+        return 12
+    boss.spiral_angle += 11
+    b += [EnemyBullet(boss.x, y0, boss.spiral_angle + i * 22.5, "normal") for i in range(16)]
+    if boss.minion_timer % 3 == 0:
+        a = aim(_Point(boss.x, y0), world.player)
+        b += [EnemyBullet(boss.x, y0, a + off, "purple_laser") for off in (-6, 6)]
+    return 30
+
+
 def _inferno(world: World, boss: Boss, ratio: float) -> int:
     boss.spiral_angle += 20
     world.enemy_bullets.extend(EnemyBullet(boss.x, boss.y, boss.spiral_angle + i * 45, "normal") for i in range(8))
@@ -313,7 +360,7 @@ def _inferno(world: World, boss: Boss, ratio: float) -> int:
 BOSS_PATTERNS = {"crab": _crab, "octopus": _octopus, "spider": _spider, "nest": _nest,
                  "cruiser": _cruiser, "mothership": _mothership,
                  # Hồi IV - tạm mượn kiểu đánh có sẵn cho tới đợt làm cơ chế riêng
-                 "storm_eye": _storm_eye, "listener": _listener, "swarm_heart": _mothership}
+                 "storm_eye": _storm_eye, "listener": _listener, "swarm_heart": _swarm_heart}
 SHIELD_REGEN_KINDS = {"octopus", "spider", "cruiser", "mothership", "swarm_heart"}
 
 
@@ -341,7 +388,7 @@ def boss_attack(world: World, boss: Boss) -> None:
     else:
         pattern = BOSS_PATTERNS[boss.kind]
     cooldown = pattern(world, boss, ratio)
-    boss.attack_cooldown = _cooldown(world, cooldown * (0.5 if boss.raging else 1.0))
+    boss.attack_cooldown = _cooldown(world, cooldown * (0.5 if boss.raging else 1.0) / boss.fire_speed)
 
 
 def _decoy_tell(world: World) -> None:

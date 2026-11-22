@@ -15,7 +15,7 @@ from spaceship.ui.hud import format_time
 from spaceship.ui.menu_list import MenuList
 from spaceship.ui.widgets import (
     ACCENT, FRAME, LOCKED, MUTED, SECONDARY, SELECTED_FILL, TEXT, Button,
-    blit_center, dim, draw_back_hint, draw_lock, draw_panel, draw_star, fit_text,
+    blit_center, dim, draw_back_hint, draw_lock, draw_panel, draw_star, fit_text, wrap_text,
 )
 
 PANEL = pygame.Rect(20, 50, WIDTH - 40, 600)
@@ -320,7 +320,7 @@ class AchievementsScene(Scene):
         return totals.get(key)
 
     def _draw_badges(self, surface, a) -> None:
-        cols, gap = 3, 8
+        cols, gap = (4, 7) if len(achievements.ACHIEVEMENTS) > 21 else (3, 8)    # 24 huy hiệu: lưới 4 cột
         items = achievements.ACHIEVEMENTS
         rows = (len(items) + cols - 1) // cols
         w = (BADGE_AREA.width - gap * (cols - 1)) // cols
@@ -332,13 +332,14 @@ class AchievementsScene(Scene):
             got = item.key in earned
             draw_panel(surface, card, BADGE_COLOR if got else (40, 61, 76))
             color = BADGE_COLOR if got else LOCKED
-            center = (card.x + 30, card.centery)
+            narrow = cols >= 4
+            center = (card.x + (24 if narrow else 30), card.centery)
             if got:
                 glow.add(surface, glow.orb(glow.scale(BADGE_COLOR, 0.45), 16, core=0.0), center)
             draw_badge_icon(surface, item.icon, center, color)
             if not got:
                 draw_lock(surface, (center[0] + 15, center[1] + 15), MUTED)
-            tx = card.x + 60
+            tx = card.x + (46 if narrow else 60)
             width = card.right - 12 - tx
             # Thẻ thấp (7 hàng): ngày đạt / tiến độ nằm bên phải dòng tên, thanh tiến độ sát đáy thẻ.
             footer, progress = "", None
@@ -352,11 +353,20 @@ class AchievementsScene(Scene):
             if footer:
                 tag = a.text(footer, 10, BADGE_COLOR if got else MUTED, role="label")
                 tag_w = tag.get_width() + 6
-                surface.blit(tag, (card.right - 10 - tag.get_width(), card.y + 9))
-            name = fit_text(a, item.name, 15, TEXT if got else SECONDARY, width - tag_w, role="ui")
+                if narrow:                                   # lưới 4 cột: ngày / tiến độ xuống góc dưới phải
+                    surface.blit(tag, (card.right - 8 - tag.get_width(), card.bottom - 17))
+                    tag_w = 0
+                else:
+                    surface.blit(tag, (card.right - 10 - tag.get_width(), card.y + 9))
+            name = fit_text(a, item.name, 14 if narrow else 15, TEXT if got else SECONDARY, width - tag_w, role="ui")
             surface.blit(name, (tx, card.y + 5))
-            how = fit_text(a, item.how, 12, SECONDARY if got else MUTED, width, role="body")
-            surface.blit(how, (tx, card.y + 25))
+            if narrow:                                       # mô tả xuống 2 dòng thay vì co chữ thật nhỏ
+                rows = wrap_text(a, item.how, 11, width + 4, role="body")[:2]
+                for j, row in enumerate(rows):
+                    surface.blit(a.text(row, 11, SECONDARY if got else MUTED, role="body"), (tx, card.y + 24 + j * 13))
+            else:
+                how = fit_text(a, item.how, 12, SECONDARY if got else MUTED, width, role="body")
+                surface.blit(how, (tx, card.y + 25))
             if progress is not None:
                 bar = pygame.Rect(tx, card.bottom - 7, width, 3)
                 pygame.draw.rect(surface, (30, 38, 50), bar)

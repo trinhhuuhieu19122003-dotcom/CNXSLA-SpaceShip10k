@@ -176,7 +176,8 @@ class BestiaryView:
         self.selected = 0
         height = body.height - 44
         grid = pygame.Rect(body.x, body.y + 44, 424, height)
-        self.cards = _grid(grid, 3, (len(self.keys) + 2) // 3, 8, 8)[:len(self.keys)]
+        cols = 4 if len(self.keys) > 18 else 3                      # Hồi IV: 21 mục -> lưới 4 cột
+        self.cards = _grid(grid, cols, (len(self.keys) + cols - 1) // cols, 8, 8)[:len(self.keys)]
         x = grid.right + 16
         self.detail = pygame.Rect(x, grid.y, body.right - x, height)
         self._silhouettes: dict[tuple[str, int], pygame.Surface] = {}
