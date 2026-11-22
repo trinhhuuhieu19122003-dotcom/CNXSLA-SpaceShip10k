@@ -7,6 +7,7 @@ Quầng mờ được làm bằng cách thu nhỏ rồi phóng to lại ảnh (n
 """
 from __future__ import annotations
 
+import random
 from typing import Dict, Tuple
 
 import pygame
@@ -98,6 +99,89 @@ def beam(color: Color, width: int, length: int) -> pygame.Surface:
             pygame.draw.rect(s, scale(color, k), (cx - w // 2, 0, w, length))
         s = _blur(s, 3)
         pygame.draw.rect(s, (255, 255, 255), (cx - max(2, width // 5), 0, max(4, width * 2 // 5), length))
+        _cache[key] = s
+    return _cache[key]
+
+
+NOVA_BASE = 160          # bán kính gốc của ảnh vòng nổ; khi vẽ sẽ phóng theo bán kính thật
+
+
+def nova(color: Color) -> pygame.Surface:
+    """Đĩa nổ plasma: lòng sáng mờ, càng ra mép càng chói, quầng mờ bên ngoài (vẽ sẵn 1 lần)."""
+    key = ("nova", color)
+    if key not in _cache:
+        R = NOVA_BASE
+        pad = R // 5
+        size = 2 * (R + pad)
+        c = size // 2
+        s = pygame.Surface((size, size))
+        pygame.draw.circle(s, scale(color, 0.5), (c, c), R + pad // 2)          # quầng ngoài (sẽ được làm mờ)
+        for r in range(R, 0, -2):                                             # lòng: mờ ở giữa, sáng dần ra mép
+            t = r / R
+            pygame.draw.circle(s, scale(color, 0.14 + 0.86 * t ** 6), (c, c), r)
+        _cache[key] = _blur(s, 3)          # viền sắc được vẽ riêng mỗi khung (xem PlasmaNova.draw)
+    return _cache[key]
+
+
+def add_scaled(surface: pygame.Surface, texture: pygame.Surface, center, radius: int, k: float = 1.0,
+               base: int = NOVA_BASE, shrink: int = 4) -> None:
+    """Phóng ``texture`` (vẽ cho bán kính ``base``) tới ``radius`` rồi cộng sáng, nhân độ sáng ``k``.
+
+    Ảnh vốn rất mờ nên chỉ làm mượt ở 1/``shrink`` kích thước rồi phóng lên kiểu điểm ảnh (rẻ hơn hàng chục
+    lần, mắt không phân biệt được); chỉ phần nằm trong màn hình mới được phóng và dán."""
+    if radius <= 0 or k <= 0:
+        return
+    small = max(1, int(texture.get_width() * radius / base) // shrink)
+    img = pygame.transform.smoothscale(texture, (small, small))
+    if k < 0.99:
+        v = int(255 * max(0.0, min(1.0, k)))
+        img.fill((v, v, v), special_flags=pygame.BLEND_RGB_MULT)
+    size = small * shrink
+    left, top = int(center[0]) - size // 2, int(center[1]) - size // 2
+    visible = pygame.Rect(left, top, size, size).clip(surface.get_rect())
+    if visible.w <= 0 or visible.h <= 0:
+        return
+    x0, y0 = (visible.x - left) // shrink, (visible.y - top) // shrink
+    x1, y1 = -(-(visible.right - left) // shrink), -(-(visible.bottom - top) // shrink)
+    src = pygame.Rect(x0, y0, x1 - x0, y1 - y0).clip(img.get_rect())
+    if src.w <= 0 or src.h <= 0:
+        return
+    part = pygame.transform.scale(img.subsurface(src), (src.w * shrink, src.h * shrink))
+    surface.blit(part, (left + src.x * shrink, top + src.y * shrink), special_flags=pygame.BLEND_RGB_ADD)
+
+
+def tint(surface: pygame.Surface, color: Color) -> None:
+    """Ám màu cả màn bằng phép cộng sáng (dán một tấm màu đặc đã cache: nhanh hơn fill có cờ ~20 lần)."""
+    color = tuple(c // 4 * 4 for c in color)                 # làm tròn để cache ít tấm
+    if not any(color):
+        return
+    key = ("tint", surface.get_size(), color)
+    if key not in _cache:
+        solid = pygame.Surface(surface.get_size())
+        if pygame.display.get_surface() is not None:
+            solid = solid.convert()
+        solid.fill(color)
+        _cache[key] = solid
+    surface.blit(_cache[key], (0, 0), special_flags=pygame.BLEND_RGB_ADD)
+
+
+def storm_cloud(width: int, height: int) -> pygame.Surface:
+    """Mây giông phủ nửa trên màn: đen-xanh đậm ở mép trên, trong dần xuống dưới, có vài mảng mây."""
+    key = ("storm", width, height)
+    if key not in _cache:
+        s = pygame.Surface((width, height), pygame.SRCALPHA)
+        for y in range(height):
+            t = 1 - y / height
+            pygame.draw.line(s, (8, 10, 26, int(235 * t ** 1.6)), (0, y), (width, y))
+        lumps = pygame.Surface((width, height), pygame.SRCALPHA)
+        rng = random.Random(7)                                        # cố định: mây lần nào cũng giống nhau
+        for _ in range(26):
+            r = rng.randint(40, 90)
+            pygame.draw.circle(lumps, (14, 16, 34, rng.randint(50, 110)),
+                               (rng.randint(0, width), rng.randint(-20, int(height * 0.35))), r)
+        small = pygame.transform.smoothscale(lumps, (max(1, width // 8), max(1, height // 8)))
+        lumps = pygame.transform.smoothscale(small, (width, height))
+        s.blit(lumps, (0, 0))
         _cache[key] = s
     return _cache[key]
 

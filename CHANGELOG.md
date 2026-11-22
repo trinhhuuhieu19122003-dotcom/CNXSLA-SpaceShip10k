@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.2.1-dev] – Kỹ năng Nộ "ra dáng chiêu cuối", drone hộ vệ bay rộng
+- **Vòng Plasma**: tụ lực 0,3 giây (cầu plasma phình to, hạt sáng bị hút vào, vòng co lại) rồi nổ thành đĩa sáng
+  lan rộng có viền trắng nóng, thêm vòng dội thứ hai, màn ám xanh, địch trúng chớp trắng, khựng hình 3 tick.
+  Lúc tụ lực vẫn xóa đạn trong bán kính 90 quanh tàu (vẫn cứu nguy kịp). Sát thương giữ nguyên.
+- **Mưa Tên Lửa**: 0,4 giây khóa mục tiêu (vòng ngắm đỏ co lại trên tối đa 8 con, tiếng bíp), rồi 20 tên lửa
+  vàng-trắng to hơn, vệt lửa dài, phóng xen kẽ từ hai cánh như quạt mở; mỗi quả đuổi đúng con đã khóa và trúng đâu
+  nổ cam tới đó. Sát thương giữ nguyên.
+- **Bão Sét**: nửa trên màn tối sầm như mây giông (vẽ DƯỚI địch và đạn địch, không che đạn cần né), chớp lóe trong
+  mây; sét dày gần gấp đôi, tồn tại lâu hơn, chỗ đánh có quầng nổ + sóng xung kích, mỗi đợt rung mạnh.
+- Ám màu / chớp lóe theo mục "Rung & nháy" trong Tùy chọn (giảm = nhẹ hơn, tắt = không có).
+- **Drone hộ vệ** bay vòng rộng hơn (bán kính 66 → 100): không còn dính vào cánh tàu và drone tấn công.
+- Hiệu năng: tia sét chỉ vẽ lại khi rung (2 tick/lần) thay vì mỗi khung; đĩa nổ làm mượt ở 1/4 kích thước; ám màu
+  dán tấm màu đặc thay cho `fill` có cờ (~20 lần nhanh hơn). Lúc tung chiêu ở 1080p nhanh ngang hoặc hơn bản cũ.
+- 12 test mới (`tests/test_skills.py`); tổng 177.
+
 ## [2.2.0-dev] – Hồi IV · Nguồn Tín Hiệu (đợt 1: khung)
 - **5 ải mới (11–15)**, mở sau khi qua ải 10: Tiếng Vọng, Khoang Ngủ Đông, Giếng Trọng Lực, Tín Hiệu Câm, Trái Tim Đàn.
   Toàn bộ thoại mở đầu và thoại trong trận; địch tạm dùng loại có sẵn, cơ chế mới làm ở các đợt sau

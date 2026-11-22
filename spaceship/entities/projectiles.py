@@ -24,6 +24,7 @@ HOMING_TURN_SPEED = 16
 
 
 DRONE_BOLT_COLOR = (255, 170, 70)
+SKILL_MISSILE_COLOR = (255, 225, 120)      # tên lửa kỹ năng Nộ: vàng-trắng, khác tím của tên lửa thường
 
 
 class Bullet:
@@ -36,6 +37,7 @@ class Bullet:
         self.timer = 0
         self.trail: list = []
         self.hit_ids: set = set()      # địch đã bị tia xuyên thấu trúng (mỗi địch 1 lần)
+        self.target_id: Optional[int] = None   # tên lửa kỹ năng Nộ: đuổi đúng con đã khóa (nếu còn sống)
         speed = PIERCING_LASER_SPEED if self.is_piercing_laser else BULLET_SPEED.get(kind, 15)
         rad = math.radians(angle if angle is not None else 90)
         self.dx = math.cos(rad) * speed
@@ -46,6 +48,11 @@ class Bullet:
     @property
     def is_piercing_laser(self) -> bool:
         return self.kind == "laser" and self.level == 6
+
+    @property
+    def is_skill_missile(self) -> bool:
+        """Tên lửa của MƯA TÊN LỬA (kỹ năng Nộ): có sát thương riêng, vẽ to và vàng hơn tên lửa thường."""
+        return self.kind == "homing" and self.damage is not None
 
     @property
     def pierces(self) -> bool:
@@ -66,7 +73,7 @@ class Bullet:
             self.y -= self.vy
             return
         self.trail.append((self.x, self.y))
-        if len(self.trail) > (8 if self.level == 6 else 5):
+        if len(self.trail) > (12 if self.is_skill_missile else 8 if self.level == 6 else 5):
             self.trail.pop(0)
         if self.level == 6 and self.timer < 12:      # bung xoắn ốc trước khi đuổi mục tiêu
             radius = self.timer * 4
@@ -74,8 +81,11 @@ class Bullet:
             self.x = self.start_x + math.cos(ang) * radius
             self.y = self.start_y - math.sin(ang) * radius
             return
-        if enemies and self.timer > 10:
-            target = min(enemies, key=lambda e: math.hypot(e.x - self.x, e.y - self.y))
+        if enemies and self.timer > (6 if self.is_skill_missile else 10):
+            target = next((e for e in enemies if e.id == self.target_id and not e.dead), None) \
+                if self.target_id is not None else None
+            if target is None:
+                target = min(enemies, key=lambda e: math.hypot(e.x - self.x, e.y - self.y))
             ang = math.atan2(target.y - self.y, target.x - self.x)
             self.dx = math.cos(ang) * HOMING_TURN_SPEED
             self.vy = -math.sin(ang) * HOMING_TURN_SPEED
@@ -115,6 +125,9 @@ class Bullet:
         glow.add(surface, glow.orb(glow.scale(LASER_COLOR, 0.8), 4, core=0.7), (self.x, self.y - 20))
 
     def _draw_homing(self, surface: pygame.Surface) -> None:
+        if self.is_skill_missile:
+            self._draw_skill_missile(surface)
+            return
         big = self.level == 6
         for i, (tx, ty) in enumerate(self.trail):                 # vệt khói sáng
             k = (i + 1) / (len(self.trail) + 1)
@@ -130,6 +143,24 @@ class Bullet:
         pygame.draw.polygon(surface, (60, 20, 90), [nose, left, right])
         pygame.draw.polygon(surface, HOMING_COLOR, [nose, left, right], 2)
         glow.add(surface, glow.orb(HOMING_COLOR, 3, core=1.0, halo=1.0), nose)
+
+    def _draw_skill_missile(self, surface: pygame.Surface) -> None:
+        """Tên lửa kỹ năng Nộ: thân vàng-trắng to gấp rưỡi, vệt khói lửa dài, đuôi phụt cam."""
+        n = len(self.trail)
+        for i, (tx, ty) in enumerate(self.trail):                 # vệt khói: đầu vàng cam, đuôi đỏ sẫm mờ
+            k = (i + 1) / (n + 1)
+            glow.add(surface, glow.orb((int(255 * k), int(150 * k * k), int(40 * k)), 3 + int(5 * k),
+                                       core=0.0, halo=0.8), (tx, ty))
+        ang = math.atan2(-self.vy, self.dx)
+        length, w = 20, 7
+        nose = (self.x + math.cos(ang) * length, self.y + math.sin(ang) * length)
+        left = (self.x + math.cos(ang + 2.5) * w, self.y + math.sin(ang + 2.5) * w)
+        right = (self.x + math.cos(ang - 2.5) * w, self.y + math.sin(ang - 2.5) * w)
+        tail = (self.x - math.cos(ang) * 5, self.y - math.sin(ang) * 5)
+        glow.add(surface, glow.orb((255, 150, 50), 7 + (self.timer % 3), core=0.7, halo=1.4), tail)
+        pygame.draw.polygon(surface, (90, 60, 10), [nose, left, right])
+        pygame.draw.polygon(surface, SKILL_MISSILE_COLOR, [nose, left, right], 2)
+        glow.add(surface, glow.orb(SKILL_MISSILE_COLOR, 4, core=1.0, halo=1.2), nose)
 
     def _draw_drone_bolt(self, surface: pygame.Surface) -> None:
         """Đạn drone: mũi kim sáng màu cam, hướng theo đường bay."""

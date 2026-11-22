@@ -148,6 +148,8 @@ def resolve_player_bullets(world: World) -> None:
                     dmg = min(50, config.WEAPON_BASE_DAMAGE.get(bullet.kind, 6) + player.bonus_damage)
                 damage_enemy(world, enemy, dmg, crit=bullet.kind == "plasma", gain_rage=not skill_shot)
                 world.sparks(bullet.x, bullet.y, HIT_SPARK.get(bullet.kind, NEON_CYAN), 4)
+                if skill_shot:                                   # tên lửa Nộ: trúng đâu nổ cam tới đó
+                    world.explode(bullet.x, bullet.y, 0.6)
                 if bullet.kind == "plasma" and bullet.level == 6:
                     _splash(world, bullet.x, bullet.y, dmg, enemy.id)
                 break

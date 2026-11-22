@@ -2,10 +2,10 @@
 
 | Súng | Vai trò | Cấp 6 (tối thượng) | Kỹ năng Nộ |
 |---|---|---|---|
-| Plasma | Quét đông | Đạn nổ lan | VÒNG PLASMA: vòng nổ quanh tàu, xóa đạn địch |
+| Plasma | Quét đông | Đạn nổ lan | VÒNG PLASMA: tụ lực rồi nổ đĩa sáng quanh tàu, xóa đạn địch |
 | Laser | Diệt boss | Tia xuyên thấu liền mạch | ĐẠI PHÁO: tia khổng lồ 3 giây |
-| Homing | An toàn, tự đuổi | 7 tên lửa xoắn ốc | MƯA TÊN LỬA: 20 tên lửa |
-| Tia Sét | Nhảy dây chuyền | Nhảy 8 mục tiêu | BÃO SÉT: sét đánh mọi địch 3 lần |
+| Homing | An toàn, tự đuổi | 7 tên lửa xoắn ốc | MƯA TÊN LỬA: khóa mục tiêu rồi 20 tên lửa từ 2 cánh |
+| Tia Sét | Nhảy dây chuyền | Nhảy 8 mục tiêu | BÃO SÉT: trời tối sầm, sét đánh mọi địch 3 lần |
 """
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ import pygame
 
 from spaceship import config
 from spaceship.config import HEIGHT, LASER_COLOR, PLASMA_COLOR
+from spaceship.entities.effects import Flash, Shockwave
 from spaceship.entities.projectiles import Bullet
 from spaceship.systems import combat
 from spaceship.systems.world import World
@@ -53,6 +54,7 @@ class LightningArc:
         self.points, self.color, self.width, self.impact = list(points), color, width, impact
         self.life = self.max_life = life
         self.forks = self._make_forks()
+        self._baked = None            # (khóa, quầng, lõi, toạ độ): chỉ vẽ lại khi tia rung hoặc mờ thêm 1 nấc
 
     def _make_forks(self) -> list:
         forks = []
@@ -79,13 +81,25 @@ class LightningArc:
 
     def draw(self, surface: pygame.Surface) -> None:
         k = self.life / self.max_life
+        key = (len(self.points) and self.points[1], math.ceil(k * 5))    # đổi khi rung (2 tick) / mờ 1 nấc
+        if self._baked is None or self._baked[0] != key:
+            self._baked = (key,) + (self._bake(math.ceil(k * 5) / 5) or (None, None, None))
+        _, halo, core, pos = self._baked
+        if halo is not None:
+            surface.blit(halo, pos, special_flags=pygame.BLEND_RGB_ADD)
+            surface.blit(core, pos, special_flags=pygame.BLEND_RGB_ADD)
+        if self.impact:
+            glow.add(surface, glow.orb(glow.scale(self.color, k), max(4, int(12 * k)), core=0.6), self.points[-1])
+        glow.add(surface, glow.orb(glow.scale(LIGHTNING_EDGE, 0.8 * k), 5, core=0.6), self.points[0])
+
+    def _bake(self, k: float):
         lines = [self.points] + self.forks
         xs = [x for line in lines for x, _ in line]
         ys = [y for line in lines for _, y in line]
         left, top = int(min(xs)) - self.PAD, int(min(ys)) - self.PAD
         size = (int(max(xs)) - left + self.PAD, int(max(ys)) - top + self.PAD)
         if size[0] <= 0 or size[1] <= 0 or size[0] * size[1] > 400_000:
-            return
+            return None
         shift = [[(x - left, y - top) for x, y in line] for line in lines]
         halo = pygame.Surface(size)
         w = self.width
@@ -99,11 +113,7 @@ class LightningArc:
         for fork in shift[1:]:
             pygame.draw.lines(core, glow.scale(LIGHTNING_EDGE, k), False, fork, 3)
             pygame.draw.lines(core, glow.scale((255, 255, 255), 0.85 * k), False, fork, 1)
-        surface.blit(halo, (left, top), special_flags=pygame.BLEND_RGB_ADD)
-        surface.blit(core, (left, top), special_flags=pygame.BLEND_RGB_ADD)
-        if self.impact:
-            glow.add(surface, glow.orb(glow.scale(self.color, k), max(4, int(12 * k)), core=0.6), self.points[-1])
-        glow.add(surface, glow.orb(glow.scale(LIGHTNING_EDGE, 0.8 * k), 5, core=0.6), self.points[0])
+        return halo, core, (left, top)
 
 
 def strike_chain(world: World, origin, damage: float, jumps: int, reach: float) -> int:
@@ -178,6 +188,9 @@ def fire_player(world: World) -> bool:
 
 
 # --- Kỹ năng Nộ --------------------------------------------------------------------------------
+# Công thức "chiêu cuối" (học từ ĐẠI PHÁO): phủ vùng lớn + phát sáng cộng màu + kéo dài đủ lâu + rung liên tục.
+# Mỗi kỹ năng có 2 lớp vẽ: ``draw_back`` (dưới địch/đạn địch, vd. mây giông) và ``draw`` (trên cùng).
+# ``fx`` = mức "Rung & nháy" trong Tùy chọn (1 đầy đủ, 0.5 giảm, 0 tắt): chỉ áp cho chớp/ám màu.
 class Skill:
     ticks = 60
 
@@ -191,7 +204,10 @@ class Skill:
     def update(self, world: World) -> None:
         self.t += 1
 
-    def draw(self, surface: pygame.Surface, world: World) -> None:
+    def draw_back(self, surface: pygame.Surface, world: World, fx: float = 1.0) -> None:
+        pass
+
+    def draw(self, surface: pygame.Surface, world: World, fx: float = 1.0) -> None:
         pass
 
 
@@ -213,7 +229,7 @@ class LaserCannon(Skill):
         if self.t % 4 == 0:
             world.shake(4)
 
-    def draw(self, surface: pygame.Surface, world: World) -> None:
+    def draw(self, surface: pygame.Surface, world: World, fx: float = 1.0) -> None:
         p = world.player
         top = int(p.y) - 30
         if top <= 0:
@@ -228,67 +244,223 @@ class LaserCannon(Skill):
         glow.add(surface, glow.orb(LASER_COLOR, 30, core=0.6), (p.x, top))
 
 
+def _ease_out(x: float) -> float:
+    x = max(0.0, min(1.0, x))
+    return 1 - (1 - x) ** 2
+
+
+def _tint(surface: pygame.Surface, color, k: float) -> None:
+    """Ám màu cả màn (cộng sáng) - dùng cho chớp xanh plasma / chớp sét."""
+    if k > 0:
+        glow.tint(surface, glow.scale(color, k))
+
+
 class PlasmaNova(Skill):
-    """VÒNG PLASMA: vòng nổ lan rộng quanh tàu, mỗi địch trúng một lần, xóa sạch đạn địch."""
-    ticks = 40
+    """VÒNG PLASMA: tụ lực 0,3 giây (cầu plasma phình to, hạt sáng bị hút vào) rồi NỔ: đĩa sáng lan rộng
+    quanh tàu + vòng dội thứ hai, mỗi địch trúng một lần, xóa sạch đạn địch. Lúc tụ lực vẫn có một vòng
+    nhỏ quanh tàu xóa đạn, để chiêu này vẫn cứu nguy kịp như trước."""
+    CHARGE = 18                    # tụ lực
+    EXPAND = 30                    # vòng lan tới bán kính tối đa
+    ECHO_DELAY = 8                 # vòng dội chạy sau
+    ticks = CHARGE + 52
+    CHARGE_GUARD = 90              # bán kính xóa đạn quanh tàu lúc đang tụ lực
 
     def __init__(self, world: World) -> None:
         super().__init__(world)
         self.cx, self.cy = world.player.x, world.player.y
         self.hit = set()
-        world.flash = 4
+
+    @property
+    def charging(self) -> bool:
+        return self.t < self.CHARGE
 
     @property
     def radius(self) -> float:
-        return config.SKILL_PLASMA_RADIUS * min(1.0, self.t / 30)
+        return config.SKILL_PLASMA_RADIUS * _ease_out((self.t - self.CHARGE) / self.EXPAND)
+
+    @property
+    def echo_radius(self) -> float:
+        return config.SKILL_PLASMA_RADIUS * 0.92 * _ease_out((self.t - self.CHARGE - self.ECHO_DELAY) / (self.EXPAND + 6))
 
     def update(self, world: World) -> None:
         super().update(world)
+        p = world.player
+        if self.charging:                                        # tụ lực: bám theo tàu
+            self.cx, self.cy = p.x, p.y
+            world.enemy_bullets[:] = [b for b in world.enemy_bullets
+                                      if math.hypot(b.x - p.x, b.y - p.y) > self.CHARGE_GUARD]
+            if self.t % 3 == 0:
+                world.shake(2)
+            return
+        if self.t == self.CHARGE:                                # NỔ
+            world.flash = 4
+            world.shake(14)
+            world.freeze(3)
+            world.particles.append(Flash(self.cx, self.cy, PLASMA_COLOR, radius=60, life=14))
         r = self.radius
         for e in world.enemies:
             if e.id not in self.hit and math.hypot(e.x - self.cx, e.y - self.cy) < r + e.radius:
                 self.hit.add(e.id)
                 combat.damage_enemy(world, e, config.SKILL_PLASMA_DAMAGE, crit=True, gain_rage=False)
                 world.sparks(e.x, e.y, PLASMA_COLOR, 6)
+                world.particles.append(Flash(e.x, e.y, (190, 235, 255), radius=24, life=10))
         world.enemy_bullets[:] = [b for b in world.enemy_bullets if math.hypot(b.x - self.cx, b.y - self.cy) > r]
 
-    def draw(self, surface: pygame.Surface, world: World) -> None:
+    def draw(self, surface: pygame.Surface, world: World, fx: float = 1.0) -> None:
+        if self.charging:
+            self._draw_charge(surface, world)
+            return
+        since = self.t - self.CHARGE
+        fade = min(1.0, (self.ticks - self.t) / 22)              # mờ dần ở cuối
+        if since < 16:                                            # ám xanh cả màn lúc vừa nổ
+            _tint(surface, (0, 40, 70), (1 - since / 16) * fx)
         r = int(self.radius)
-        k = 1 - self.t / self.ticks
-        for width, c in ((14, glow.scale(PLASMA_COLOR, 0.35 * k)), (6, glow.scale(PLASMA_COLOR, k)),
-                         (2, glow.scale((255, 255, 255), k))):
-            if r > width:
-                pygame.draw.circle(surface, c, (int(self.cx), int(self.cy)), r, width)
+        if r > 8:
+            center = (int(self.cx), int(self.cy))
+            glow.add_scaled(surface, glow.nova(PLASMA_COLOR), center, r, 0.95 * fade)
+            pygame.draw.circle(surface, glow.scale(PLASMA_COLOR, fade), center, r, 5)          # viền sắc
+            pygame.draw.circle(surface, glow.scale((255, 255, 255), fade), center, r - 1, 2)   # lõi trắng nóng
+        er = int(self.echo_radius)
+        if er > 8:
+            k = fade * 0.8
+            pygame.draw.circle(surface, glow.scale(PLASMA_COLOR, 0.45 * k), (int(self.cx), int(self.cy)), er, 9)
+            pygame.draw.circle(surface, glow.scale((210, 245, 255), k), (int(self.cx), int(self.cy)), er, 2)
+
+    def _draw_charge(self, surface: pygame.Surface, world: World) -> None:
+        p = world.player
+        k = self.t / self.CHARGE                                  # 0 -> 1
+        glow.add(surface, glow.orb(PLASMA_COLOR, 10 + int(26 * k) // 2 * 2, core=0.55, halo=1.3), (p.x, p.y))
+        ring = int(150 * (1 - k)) + 20                            # vòng co dần vào tàu
+        pygame.draw.circle(surface, glow.scale(PLASMA_COLOR, 0.4 + 0.6 * k), (int(p.x), int(p.y)), ring, 3)
+        for i in range(12):                                       # hạt sáng bị hút vào tâm
+            ang = math.radians(i * 30 + self.t * 9)
+            dist = 30 + 130 * (1 - k) * (0.7 + 0.3 * ((i * 7) % 5) / 4)
+            glow.add(surface, glow.orb((170, 230, 255), 3, core=0.8, halo=0.8),
+                     (p.x + math.cos(ang) * dist, p.y + math.sin(ang) * dist))
 
 
 class MissileRain(Skill):
-    """MƯA TÊN LỬA: phóng 20 tên lửa tự đuổi trong nửa giây."""
-    ticks = 30
+    """MƯA TÊN LỬA: 0,4 giây khóa mục tiêu (vòng ngắm đỏ co lại trên từng con, kêu "bíp"), rồi phóng
+    20 tên lửa vàng từ hai bên cánh như quạt mở, chia đều cho các mục tiêu đã khóa; trúng đâu nổ cam tới đó."""
+    LOCK = 24
+    MISSILES = config.SKILL_HOMING_MISSILES
+    MAX_LOCKS = 8
+    ticks = LOCK + MISSILES + 14
+
+    def __init__(self, world: World) -> None:
+        super().__init__(world)
+        self.locks: List[int] = []
+        self._lock_targets(world)
+        world.play("lock_on")
+
+    def _lock_targets(self, world: World) -> None:
+        p = world.player
+        visible = [e for e in world.enemies if e.y > 0 and not e.dead and not e.is_obstacle]
+        visible.sort(key=lambda e: math.hypot(e.x - p.x, e.y - p.y))
+        self.locks = [e.id for e in visible[:self.MAX_LOCKS]]
 
     def update(self, world: World) -> None:
         super().update(world)
+        if self.t == self.LOCK and not self.locks:                # lúc bật chưa có ai: khóa lại lần nữa
+            self._lock_targets(world)
+        i = self.t - self.LOCK
+        if not 0 <= i < self.MISSILES:
+            return
         p = world.player
-        if self.t <= 20:
-            angle = 30 + (self.t * 37) % 120
-            world.bullets.append(Bullet(p.x, p.y - 10, "homing", angle=angle, level=3,
-                                        damage=config.SKILL_HOMING_DAMAGE))
+        side = -1 if i % 2 == 0 else 1                            # xen kẽ cánh trái / cánh phải
+        spread = 12 + (i // 2) * 7                                # quạt mở dần ra
+        missile = Bullet(p.x + side * 34, p.y + 4, "homing", angle=90 - side * spread, level=3,
+                         damage=config.SKILL_HOMING_DAMAGE)
+        if self.locks:
+            missile.target_id = self.locks[i % len(self.locks)]
+        world.bullets.append(missile)
+        world.sparks(p.x + side * 34, p.y + 4, (255, 210, 120), 2)
+        if i % 3 == 0:
+            world.shake(3)
+
+    def draw(self, surface: pygame.Surface, world: World, fx: float = 1.0) -> None:
+        alive = {e.id: e for e in world.enemies if not e.dead}
+        k = min(1.0, self.t / self.LOCK)
+        blink = (self.t // 3) % 2 == 0
+        for eid in self.locks:
+            e = alive.get(eid)
+            if e is None:
+                continue
+            base = e.radius + 10
+            r = int(base + 46 * (1 - k))                          # vòng ngắm co lại dần
+            color = LOCK_COLOR if (k < 1 or blink) else (255, 230, 120)
+            cx, cy = int(e.x), int(e.y)
+            pygame.draw.circle(surface, glow.scale(color, 0.35), (cx, cy), r + 2, 5)
+            pygame.draw.circle(surface, color, (cx, cy), r, 2)
+            for a in range(4):                                    # 4 vạch ngắm
+                ang = math.radians(a * 90 + 45 + (1 - k) * 90)
+                inner, outer = r - 6, r + 10
+                pygame.draw.line(surface, color, (cx + math.cos(ang) * inner, cy + math.sin(ang) * inner),
+                                 (cx + math.cos(ang) * outer, cy + math.sin(ang) * outer), 2)
+            if k >= 1:
+                glow.add(surface, glow.orb(glow.scale(LOCK_COLOR, 0.8), 4, core=0.8), (cx, cy))
 
 
 class LightningStorm(Skill):
-    """BÃO SÉT: sét từ trên trời giáng xuống MỌI địch trên màn, 3 đợt."""
-    ticks = 50
+    """BÃO SÉT: trời tối sầm (mây giông chớp lóe phía trên), rồi 3 đợt sét dày giáng xuống MỌI địch trên màn;
+    chỗ sét đánh có quầng nổ vàng, mỗi đợt màn chớp và rung mạnh."""
+    GATHER = 12
+    STRIKES = (12, 30, 48)
+    ticks = 72
+
+    def __init__(self, world: World) -> None:
+        super().__init__(world)
+        self.flickers: list = []                                   # chớp trong mây: [x, y, r, life]
+
+    @property
+    def darkness(self) -> float:
+        """0..1: tối dần lúc tụ mây, giữ, rồi sáng lại ở cuối."""
+        return min(1.0, self.t / self.GATHER, (self.ticks - self.t) / 16)
 
     def update(self, world: World) -> None:
         super().update(world)
-        if self.t not in (1, 20, 40):
+        for f in self.flickers:
+            f[3] -= 1
+        self.flickers = [f for f in self.flickers if f[3] > 0]
+        if random.random() < 0.35:                                 # chỉ để vẽ: dùng random riêng, không đụng RNG trận
+            self.flickers.append([random.uniform(40, config.WIDTH - 40), random.uniform(10, 120),
+                                  random.choice((22, 30, 38)), 5])
+        if self.t not in self.STRIKES:
             return
-        world.flash = 2
+        world.flash = 3
+        world.shake(9)
         for e in list(world.enemies):
             if e.y < -20:
                 continue
             top = (e.x + world.rng.uniform(-60, 60), 0)
-            world.particles.append(LightningArc(_jagged(top, (e.x, e.y), world.rng, 9, 22), life=10, width=4))
+            world.particles.append(LightningArc(_jagged(top, (e.x, e.y), world.rng, 10, 24), life=16, width=7))
+            world.particles.append(Flash(e.x, e.y, LIGHTNING_COLOR, radius=33, life=12))
+            world.particles.append(Shockwave(e.x, e.y, LIGHTNING_COLOR, max_radius=55, life=14))
             combat.damage_enemy(world, e, config.SKILL_LIGHTNING_DAMAGE, crit=True, gain_rage=False)
+
+    def draw_back(self, surface: pygame.Surface, world: World, fx: float = 1.0) -> None:
+        d = self.darkness
+        if d <= 0:
+            return
+        cloud = glow.storm_cloud(surface.get_width(), int(surface.get_height() * 0.62))
+        cloud.set_alpha(int(210 * d))
+        surface.blit(cloud, (0, 0))
+        if fx <= 0:
+            return
+        for x, y, r, life in self.flickers:                        # chớp lóe trong mây: một dải đốm sáng ngang
+            k = life / 5 * 0.45 * d * fx
+            color = glow.scale(STORM_FLICKER, k)
+            for dx, size in ((-r, 10), (0, 16), (r, 12)):
+                glow.add(surface, glow.orb(color, size, core=0.0, halo=1.5), (x + dx, y + (dx % 7) - 3))
+
+    def draw(self, surface: pygame.Surface, world: World, fx: float = 1.0) -> None:
+        since = min((self.t - s for s in self.STRIKES if self.t >= s), default=99)
+        if since < 6:                                              # chớp vàng nhạt mỗi đợt sét
+            _tint(surface, (36, 32, 10), (1 - since / 6) * fx)
+
+
+LOCK_COLOR = (255, 70, 70)
+STORM_FLICKER = (150, 175, 255)
 
 
 SKILLS = {"laser": LaserCannon, "plasma": PlasmaNova, "homing": MissileRain, "lightning": LightningStorm}
@@ -315,7 +487,13 @@ def update_skills(world: World) -> None:
     world.skills[:] = [s for s in world.skills if s.alive]
 
 
-def draw_skills(surface: pygame.Surface, world: World) -> None:
+def draw_skills_back(surface: pygame.Surface, world: World, fx: float = 1.0) -> None:
+    """Lớp dưới của kỹ năng (vẽ ngay sau nền, trước địch và đạn địch - không che đạn cần né)."""
     for skill in world.skills:
-        skill.draw(surface, world)
+        skill.draw_back(surface, world, fx)
+
+
+def draw_skills(surface: pygame.Surface, world: World, fx: float = 1.0) -> None:
+    for skill in world.skills:
+        skill.draw(surface, world, fx)
 

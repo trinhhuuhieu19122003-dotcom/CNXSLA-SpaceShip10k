@@ -416,6 +416,7 @@ class GameplayScene(Scene):
         w, assets = self.world, self.game.assets
         self._draw_background(surface)
         self.game.starfield.draw(surface, inferno=self.mode is GameMode.INFERNO)
+        weapons.draw_skills_back(surface, w, self.fx_scale)
         for item in w.items:
             item.draw(surface, assets, w.player.weapon)
         for particle in w.particles:
@@ -428,7 +429,7 @@ class GameplayScene(Scene):
             self.fog.draw(surface)
         for bullet in w.enemy_bullets:               # đạn địch vẽ SAU sương mù: luôn nhìn thấy để né
             bullet.draw(surface)
-        weapons.draw_skills(surface, w)
+        weapons.draw_skills(surface, w, self.fx_scale)
         for number in w.damage_numbers:
             number.draw(surface, assets)
         if not self.finished or w.outcome == "victory":
