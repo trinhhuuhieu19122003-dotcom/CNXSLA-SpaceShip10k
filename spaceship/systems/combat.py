@@ -213,12 +213,20 @@ def resolve_player_bullets(world: World) -> None:
 def resolve_enemy_bullets(world: World) -> None:
     player = world.player
     obstacles = [e for e in world.enemies if e.is_obstacle]
+    # Ải hộ tống: thân tàu (không chỉ điểm va chạm) che đạn cho tàu cứu sinh - chạm thân là đạn tan,
+    # kể cả lúc đang bất tử; chỉ trúng điểm va chạm khi không bất tử mới mất máu như thường.
+    cover = getattr(world.mechanic, "body_cover", False)
     for bullet in list(world.enemy_bullets):
         if obstacles and any(o.contains(bullet.x, bullet.y) for o in obstacles):   # núp sau xác tàu
             world.enemy_bullets.remove(bullet)
             world.sparks(bullet.x, bullet.y, (200, 200, 200), 2)
             continue
         dist = math.hypot(player.x - bullet.x, player.y - bullet.y)
+        if cover and dist < PLAYER_BODY_RADIUS and not player.shield_active and \
+                (dist >= PLAYER_BULLET_RADIUS or player.invincible_timer > 0):
+            world.enemy_bullets.remove(bullet)
+            world.sparks(bullet.x, bullet.y, (200, 230, 255), 3)
+            continue
         if dist >= PLAYER_BULLET_RADIUS:
             if dist < config.GRAZE_RADIUS and not bullet.grazed and player.invincible_timer <= 0:
                 _graze(world, bullet)

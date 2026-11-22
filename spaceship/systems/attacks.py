@@ -305,7 +305,7 @@ def run_enemy_ai(world: World) -> None:
             enemy.hit_flash -= 1
         if enemy.hp_bar_timer > 0:
             enemy.hp_bar_timer -= 1
-        enemy.update(world.player)
+        enemy.update(world.mechanic.target_for(world, enemy) if world.mechanic is not None else world.player)
         if getattr(enemy, "just_locked", False):
             world.play("lock_on")                     # kamikaze khóa mục tiêu: bíp cảnh báo
         if enemy.is_boss:

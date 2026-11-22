@@ -84,6 +84,8 @@ class GameplayScene(Scene):
             self.world.difficulty = 2.0
         radio = RADIO.get(self.level_number) if self.level is not None else None
         self.director = create_director(mode, self.level, radio)
+        self.mechanic = getattr(self.director, "mechanic", None)   # cơ chế riêng Hồi IV (None ở ải thường)
+        self.world.mechanic = self.mechanic
         self.background = self.level.background if self.level is not None else DEFAULT_BACKGROUND.get(mode, "bg_act1")
         self.bg_offset = 0.0
         self.fog = Fog(game.rng) if self.level is not None and self.level.fog else None
@@ -338,7 +340,10 @@ class GameplayScene(Scene):
 
     @property
     def stars(self) -> int:
-        """1 sao: qua ải · 2 sao: mất tối đa 1 mạng · 3 sao: không mất mạng nào."""
+        """1 sao: qua ải · 2 sao: mất tối đa 1 mạng · 3 sao: không mất mạng nào (ải 12: theo số người cứu)."""
+        special = self.mechanic.stars(self.world) if self.mechanic is not None else None
+        if special is not None:
+            return special
         lost = self.world.lives_lost
         return 3 if lost == 0 else (2 if lost <= 1 else 1)
 
@@ -358,6 +363,10 @@ class GameplayScene(Scene):
         game = self.game
         stars = self.stars if victory and self.level is not None else 0
         if victory and self.level is not None:
+            rescued = getattr(self.mechanic, "rescued", None)
+            if rescued is not None:                                 # ải 12: nhớ số người cứu cho đoạn kết thật
+                game.save.rescued = rescued
+                self.run.rescued = rescued
             game.save.record_level(self.level_number, stars, LEVEL_COUNT, MAIN_LEVELS)
         self._record_achievements(victory and self.level is not None, stars)
         if self.level is None:
@@ -373,7 +382,7 @@ class GameplayScene(Scene):
                                             backdrop="ending", title="KẾT THÚC",
                                             music="ending"))
         elif victory and self.level_number == LEVEL_COUNT:        # Hồi IV xong -> kết thúc thật
-            game.change_scene(CutsceneScene(game, make_script(story.TRUE_ENDING),
+            game.change_scene(CutsceneScene(game, make_script(story.true_ending(game.save.rescued)),
                                             lambda: result_scene(ending="true"),
                                             backdrop="ending", title="KẾT THÚC THẬT", music="ending"))
         else:
@@ -419,6 +428,8 @@ class GameplayScene(Scene):
         self._draw_background(surface)
         self.game.starfield.draw(surface, inferno=self.mode is GameMode.INFERNO)
         weapons.draw_skills_back(surface, w, self.fx_scale)
+        if self.mechanic is not None:
+            self.mechanic.draw_back(surface, w, assets, self.fx_scale)
         for item in w.items:
             item.draw(surface, assets, w.player.weapon)
         for particle in w.particles:
@@ -427,6 +438,8 @@ class GameplayScene(Scene):
             bullet.draw(surface)
         for enemy in w.enemies:
             enemy.draw(surface, assets)
+        if self.mechanic is not None:
+            self.mechanic.draw_front(surface, w, assets, self.fx_scale)
         if self.fog is not None:
             self.fog.draw(surface)
         for bullet in w.enemy_bullets:               # đạn địch vẽ SAU sương mù: luôn nhìn thấy để né
@@ -436,6 +449,8 @@ class GameplayScene(Scene):
             number.draw(surface, assets)
         if not self.finished or w.outcome == "victory":
             w.player.draw(surface, assets)
+        if self.mechanic is not None:
+            self.mechanic.draw_overlay(surface, w, assets, self.fx_scale)
         feel.draw_vignette(surface, w, self.fx_scale)   # trước HUD: chữ trên HUD không bị nhuộm đỏ
         if self.game.wide_layout:                    # HUD nằm ở 2 bảng bên; chiến trường chỉ giữ thanh boss
             draw_boss_bar(surface, assets, w, y=30)

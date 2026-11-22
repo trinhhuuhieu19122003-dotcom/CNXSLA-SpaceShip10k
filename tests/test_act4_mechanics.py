@@ -98,3 +98,122 @@ class ShadowKXTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class EscortTest(unittest.TestCase):
+    def setUp(self):
+        from spaceship.systems.spawning import LevelDirector
+        self.w = world(12)
+        self.d = LevelDirector(self.w.level)
+        self.d.intro_timer = 0
+        self.m = self.d.mechanic
+        self.w.mechanic = self.m
+
+    def test_level_12_has_escort_and_one_boat_per_wave(self):
+        from spaceship.systems.mechanics import Escort
+        self.assertIsInstance(self.m, Escort)
+        for i in range(4):
+            spawned(12, i, self.w)
+        self.assertEqual(self.m.launched, 4)
+
+    def test_boat_crosses_and_is_saved(self):
+        from spaceship.systems.mechanics import LIFEBOAT_CREW
+        self.m.launch(self.w)
+        for _ in range(1200):
+            self.m.update(self.w)
+        self.assertEqual(self.m.rescued, LIFEBOAT_CREW)
+        self.assertEqual(self.m.boats, [])
+
+    def test_bullets_and_rams_hurt_then_lose_crew(self):
+        from spaceship.entities.projectiles import EnemyBullet
+        from spaceship.entities.enemies import Enemy
+        self.m.launch(self.w)
+        boat = self.m.boats[0]
+        boat.x = 300
+        self.w.enemy_bullets.append(EnemyBullet(boat.x, boat.y, 90))
+        self.m.update(self.w)
+        self.assertEqual(boat.hp, 100 - 15)
+        e = Enemy(1.0, kamikaze_chance=0)
+        e.x, e.y = boat.x + 0.8, boat.y
+        self.w.enemies.append(e)
+        self.m.update(self.w)
+        self.assertEqual(boat.hp, 100 - 15 - 30)
+        self.assertNotIn(e, self.w.enemies)
+        self.assertEqual(self.w.score, 0)                       # đâm vào nhau: không được điểm
+        boat.hp = 1
+        self.w.enemy_bullets.append(EnemyBullet(boat.x, boat.y, 90))
+        self.m.update(self.w)
+        self.assertEqual(self.m.lost, 1)
+        self.assertTrue(any("Mất chiếc số 1" in line.text for line in self.w.radio))
+
+    def test_losing_all_four_is_defeat(self):
+        for _ in range(4):
+            self.m.launch(self.w)
+        for boat in self.m.boats:
+            boat.x, boat.hp = 300, 0
+        self.m.update(self.w)
+        self.assertEqual(self.w.outcome, "defeat")
+
+    def test_stars_by_people_saved(self):
+        for rescued, stars in ((10, 1), (20, 1), (30, 2), (40, 3)):
+            self.m.rescued = rescued
+            self.assertEqual(self.m.stars(self.w), stars)
+
+    def test_parasites_and_kamikaze_hunt_the_boat(self):
+        from spaceship.entities.enemies import Enemy, Parasite
+        self.m.launch(self.w)
+        boat = self.m.boats[0]
+        boat.x = 600
+        p = Parasite(1.0, 200, 0, rng=random.Random(1))
+        k = Enemy(1.0, kamikaze_chance=1, rng=random.Random(1))
+        grunt = Enemy(1.0, kamikaze_chance=0, rng=random.Random(1))
+        self.assertIs(self.m.target_for(self.w, p), boat)
+        self.assertIs(self.m.target_for(self.w, k), boat)
+        self.assertIs(self.m.target_for(self.w, grunt), self.w.player)
+        for _ in range(80):
+            p.update(boat)
+        self.assertGreater(p.base_x, 350)                       # lượn dần về phía tàu cứu sinh
+
+    def test_player_body_covers_bullets(self):
+        from spaceship.entities.projectiles import EnemyBullet
+        p = self.w.player
+        p.invincible_timer = 30
+        b = EnemyBullet(p.x + 12, p.y, 90)
+        self.w.enemy_bullets.append(b)
+        combat.resolve_enemy_bullets(self.w)
+        self.assertNotIn(b, self.w.enemy_bullets)              # bất tử vẫn che được
+        self.assertEqual(p.hp, p.max_hp)
+
+    def test_next_wave_waits_for_the_boat(self):
+        self.d.update(self.w)                                   # wave 1: thả tàu + lính
+        self.w.enemies.clear()
+        for _ in range(400):
+            self.d.update(self.w)
+            self.w.enemies.clear()
+        self.assertEqual(self.w.wave, 1)                        # tàu còn đang bay: chưa sang wave 2
+        for _ in range(1200):
+            self.d.update(self.w)
+            self.w.enemies.clear()
+            if self.w.wave == 2:
+                break
+        self.assertEqual(self.w.wave, 2)
+
+    def test_clear_radio_counts_people_and_true_ending_uses_it(self):
+        from spaceship.campaign import story
+        self.m.rescued = 30
+        lines = self.m.radio(self.w, ("clear", 0))
+        self.assertIn("30 trên 40", lines[0][1])
+        self.assertEqual(story.true_ending(30)[-1][1], "Đưa 30 người về nhà.")
+        self.assertEqual(story.true_ending(40)[-1][1], "Đưa tất cả bọn họ về nhà.")
+        self.assertEqual(story.true_ending(None)[-1][1], "Đưa tất cả bọn họ về nhà.")
+
+    def test_save_keeps_rescued(self):
+        import tempfile
+        from pathlib import Path
+        from spaceship.core.storage import SaveData
+        path = Path(tempfile.mkdtemp()) / "save.json"
+        s = SaveData(path=path)
+        s.rescued = 30
+        s.save()
+        self.assertEqual(SaveData.load(path).rescued, 30)
+        self.assertIsNone(SaveData(path=Path(tempfile.mkdtemp()) / "x.json").rescued)

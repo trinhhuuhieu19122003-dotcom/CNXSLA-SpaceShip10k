@@ -35,10 +35,18 @@ lặp lại. Cuối hồi là **kết thúc thật**: tín hiệu tắt, vòng l
 |---|---|---|
 | 1 | Khung: dữ liệu 5 ải (địch tạm), toàn bộ thoại mở đầu, màn Chọn ải 3 hàng (Hồi IV hiện "???" tới khi phá đảo), bản đồ hành trình riêng, đoạn kết ải 10 mở Hồi IV, kết thúc thật sau ải 15, ảnh tạm | Xong |
 | 2 | Bóng KX: lặp lại x của tàu 2/3/4 giây trước, bắn thẳng xuống mỗi 0,8 giây bằng màu súng của bạn; ải 11 (5 wave theo thiết kế), ải 14 wave 3, ải 15 wave 1 | Xong |
-| 3 | Hộ tống tàu cứu sinh + chấm sao riêng | Chưa |
+| 3 | Hộ tống: 4 tàu cứu sinh (máu 100, bay ngang y≈470, 0,8 px/tick), mỗi wave 1 tàu và wave sau chờ tàu bay xong; Ký Sinh + lính cảm tử nhắm tàu cứu sinh; thân tàu bạn che đạn (kể cả lúc bất tử); "ĐÃ CỨU N/40"; sao theo người cứu; mất cả 4 = thua; nhớ số người cứu cho câu cuối kết thúc thật | Xong |
 | 4 | Lực hút + Mắt Bão | Chưa |
 | 5 | Màn tối + Kẻ Nghe | Chưa |
 | 6 | Trái Tim Đàn 3 pha, khoảnh khắc ARIA, 3 huy hiệu, "Mô phỏng ký ức" | Chưa |
+
+## Ghi chú kỹ thuật (đợt 2-6)
+
+- `systems/mechanics.py`: mỗi ải Hồi IV gắn một "cơ chế" (`Level.mechanic`), do `LevelDirector` tạo và gọi
+  `update` mỗi tick; GameplayScene gọi các móc vẽ (`draw_back` / `draw_front` / `draw_overlay`), `stars`,
+  `hud_text`. Ải không có cơ chế chạy y như cũ.
+- `Player.x_history` (4 giây) cho Bóng KX; ảnh `shadow_kx`, `ghost_ship` dựng từ sprite tàu (`Assets.DERIVED`).
+- `SaveData.rescued`: số người cứu ở lần qua ải 12 gần nhất, dùng cho câu cuối `story.true_ending()`.
 
 ## Ghi chú kỹ thuật (đợt 1)
 

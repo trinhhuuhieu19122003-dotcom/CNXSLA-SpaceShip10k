@@ -153,11 +153,12 @@ RADIO = {
          ("wave", 5): [(ARIA, "Ba bóng, mỗi cái trễ một nhịp. Đổi hướng liên tục.")],
          ("clear", 0): [(KX, "Nó học nhanh thật."), (ARIA, "Nhanh hơn lần trước."),
                         (KX, "Lần trước?"), (ARIA, "...Không có gì.")]},
-    12: {("wave", 1): [(ARIA, "Tàu cứu sinh đang tới. Dọn đường cho họ.")],
-         ("wave", 2): [(ARIA, "Ký Sinh ngửi thấy người sống. Bắn chặn từ xa!")],
+    12: {("wave", 1): [(ARIA, "Tàu cứu sinh không có khiên. Bay chắn giữa nó và đạn địch.")],
+         ("wave", 2): [(ARIA, "Ký Sinh ngửi thấy người sống. Chúng nhắm vào tàu cứu sinh!")],
          ("wave", 3): [(KX, "ARIA, sao cô biết tọa độ khoang ngủ đông? Nó không có trong dữ liệu phi đội."),
                        (ARIA, "...Tôi đoán.")],
-         ("clear", 0): [(ARIA, "Các khoang ngủ đông đã an toàn."), (KX, "Lần này không bỏ lại ai.")]},
+         # ("clear", 0): thoại có số người cứu được - xem systems/mechanics.py Escort.radio
+         },
     13: {("wave", 1): [(ARIA, "Lực hút đang kéo mọi thứ về phía hố đen. Giữ chắc tay lái.")],
          ("boss", 0): [(ARIA, "Mắt Bão. Nó sống bên trong lực hút.")],
          ("phase", 2): [(ARIA, "Tôi nghe thấy nó... rất rõ."),
@@ -204,6 +205,12 @@ TRUE_ENDING = [
     (ARIA, "Ghi nhận, Chỉ huy. Chúng ta đi đâu?"),
     (KX, "Đưa tất cả bọn họ về nhà."),
 ]
+
+
+def true_ending(rescued=None) -> list:
+    """Kết thúc thật; câu cuối nhắc số người cứu được ở ải 12 (40/40 hoặc chưa rõ: "tất cả bọn họ")."""
+    last = "Đưa tất cả bọn họ về nhà." if rescued is None or rescued >= 40 else f"Đưa {rescued} người về nhà."
+    return TRUE_ENDING[:-1] + [(KX, last)]
 
 # --- Vòng lặp tín hiệu (chu kỳ mới sau khi phá đảo) -----------------------------------------------
 #: Đuôi của đoạn kết: tín hiệu tàu mẹ lại vang lên -> mở ra chu kỳ tiếp theo.

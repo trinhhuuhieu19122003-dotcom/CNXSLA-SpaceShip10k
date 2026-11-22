@@ -17,7 +17,7 @@ chỉ cần sửa dữ liệu ở đây, không đụng tới logic.
 | 9 | Hạm Đội Hộ Tống | Mini-boss Tàu Hộ Tống -> Drone thứ hai |
 | 10 | Tàu Mẹ | BOSS CUỐI (phá đảo: mở Hỏa ngục) |
 | 11 | Tiếng Vọng | Hồi IV: Bóng KX lặp lại đường bay của bạn |
-| 12 | Khoang Ngủ Đông | Hộ tống tàu cứu sinh (đợt 3) |
+| 12 | Khoang Ngủ Đông | Hộ tống 4 tàu cứu sinh, sao theo số người cứu |
 | 13 | Giếng Trọng Lực | Lực hút, mini-boss Mắt Bão (đợt 4) |
 | 14 | Tín Hiệu Câm | Màn tối, mini-boss Kẻ Nghe (đợt 5) |
 | 15 | Trái Tim Đàn | BOSS CUỐI THẬT (đợt 6) |
@@ -120,6 +120,11 @@ def shadows(delays, at: int = 0, every: int = 30) -> List[Event]:
             for i, d in enumerate(delays)]
 
 
+def lifeboat(at: int = 0) -> List[Event]:
+    """Ải 12: thả một tàu cứu sinh bay ngang qua màn (cần cơ chế "escort")."""
+    return [(at, lambda world: world.mechanic.launch(world))]
+
+
 def wave(*parts: List[Event]) -> Wave:
     return sorted((e for part in parts for e in part), key=lambda e: e[0])
 
@@ -138,6 +143,7 @@ class Level:
     meteor_rate: float = 0.0               # xác suất mỗi tick có thiên thạch bay ngang
     wreck_every: int = 0                   # cứ N tick lại trôi xuống một xác tàu
     fog: bool = False
+    mechanic: Optional[str] = None         # cơ chế riêng Hồi IV (systems/mechanics.py)
     hint: str = field(default="", compare=False)
 
     @property
@@ -215,11 +221,11 @@ LEVELS: Tuple[Level, ...] = (
         wave(shadows([2, 3, 4], every=40), turrets([200, 600], at=90)),
     ), hint="Bóng KX: Đàn đang học cách bạn lái"),
     Level(12, 4, "KHOANG NGỦ ĐÔNG", "bg_act4", 1.9, (
-        wave(grunts(3, 2)),
-        wave(swarm(12, every=10)),
-        wave(breeders([250, 550]), grunts(3, 3, at=60, kamikaze=0.4)),
-        wave(turrets([150, 650]), allies(3, at=60)),
-    ), hint="40 người sống sót đang chờ"),
+        wave(lifeboat(), grunts(3, 2, at=30)),
+        wave(lifeboat(), swarm(12, at=90, every=14)),
+        wave(lifeboat(), breeders([250, 550], at=60), grunts(3, 3, at=120, kamikaze=0.4)),
+        wave(lifeboat(), turrets([40, 760], at=60), allies(3, at=120)),
+    ), mechanic="escort", hint="Hộ tống 4 tàu cứu sinh (40 người)"),
     Level(13, 4, "GIẾNG TRỌNG LỰC", "bg_blackhole", 2.0, (
         wave(grunts(3, 2)),
         wave(swarm(16, every=8), meteors(3, at=40, every=60)),

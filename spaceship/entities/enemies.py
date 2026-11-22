@@ -245,6 +245,9 @@ class Parasite(EnemyBase):
     def update(self, player=None) -> None:
         self.age += 1
         self.y += self.vy
+        if getattr(player, "is_lifeboat", False) and self.y < player.y:   # ải 12: "ngửi thấy người sống"
+            self.base_x += max(-2.2, min(2.2, (player.x - self.base_x) * 0.05))
+            self.amp = max(14, self.amp * 0.99)
         self.x = self.base_x + math.sin(self.age * 0.06 + self.phase) * self.amp
 
 

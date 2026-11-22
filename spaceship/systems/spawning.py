@@ -13,6 +13,7 @@ from spaceship import config
 from spaceship.config import WIDTH, GameMode
 from spaceship.entities.enemies import BOSS_SPECS, Boss, Enemy, InfectedAlly, Meteor, Parasite, ShieldBug, Wreck
 from spaceship.systems import loot
+from spaceship.systems.mechanics import create_mechanic
 from spaceship.systems.world import World
 
 Formation = List[Tuple[int, int]]
@@ -119,6 +120,7 @@ class LevelDirector(Director):
         self.boss_phase = 1
         self.clear_timer = 0
         self.wreck_timer = 0
+        self.mechanic = create_mechanic(level)     # cơ chế riêng Hồi IV (None ở ải thường)
 
     @property
     def total_waves(self) -> int:
@@ -126,24 +128,32 @@ class LevelDirector(Director):
 
     @property
     def progress_text(self) -> str:
+        extra = f" · {self.mechanic.hud_text}" if self.mechanic is not None and self.mechanic.hud_text else ""
         if self.boss is not None:
-            return "BOSS"
-        return f"WAVE {max(1, self.wave_index + 1)}/{self.total_waves}"
+            return "BOSS" + extra
+        return f"WAVE {max(1, self.wave_index + 1)}/{self.total_waves}{extra}"
 
     def threat_cap(self, world: World) -> float:
         return config.THREAT_CAP[self.level.act] + config.THREAT_CAP_PER_CYCLE * (world.cycle - 1)
 
     def _say(self, world: World, key) -> None:
-        for line in self.radio.get(key, []):
+        lines = self.mechanic.radio(world, key) if self.mechanic is not None else None
+        for line in (lines if lines is not None else self.radio.get(key, [])):
             world.say(line[0], line[1])
 
     def update(self, world: World) -> None:
+        if self.mechanic is not None:
+            world.mechanic = self.mechanic
         if self.intro_timer > 0:
             self.intro_timer -= 1
             return
         self._handle_defeated_bosses(world)
         if world.outcome:
             return
+        if self.mechanic is not None:
+            self.mechanic.update(world)
+            if world.outcome:
+                return
         if self.clear_timer > 0:
             self.clear_timer -= 1
             if self.clear_timer == 0:
@@ -164,6 +174,8 @@ class LevelDirector(Director):
                 self.events.pop(0)[1](world)
             return
         if any(_counting(e) for e in world.enemies):
+            return
+        if self.mechanic is not None and self.mechanic.holds(world):   # vd. tàu cứu sinh còn đang bay qua
             return
         self.gap += 1
         breath = config.WAVE_LONG_BREATH_TICKS if self.wave_index % 2 == 1 else config.WAVE_BREATH_TICKS

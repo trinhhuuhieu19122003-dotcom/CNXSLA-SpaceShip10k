@@ -91,6 +91,8 @@ class SaveData:
     #: Huy hiệu đã đạt: khóa -> ngày đạt (YYYY-MM-DD). Bộ đếm cộng dồn cho huy hiệu (Nộ, chặn đạn...).
     achievements: Dict[str, str] = field(default_factory=dict)
     counters: Dict[str, int] = field(default_factory=dict)
+    #: Hồi IV: số người cứu được ở lần qua ải 12 gần nhất (None = chưa qua) - câu cuối của kết thúc thật
+    rescued: Optional[int] = None
 
     def mark_seen(self, key: str) -> bool:
         """Lưu mục Sổ tay mới; các lần gặp tiếp theo không ghi file."""
@@ -210,6 +212,7 @@ class SaveData:
                 "cycle": self.cycle,
                 "cycle_complete": self.cycle_complete,
                 "cycle_history": {str(k): v for k, v in sorted(self.cycle_history.items())},
+                "rescued": self.rescued,
             },
             "achievements": dict(sorted(self.achievements.items())),
             "counters": dict(sorted(self.counters.items())),
@@ -244,6 +247,8 @@ class SaveData:
                 # Save cũ (v3) đã phá đảo thì coi như xong chu kỳ 1, được mở chu kỳ 2
                 data.cycle_complete = bool(campaign.get("cycle_complete", data.campaign_cleared))
                 data.cycle_history = {int(k): int(v) for k, v in campaign.get("cycle_history", {}).items()}
+                rescued = campaign.get("rescued")
+                data.rescued = max(0, min(40, int(rescued))) if isinstance(rescued, (int, float)) else None
                 # Save trước khi có Hồi IV: đã qua ải 10 trong chu kỳ này -> mở luôn ải 11
                 if data.unlocked_level >= 10 and 10 in data.level_stars:
                     data.unlocked_level = max(data.unlocked_level, 11)

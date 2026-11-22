@@ -33,6 +33,9 @@ class RunStats:
     best_combo: int = 0             # chuỗi hạ dài nhất trong ván
     grazes: int = 0                 # số lần sát đạn
     best_cancel: int = 0            # số đạn hủy nhiều nhất trong một lần (hạ boss / boss đổi pha)
+    rescued: int = 0                # Hồi IV ải 12: số người cứu được
+    true_ending: bool = False       # Hồi IV: vừa xem kết thúc thật (qua ải 15)
+    chose_you: bool = False         # Hồi IV: hạ Trái Tim Đàn bằng Đại pháo sau khi ARIA cắt kết nối
     recorded: bool = False          # True: kills/skills... đã cộng vào file lưu, không cộng lần nữa
 
 

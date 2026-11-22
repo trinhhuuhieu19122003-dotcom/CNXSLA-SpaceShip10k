@@ -48,6 +48,8 @@ class World:
     preset: str = "normal"
     #: ải đang chơi (chế độ Vượt ải), xem campaign/levels.py
     level: Any = None
+    #: cơ chế riêng của ải Hồi IV (systems/mechanics.py), None ở các ải khác
+    mechanic: Any = None
 
     #: rung màn hình kiểu trauma (0..1), giảm dần mỗi tick; xem ``shake``
     trauma: float = 0.0
