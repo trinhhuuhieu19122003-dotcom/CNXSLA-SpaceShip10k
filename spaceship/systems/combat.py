@@ -11,10 +11,11 @@ import math
 
 from spaceship import config
 from spaceship.config import HEIGHT, NEON_CYAN
-from spaceship.entities.effects import DamageNumber, Flash
+from spaceship.entities.effects import DamageNumber, Flash, FloatText, Shockwave
 from spaceship.entities.enemies import EnemyBase
 from spaceship.systems import loot
 from spaceship.systems.world import World
+from spaceship.ui import shields
 
 HIT_SPARK = {"plasma": (120, 200, 255), "laser": (255, 120, 100), "homing": (220, 140, 255), "drone_bolt": (255, 170, 60)}
 BLOCK_SPARK = (120, 220, 255)
@@ -22,6 +23,44 @@ BURN_ORANGE = (255, 100, 0)
 SHIELD_SPARK = (100, 255, 255)
 PLAYER_BULLET_RADIUS = config.PLAYER_HITBOX
 PLAYER_BODY_RADIUS = 20
+
+
+# --- Khiên -------------------------------------------------------------------------
+def shield_break(world: World, boss) -> None:
+    """Khiên boss vỡ: mảnh tổ ong văng ra, sóng xung kích, chữ "KHIÊN VỠ!", khựng hình + rung."""
+    rx, ry = shields.boss_shield_axes(boss)
+    shields.shatter(world.particles, boss.x, boss.y, rx, ry, shields.BOSS_SHIELD_COLOR, 36, 10, 7, rng=world.rng)
+    world.particles.append(Shockwave(boss.x, boss.y, shields.BOSS_SHIELD_COLOR, max_radius=rx * 1.35, life=22))
+    world.particles.append(Flash(boss.x, boss.y, (255, 220, 150), radius=60, life=12))
+    world.damage_numbers.append(FloatText(boss.x, boss.y + ry * 0.4, "KHIÊN VỠ!", (255, 190, 90), size=30))
+    world.freeze(config.HITSTOP_SHIELD_BREAK)
+    world.shake(12)
+    world.flash = 2
+    world.play("shield_break")
+
+
+def _boss_shield_ripple(world: World, enemy, x: float, y: float, laser: bool = False) -> None:
+    """Đạn trúng khiên boss: gợn sóng ở đúng chỗ trúng trên viền khiên (laser: to và tóe lửa hơn)."""
+    if not enemy.is_boss or enemy.shield_hp <= 0:
+        return
+    rx_, ry_ = shields.boss_rim_point(enemy, x, y)
+    world.particles.append(shields.ShieldRipple(rx_, ry_, shields.BOSS_SHIELD_COLOR, size=1.4 if laser else 1.0))
+    if laser:
+        world.sparks(rx_, ry_, (255, 200, 120), 3)
+
+
+def tick_player_fx(world: World) -> None:
+    """Hiệu ứng theo trạng thái tàu (gọi sau ``Player.tick_timers``): khiên hết giờ thì vỡ, hồi sinh có tiếng."""
+    p = world.player
+    if p.shield_ended:
+        r = shields.PLAYER_SHIELD_RADIUS
+        shields.shatter(world.particles, p.x, p.y, r, r, shields.PLAYER_SHIELD_COLOR, 16, 6, 4, rng=world.rng)
+        world.play("shield_break")
+    if p.respawn_glow:
+        if p.warp_timer == config.RESPAWN_WARP_TICKS - 8:
+            world.play("warp_in")
+        if p.warp_timer == 0 and p.invincible_timer in (30, 20, 10):    # sắp hết bất tử: tích - tích - tích
+            world.play("tick")
 
 
 # --- Sát thương ---------------------------------------------------------------------
@@ -36,9 +75,13 @@ def damage_enemy(world: World, enemy: EnemyBase, amount: float, *, crit: bool = 
         world.damage_numbers.append(DamageNumber(enemy.x, enemy.y, amount, crit, rng=world.rng))
     if enemy.shield_hp > 0:                       # khiên hấp thụ trước, phần dư trừ vào máu
         enemy.shield_hp -= amount
+        if enemy.is_boss:
+            enemy.shield_flash = 6
         if enemy.shield_hp < 0:
             enemy.hp += enemy.shield_hp
             enemy.shield_hp = 0
+        if enemy.shield_hp <= 0 and enemy.is_boss:
+            shield_break(world, enemy)
     else:
         before = enemy.hp
         enemy.hp -= amount
@@ -130,6 +173,7 @@ def resolve_player_bullets(world: World) -> None:
             for enemy in world.enemies:
                 if enemy.id not in bullet.hit_ids and bullet.hits(enemy):
                     bullet.hit_ids.add(enemy.id)
+                    _boss_shield_ripple(world, enemy, bullet.x, enemy.y + enemy.ry, laser=True)
                     damage_enemy(world, enemy, dmg, crit=True)
                     world.sparks(enemy.x, enemy.y + enemy.ry * 0.6, HIT_SPARK["laser"], 6)
         else:
@@ -141,6 +185,7 @@ def resolve_player_bullets(world: World) -> None:
                     world.sparks(bullet.x, bullet.y, BLOCK_SPARK, 3)
                     world.play("shield_block")
                     break
+                _boss_shield_ripple(world, enemy, bullet.x, bullet.y, laser=bullet.kind == "laser")
                 skill_shot = bullet.damage is not None           # tên lửa của kỹ năng Nộ: không hồi Nộ
                 if skill_shot:
                     dmg = bullet.damage
@@ -171,7 +216,9 @@ def resolve_enemy_bullets(world: World) -> None:
             continue
         if player.shield_active:
             world.enemy_bullets.remove(bullet)
-            world.sparks(bullet.x, bullet.y, NEON_CYAN, 4)
+            rx_, ry_ = shields.player_rim_point(player.x, player.y, bullet.x, bullet.y)
+            world.particles.append(shields.ShieldRipple(rx_, ry_, shields.PLAYER_SHIELD_COLOR))
+            world.sparks(rx_, ry_, NEON_CYAN, 4)
             world.play("shield_block")
         elif player.invincible_timer <= 0:
             world.enemy_bullets.remove(bullet)
@@ -198,6 +245,8 @@ def resolve_body_collisions(world: World) -> None:
             continue
         if player.shield_active:
             if not enemy.is_boss and not enemy.is_obstacle:   # khiên húc chết địch thường → tính là hạ địch
+                rx_, ry_ = shields.player_rim_point(player.x, player.y, enemy.x, enemy.y)
+                world.particles.append(shields.ShieldRipple(rx_, ry_, shields.PLAYER_SHIELD_COLOR, size=1.5))
                 enemy.hp = 0
                 kill_enemy(world, enemy)
                 world.burst(enemy.x, enemy.y, SHIELD_SPARK, 15)
@@ -246,7 +295,11 @@ def collect_items(world: World) -> None:
             world.play("pickup")
             player.hp = min(player.max_hp, player.hp + config.HEAL_AMOUNT[world.mode])
         elif kind == "shield":
-            world.play("pickup")
+            if not player.shield_active:                     # bật mới: bong bóng nở ra từ tàu
+                player.shield_age = 0
+                world.particles.append(Shockwave(player.x, player.y, shields.PLAYER_SHIELD_COLOR,
+                                                 max_radius=shields.PLAYER_SHIELD_RADIUS + 30, life=14))
+            world.play("shield_up")
             player.shield_timer = config.SHIELD_TICKS[world.mode]
         else:
             weapon = kind.replace("upgrade_", "")

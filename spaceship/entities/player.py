@@ -19,7 +19,7 @@ from spaceship.config import (
     YELLOW,
 )
 from spaceship.entities.projectiles import Bullet
-from spaceship.ui import glow
+from spaceship.ui import glow, shields
 
 LIGHTNING_COLOR = (255, 230, 60)
 WEAPON_COLORS = {"plasma": PLASMA_COLOR, "laser": LASER_COLOR, "homing": HOMING_COLOR, "lightning": LIGHTNING_COLOR}
@@ -52,6 +52,10 @@ class Player:
         self.bonus_damage = 0
         self.invincible_timer = 0
         self.shield_timer = 0
+        self.shield_age = 0             # số tick khiên đã bật (hiệu ứng nở ra, ô lục giác lóe)
+        self.shield_ended = False       # khiên vừa hết giờ ở tick này -> vỡ mảnh (combat.tick_player_fx)
+        self.warp_timer = 0             # > 0: đang dịch chuyển về chiến trường sau khi mất mạng
+        self.respawn_glow = False       # đang bất tử sau hồi sinh -> vẽ vòng đếm ngược, tàu mờ
         self.fire_cooldown = 0
         self.drones = 0                 # 0..2: 1 = drone tấn công, 2 = thêm drone hộ vệ
         self.drone_cooldown = 0
@@ -121,11 +125,16 @@ class Player:
     def tick_timers(self) -> None:
         if self.has_guard:
             self.guard_angle = (self.guard_angle + config.GUARD_ORBIT_SPEED) % math.tau
+        had_shield = self.shield_timer > 0
         for name in ("invincible_timer", "shield_timer", "fire_cooldown", "drone_cooldown", "guard_cooldown",
-                     "muzzle", "beam"):
+                     "muzzle", "beam", "warp_timer"):
             value = getattr(self, name)
             if value > 0:
                 setattr(self, name, value - 1)
+        self.shield_ended = had_shield and self.shield_timer == 0
+        self.shield_age = self.shield_age + 1 if self.shield_timer > 0 else 0
+        if self.invincible_timer == 0:
+            self.respawn_glow = False
 
     def fire(self, bullets: List[Bullet]) -> bool:
         """Bắn theo vũ khí hiện tại. Trả về True nếu thực sự bắn (để phát âm thanh)."""
@@ -180,21 +189,32 @@ class Player:
     def respawn(self) -> None:
         self.hp = self.max_hp
         self.invincible_timer = config.RESPAWN_INVINCIBLE_TICKS
+        self.warp_timer = config.RESPAWN_WARP_TICKS
+        self.respawn_glow = True
 
     # --- Vẽ ----------------------------------------------------------------------------
     def draw(self, surface: pygame.Surface, assets) -> None:
-        if self.invincible_timer > 0:
-            # nhấp nháy nhưng ẩn ít (1/4 thời gian): đang bất tử vẫn phải thấy rõ tàu ở đâu để né
-            if self.invincible_timer % 8 < 2:
-                return
-            if self.invincible_timer > config.MERCY_TICKS:          # vòng vàng: bất tử dài sau khi hồi sinh
-                pygame.draw.circle(surface, YELLOW, (int(self.x), int(self.y)), 55, 2)
+        alpha = 255
+        if self.respawn_glow and self.invincible_timer > 0:
+            # Hồi sinh: dịch chuyển về (tàu hiện dần), rồi tàu hơi trong suốt + vòng đếm ngược bất tử.
+            # Không nhấp nháy biến mất nữa: lúc nào cũng thấy tàu ở đâu để né.
+            if self.warp_timer > 0:
+                k = 1 - self.warp_timer / config.RESPAWN_WARP_TICKS
+                shields.draw_warp(surface, self.x, self.y, k)
+                alpha = int(170 * k)
+            else:
+                shields.draw_countdown(surface, self.x, self.y, self.invincible_timer,
+                                       config.RESPAWN_INVINCIBLE_TICKS - config.RESPAWN_WARP_TICKS)
+                alpha = 165 + int(45 * math.sin(self.invincible_timer / 5))
+        elif self.invincible_timer > 0 and self.invincible_timer % 8 < 2:
+            # bất tử ngắn sau khi trúng đạn: nhấp nháy nhưng ẩn ít (1/4 thời gian)
+            return
         if self.beam > 0:
             self._draw_beam(surface)
+        self._draw_ship(surface, assets, alpha)
         if self.shield_active:
-            self._draw_shield(surface)
-        self._draw_ship(surface, assets)
-        if self.drones:
+            shields.draw_player_shield(surface, self.x, self.y, self.shield_age, self.shield_timer)
+        if self.drones and alpha >= 120:
             self._draw_drone(surface, assets)
         if self.focus:
             self._draw_hitbox(surface)
@@ -218,31 +238,27 @@ class Player:
         surface.blit(ring, (int(self.x) - 20, int(self.y) - 20))
         pygame.draw.circle(surface, (255, 255, 255), (int(self.x), int(self.y)), 4)
 
-    def _draw_shield(self, surface: pygame.Surface) -> None:
-        shield = pygame.Surface((110, 110), pygame.SRCALPHA)
-        t = pygame.time.get_ticks()
-        pulse = 100 + int(70 * math.sin(t / 150.0))
-        outline = 180 + int(70 * math.sin(t / 150.0))
-        pygame.draw.circle(shield, (0, 255, 255, pulse // 2), (55, 55), 45)
-        for i in range(3):
-            start = math.radians(t / 3.0 + i * 120)
-            pygame.draw.arc(shield, (200, 255, 255, outline), (5, 5, 100, 100), start, start + math.radians(80), 4)
-        surface.blit(shield, (int(self.x) - 55, int(self.y) - 55))
-
-    def _draw_ship(self, surface: pygame.Surface, assets) -> None:
+    def _draw_ship(self, surface: pygame.Surface, assets, alpha: int = 255) -> None:
+        """``alpha`` < 255: tàu mờ (đang hồi sinh) - bỏ viền hào quang, thân tàu trong suốt một phần."""
         x, y = self.x, self.y
-        hull = [(x, y - 30), (x - 25, y + 20), (x, y + 10), (x + 25, y + 20)]
-        aura = pygame.Surface((60, 60), pygame.SRCALPHA)
-        local = [(px - x + 30, py - y + 30) for px, py in hull]
-        for thickness in range(5, 0, -1):
-            pygame.draw.polygon(aura, self.color + (int(100 / thickness),), local, thickness)
-        surface.blit(aura, (x - 30, y - 30))
+        if alpha <= 0:
+            return
+        if alpha >= 255:
+            hull = [(x, y - 30), (x - 25, y + 20), (x, y + 10), (x + 25, y + 20)]
+            aura = pygame.Surface((60, 60), pygame.SRCALPHA)
+            local = [(px - x + 30, py - y + 30) for px, py in hull]
+            for thickness in range(5, 0, -1):
+                pygame.draw.polygon(aura, self.color + (int(100 / thickness),), local, thickness)
+            surface.blit(aura, (x - 30, y - 30))
 
         sprite = assets.image("player", SHIP_WIDTH)
         flame = random.randint(10, 25)
         for ex in (-12, 12):                                       # quầng sáng động cơ
             glow.add(surface, glow.orb((0, 150, 200), 7, core=0.0, halo=1.0), (x + ex, y + 34))
         if sprite is not None:
+            if alpha < 255:
+                sprite = sprite.copy()
+                sprite.set_alpha(alpha)
             surface.blit(sprite, sprite.get_rect(center=(int(x), int(y))))
             if self.muzzle > 0:                                    # lóe sáng đầu nòng khi bắn
                 glow.add(surface, glow.orb(self.color, 4 + self.muzzle * 2, core=0.6), (x, y - 34))

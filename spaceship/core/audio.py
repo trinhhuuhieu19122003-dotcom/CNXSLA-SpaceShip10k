@@ -244,6 +244,32 @@ class Audio:
         t = t_axis(0.06)
         zip_ = np.sin(2 * np.pi * (2600 - 9000 * t) * t) * np.exp(-t * 60) * 0.5
         sounds["graze"] = (self._to_sound(zip_), 0.15, Sfx("", 0, 2, 90))
+
+        # Bật khiên: tiếng "vù" quét lên, có độ rung (giống trường năng lượng bật lên)
+        t = t_axis(0.38)
+        sweep = 180 + 620 * (t / t[-1]) ** 1.5
+        phase = 2 * np.pi * np.cumsum(sweep) / rate
+        hum = (np.sin(phase) + 0.35 * np.sin(2 * phase)) * (0.7 + 0.3 * np.sin(2 * np.pi * 34 * t))
+        sounds["shield_up"] = (self._to_sound(hum * self._envelope(len(t), rate, 0.02, 0.15) * 0.5), 0.35,
+                               Sfx("", 0, 1, 200))
+
+        # Vỡ khiên: tiếng nổ nhiễu ngắn + nhiều mảnh "keng" cao tắt nhanh (như kính vỡ)
+        t = t_axis(0.55)
+        crash = noise_rng.uniform(-1, 1, len(t)) * np.exp(-t * 18) * 0.7
+        for f, delay in ((2900, 0.0), (3700, 0.03), (2300, 0.07), (4400, 0.11), (3100, 0.16)):
+            tt = np.clip(t - delay, 0, None)
+            crash += np.sin(2 * np.pi * f * tt) * np.exp(-tt * 22) * (t >= delay) * 0.35
+        sounds["shield_break"] = (self._to_sound(crash * 0.8), 0.45, Sfx("", 0, 1, 150))
+
+        # Dịch chuyển về chiến trường: quét xuống rồi lên, lấp lánh
+        t = t_axis(0.5)
+        sweep = 1500 - 1100 * np.sin(np.pi * t / t[-1])
+        phase = 2 * np.pi * np.cumsum(sweep) / rate
+        warp = np.sin(phase) * (0.6 + 0.4 * np.sin(2 * np.pi * 22 * t)) * self._envelope(len(t), rate, 0.03, 0.2)
+        sounds["warp_in"] = (self._to_sound(warp * 0.5), 0.35, Sfx("", 0, 1, 400))
+
+        # Sắp hết bất tử: "tích" ngắn
+        sounds["tick"] = (self._to_sound(blip(1760, 0.035, "sine") * 0.8), 0.3, Sfx("", 0, 2, 60))
         return sounds
 
     # --- Âm lượng ---------------------------------------------------------------------------

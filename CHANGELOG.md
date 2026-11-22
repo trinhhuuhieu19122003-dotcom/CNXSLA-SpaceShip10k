@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.2.2-dev] – Khiên tổ ong, khiên boss vỡ được, hồi sinh dịch chuyển
+- **Khiên tàu** (`ui/shields.py`): bong bóng năng lượng tổ ong (lòng trong suốt, viền phát sáng, ô lục giác lóe
+  sáng, 2 vệt sáng chạy quanh viền) thay cho đĩa xanh đục che tàu. Bật lên thì nở ra từ tàu (tiếng "vù"); đỡ
+  đạn/húc địch thì gợn sóng lục giác đúng chỗ chạm trên viền; 1 giây cuối chớp tắt-sáng và nứt dần; hết giờ thì vỡ
+  thành mảnh lục giác.
+- **Khiên boss**: vòm tổ ong màu cam trùm lên boss. Trúng đạn gợn sóng ở viền (laser to hơn, tóe lửa); vừa trúng
+  đòn sáng bừng; càng mất máu khiên càng mờ và nứt thêm. **Vỡ khiên**: mảnh tổ ong văng ra, sóng xung kích, chữ
+  "KHIÊN VỠ!", khựng hình 6 tick, rung + tiếng kính vỡ. Chuyển pha hồi khiên: ô lục giác sáng lan từ tâm ra viền.
+- **Hồi sinh**: 0,4 giây đầu là "dịch chuyển về" (cột sáng chiếu xuống, 3 vòng sáng thu vào, tàu hiện dần); sau đó
+  tàu hơi trong suốt (không còn nhấp nháy biến mất) và **vòng đếm ngược** vàng ngắn dần cho biết còn bao lâu bất tử;
+  nửa giây cuối vòng chớp + "tích tích tích". Bất tử ngắn sau khi trúng đạn thường vẫn nhấp nháy như cũ.
+- 4 tiếng tổng hợp mới: `shield_up`, `shield_break`, `warp_in`, `tick`.
+- Luật giữ nguyên: thời gian khiên, máu khiên boss (kể cả phần tràn sang máu), thời gian bất tử. Không xóa đạn
+  khi hồi sinh.
+- 10 test mới (`tests/test_shields.py`); tổng 187.
+
 ## [2.2.1-dev] – Kỹ năng Nộ "ra dáng chiêu cuối", drone hộ vệ bay rộng
 - **Vòng Plasma**: tụ lực 0,3 giây (cầu plasma phình to, hạt sáng bị hút vào, vòng co lại) rồi nổ thành đĩa sáng
   lan rộng có viền trắng nóng, thêm vòng dội thứ hai, màn ám xanh, địch trúng chớp trắng, khựng hình 3 tick.

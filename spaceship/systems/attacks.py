@@ -18,6 +18,7 @@ from spaceship.entities.effects import Shockwave
 from spaceship.entities.enemies import Boss, Enemy, InfectedAlly, Parasite
 from spaceship.entities.projectiles import EnemyBullet
 from spaceship.systems.world import World
+from spaceship.ui import shields
 
 MAX_PARASITES = 24
 
@@ -271,6 +272,8 @@ def boss_attack(world: World, boss: Boss) -> None:
         if boss.kind in SHIELD_REGEN_KINDS:           # chuyển pha -> hồi một lớp khiên
             boss.shield_hp += boss.max_hp * 0.11
             boss.max_shield = max(boss.max_shield, boss.shield_hp)
+            boss.shield_regen = shields.BOSS_REGEN_TICKS     # lớp tổ ong mọc lan ra
+            world.play("shield_up")
     if not boss.arrived:
         return
     boss.attack_cooldown -= 1

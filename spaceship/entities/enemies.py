@@ -27,6 +27,7 @@ import pygame
 
 from spaceship import config
 from spaceship.config import HEIGHT, NEON_GREEN, NEON_MAGENTA, NEON_RED, WIDTH
+from spaceship.ui import shields
 
 _ids = itertools.count(1)
 
@@ -485,6 +486,8 @@ class Boss(EnemyBase):
         self.dx = 2.5 if self.kind != "mothership" else 1.2
         self.spiral_angle = 0
         self.shield_rotation = 0
+        self.shield_flash = 0           # > 0: khiên vừa đỡ đòn -> sáng bừng
+        self.shield_regen = 0           # > 0: khiên vừa hồi lại (chuyển pha) -> lớp tổ ong mọc lan ra
         self.attack_cooldown = 60
         self.phase = 1
         self.minion_timer = 0
@@ -519,37 +522,16 @@ class Boss(EnemyBase):
                 self.dx *= -1
                 self.x = max(margin, min(WIDTH - margin, self.x))
         self.shield_rotation += 5
+        if self.shield_flash > 0:
+            self.shield_flash -= 1
+        if self.shield_regen > 0:
+            self.shield_regen -= 1
 
     def draw(self, surface: pygame.Surface, assets) -> None:
-        if self.shield_hp > 0:
-            self._draw_shield(surface)
         if assets.image(self.sprite, self.sprite_width) is None:
             pygame.draw.circle(surface, NEON_MAGENTA, (int(self.x), int(self.y)), self.radius, 3)
-            return
-        flash = self.raging and (self.age // 6) % 2 == 0
-        self._draw_sprite(surface, assets, add=flash)
-
-    def _draw_shield(self, surface: pygame.Surface) -> None:
-        pulse = (math.sin(self.age / 6.0) + 1) / 2
-        fill = (200, int(50 + 50 * pulse), 0, int(70 + 70 * pulse))
-        edge = (255, int(150 + 100 * pulse), 100, 255)
-        rx, ry = self.rx + 20, self.ry + 20
-        pts = []
-        for i in range(24):
-            ang = math.radians(i * 15 + self.shield_rotation)
-            k = 1.0 if i % 2 == 0 else 0.9
-            pts.append((math.cos(ang) * rx * k + rx + 10, math.sin(ang) * ry * k + ry + 10))
-        layer = pygame.Surface((rx * 2 + 20, ry * 2 + 20), pygame.SRCALPHA)
-        pygame.draw.polygon(layer, fill, pts)
-        pygame.draw.polygon(layer, edge, pts, 3)
-        surface.blit(layer, (self.x - rx - 10, self.y - ry - 10))
-        if random.random() < 0.3:                      # tia điện chập chờn quanh khiên
-            for _ in range(3):
-                start = math.radians(random.randint(0, 360))
-                end = start + math.radians(random.randint(20, 90))
-                arc = []
-                for step in range(6):
-                    ang = start + (end - start) * step / 5
-                    k = random.uniform(0.7, 0.95)
-                    arc.append((self.x + math.cos(ang) * rx * k, self.y + math.sin(ang) * ry * k))
-                pygame.draw.lines(surface, edge[:3], False, arc, 2)
+        else:
+            flash = self.raging and (self.age // 6) % 2 == 0
+            self._draw_sprite(surface, assets, add=flash)
+        if self.shield_hp > 0:                       # khiên trùm lên thân boss như một vòm năng lượng
+            shields.draw_boss_shield(surface, self)

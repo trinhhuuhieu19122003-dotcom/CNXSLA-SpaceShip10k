@@ -158,6 +158,7 @@ class GameplayScene(Scene):
             self.director.update(w)
             p.move(controls)
             p.tick_timers()
+            combat.tick_player_fx(w)
             w.tick_feel()
             self._discover_enemies()
             self._update_audio()
@@ -172,6 +173,7 @@ class GameplayScene(Scene):
 
         p.move(controls)
         p.tick_timers()
+        combat.tick_player_fx(w)
         if controls.fire and weapons.fire_player(w):
             w.play(f"fire_{p.weapon}")
         p.fire_drone(w.bullets, w.enemies)

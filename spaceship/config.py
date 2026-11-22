@@ -61,6 +61,7 @@ PLAYER_KEYBOARD_SPEED = 7          # px/tick khi điều khiển bằng phím
 PLAYER_HAND_FOLLOW = 0.25          # hệ số bám theo tay mỗi tick (0..1)
 PLAYER_HITBOX = 15
 RESPAWN_INVINCIBLE_TICKS = 180
+RESPAWN_WARP_TICKS = 24           # 0,4 giây đầu của thời gian bất tử: hiệu ứng dịch chuyển về (chỉ để nhìn)
 RAGE_PER_HIT = 5
 MAX_WEAPON_LEVEL = 6
 MAX_BONUS_DAMAGE = 30
@@ -186,6 +187,7 @@ TRAUMA_DECAY = 0.035
 #: Đóng băng khung hình (hitstop) vài tick để cú đánh "có trọng lượng". 1 tick = 1/60 giây.
 HITSTOP_HURT = 4                 # bị trúng đạn
 HITSTOP_LIFE_LOST = 10           # mất một mạng
+HITSTOP_SHIELD_BREAK = 6         # phá vỡ khiên boss
 HITSTOP_ELITE = 3                # hạ địch to (Lính Khiên, Đẻ Trứng, Pháo tháp)
 HITSTOP_BOSS = 12                # hạ boss
 #: Sau khi trúng đạn được bất tử ngắn (1/4 giây): một chùm đạn không rút sạch máu trong 3 tick.
