@@ -11,6 +11,14 @@ Hiệu ứng: "glitch" (chữ nhiễu sóng), "radar" (tiếng radar).
 KX, ARIA, CMD = "KX-17", "ARIA", "CHỈ HUY"
 
 PORTRAITS = {KX: "portrait_kx17", ARIA: "portrait_aria", CMD: "portrait_commander"}
+#: Câu thoại có hiệu ứng "glitch" (Hồi IV): ARIA bị nhiễu / bị Đàn chiếm giọng
+GLITCH_PORTRAITS = {ARIA: "portrait_aria_glitch"}
+
+
+def portrait_for(speaker: str, effect=None):
+    if effect == "glitch" and speaker in GLITCH_PORTRAITS:
+        return GLITCH_PORTRAITS[speaker]
+    return PORTRAITS.get(speaker)
 SPEAKER_COLORS = {KX: (0, 255, 255), ARIA: (120, 220, 255), CMD: (255, 70, 70)}
 
 ACTS = {1: "HỒI I · LẠC LỐI", 2: "HỒI II · BÃI THA MA", 3: "HỒI III · TRỞ VỀ", 4: "HỒI IV · NGUỒN TÍN HIỆU"}
@@ -168,7 +176,7 @@ RADIO = {
          ("clear", 0): [(ARIA, "Giếng trọng lực đã ổn định. Phía sau nó... là im lặng.")]},
     14: {("wave", 2): [(ARIA, "---anh--- nghe--- tôi---", "glitch")],
          ("wave", 3): [(CMD, "Nó nói dối con đấy, KX-17. Từ giây đầu tiên.", "glitch")],
-         ("boss", 0): [(ARIA, "------", "glitch")],
+         # ("boss", 0): không thoại, chỉ có tiếng radar (Darkness.radio)
          ("clear", 0): [(CMD, "Nhật ký nghiên cứu... Mẫu vật số 7 của Đàn. Đã thuần hóa. Đặt tên: ARIA.", "glitch"),
                         (KX, "ARIA... cô là gì?")]},
     15: {("boss", 0): [(CMD, "Con về rồi, KX-17. Lần thứ bao nhiêu rồi nhỉ?", "glitch")],

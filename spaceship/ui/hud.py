@@ -229,22 +229,37 @@ def draw_banner(surface, assets, world: World, director=None) -> None:
         surface.blit(act, (WIDTH // 2 - act.get_width() // 2, y - 30))
 
 
+def draw_static(surface, box: pygame.Rect, seed: int, color=(255, 80, 110)) -> None:
+    """Nhiễu sóng: vài vạch ngang chập chờn chạy qua khung (đổi chỗ mỗi 3 tick)."""
+    import random as _random
+
+    rng = _random.Random(seed // 3)
+    for _ in range(4):
+        y = box.y + rng.randint(2, box.height - 4)
+        x0 = box.x + rng.randint(0, box.width // 2)
+        w = rng.randint(20, box.width // 2)
+        pygame.draw.line(surface, color if rng.random() < 0.5 else (200, 200, 220), (x0, y), (min(box.right - 2, x0 + w), y), 1)
+
+
 def draw_radio(surface, assets, world: World) -> None:
     """Thoại trong trận: chân dung nhỏ + lời thoại ngay dưới dải trên, không dừng game."""
     if not world.radio:
         return
-    from spaceship.campaign.story import PORTRAITS, SPEAKER_COLORS
+    from spaceship.campaign.story import SPEAKER_COLORS, portrait_for
 
     line = world.radio[0]
     top = 84 if any(e.is_boss for e in world.enemies) else 44
     box = pygame.Rect(150, top, WIDTH - 300, 64)          # trên cùng: không che tàu và đạn quanh tàu
     color = SPEAKER_COLORS.get(line.speaker, TEXT)
     draw_panel(surface, box, color, HUD_FILL, header_height=22)
-    portrait = assets.image(PORTRAITS.get(line.speaker, ""), 56) if line.speaker in PORTRAITS else None
+    name = portrait_for(line.speaker, getattr(line, "effect", None))
+    portrait = assets.image(name, 56) if name else None
     tx = box.x + 8
     if portrait is not None:
         surface.blit(portrait, (box.x + 4, box.y + 4))
         tx = box.x + 68
+    if getattr(line, "effect", None) == "glitch":
+        draw_static(surface, box, line.ticks)
     surface.blit(assets.text(line.speaker.upper(), 13, color, role="label"), (tx, box.y + 3))
     for i, row in enumerate(wrap_text(assets, line.text, 14, box.right - tx - 8)[:2]):
         surface.blit(assets.text(row, 14, TEXT, role="body"), (tx, box.y + 24 + i * 18))

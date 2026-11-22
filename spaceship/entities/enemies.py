@@ -208,12 +208,19 @@ class Enemy(EnemyBase):
 
     def _draw_lock_on(self, surface: pygame.Surface, assets) -> None:
         """Cảnh báo sắp lao: thân rung, vòng đỏ co lại, vạch ngắm hướng lao."""
-        k = 1 - self.windup / config.KAMIKAZE_WINDUP_TICKS          # 0 -> 1 khi sắp lao
         jitter = 2 if self.windup % 4 < 2 else -2
-        x, y = self.x, self.y
+        x = self.x
         self.x += jitter
         self._draw_sprite(surface, assets, add=self.windup % 6 < 3)
         self.x = x
+        self.draw_telegraph(surface)
+
+    def draw_telegraph(self, surface: pygame.Surface) -> None:
+        """Vòng đỏ + vạch ngắm của lính cảm tử sắp lao (vẽ cả trên lớp tối ở ải 14)."""
+        if self.windup <= 0:
+            return
+        k = 1 - self.windup / config.KAMIKAZE_WINDUP_TICKS          # 0 -> 1 khi sắp lao
+        x, y = self.x, self.y
         red = (255, int(80 * (1 - k)), 60)
         pygame.draw.circle(surface, red, (int(x), int(y)), int(36 - 14 * k), 3)
         if self.windup % 10 < 5:                                      # vòng ngoài nhấp nháy: dễ thấy khi đạn dày
@@ -339,12 +346,16 @@ class Turret(EnemyBase):
             diff = (want - self.aim + 180) % 360 - 180
             self.aim += max(-2.5, min(2.5, diff))
 
-    def draw(self, surface: pygame.Surface, assets) -> None:
+    def draw_telegraph(self, surface: pygame.Surface) -> None:
+        """Vạch đỏ cảnh báo trước khi bắn (vẽ cả trên lớp tối ở ải 14)."""
         if self.warning > 0:
             rad = math.radians(self.aim)
             end = (self.x + math.cos(rad) * 900, self.y + math.sin(rad) * 900)
             k = 1 - self.warning / self.WARN_TICKS
             pygame.draw.line(surface, (int(120 + 135 * k), 20, 20), (self.x, self.y), end, 1 + int(2 * k))
+
+    def draw(self, surface: pygame.Surface, assets) -> None:
+        self.draw_telegraph(surface)
         self._draw_sprite(surface, assets)
         gun = assets.image("turret_gun", 10)
         if gun is not None:
@@ -441,6 +452,54 @@ class ShadowKX(EnemyBase):
         glow.add(surface, glow.orb(glow.scale(SHADOW_COLOR, 0.5), 22, core=0.25, halo=1.5), (self.x, self.y))
 
 
+# --- Hồi IV · Kẻ Nghe: hình giả (pha 2) ---------------------------------------------------------
+LISTENER_EAR = (120, 255, 220)
+LISTENER_TELL_TICKS = 36            # tai sáng 0,6 giây trước mỗi loạt
+LISTENER_CORE = (255, 50, 60)
+
+
+def draw_listener_ears(surface: pygame.Surface, enemy, k: float) -> None:
+    """Hai "tai" phát sáng (0..1) - thứ duy nhất lộ ra trong bóng tối trước mỗi loạt đạn."""
+    if k <= 0:
+        return
+    for side in (-1, 1):
+        ex, ey = enemy.x + side * enemy.rx * 0.78, enemy.y - enemy.ry * 0.55
+        glow.add(surface, glow.orb(glow.scale(LISTENER_EAR, k), 10 + int(8 * k) // 2 * 2, core=0.6, halo=1.4), (ex, ey))
+
+
+class ListenerDecoy(EnemyBase):
+    """Hình giả của Kẻ Nghe (pha 2): bay lệch hai bên hình thật, cũng phát sáng tai và bắn. Không có lõi đỏ;
+    trúng một phát là tan. Không điểm, không rơi đồ."""
+
+    sprite = "listener"
+    sprite_width = 300
+    score = 0
+    counts_as_kill = False
+    drops = False
+    death_fx = "dissolve"
+    decoy = True
+
+    def __init__(self, boss, side: int) -> None:
+        super().__init__(hp=1, radius=60)
+        self.rx, self.ry = boss.rx, boss.ry
+        self.boss, self.side = boss, side
+        self.x, self.y = boss.x, boss.y
+        self.fire_at = boss.age + 30 + (20 if side > 0 else 0)
+        self.charging = False
+
+    def update(self, player=None) -> None:
+        self.age += 1
+        b = self.boss
+        self.x = max(110, min(WIDTH - 110, b.x + self.side * (230 + 40 * math.sin(self.age / 40))))
+        self.y = b.y + 30 * math.sin(self.age / 33 + self.side)
+
+    def draw(self, surface: pygame.Surface, assets) -> None:
+        self._draw_sprite(surface, assets)
+
+    def draw_telegraph(self, surface: pygame.Surface) -> None:
+        draw_listener_ears(surface, self, 1.0 if self.charging else 0.0)
+
+
 # --- Chướng ngại -----------------------------------------------------------------------------
 class Meteor(EnemyBase):
     is_meteor = True
@@ -526,7 +585,7 @@ BOSS_SPECS = {
                            hover_y=185, rages=True),
     # Hồi IV (đợt 1: tạm dùng kiểu đánh của boss cũ, xem docs/design/hoi-4.md)
     "storm_eye": BossSpec("MẮT BÃO", "storm_eye", 240, 1800, 78, 78, 3, hover_y=260),
-    "listener": BossSpec("KẺ NGHE", "listener", 300, 1600, 110, 60, 3, hover_y=150),
+    "listener": BossSpec("KẺ NGHE", "listener", 300, 1600, 110, 60, 3, hover_y=170),
     "swarm_heart": BossSpec("TRÁI TIM ĐÀN", "swarm_heart", 480, 4200, 210, 90, 6, shield=1 / 4,
                             hover_y=185, rages=True),
 }
@@ -555,6 +614,9 @@ class Boss(EnemyBase):
         self.dx = 2.5 if self.kind != "mothership" else 1.2
         self.spiral_angle = 0
         self.shield_rotation = 0
+        self.free_flight = False        # cơ chế ải tự lái boss (Kẻ Nghe lượn trong tối): coi như đã tới chỗ
+        self.fire_at = 0                # Kẻ Nghe: tick sẽ bắn loạt kế tiếp (tai sáng 0,6 giây trước đó)
+        self.decoy_cooldown = 0         # Kẻ Nghe pha 2: chờ tách hình giả lần nữa
         self.shield_flash = 0           # > 0: khiên vừa đỡ đòn -> sáng bừng
         self.shield_regen = 0           # > 0: khiên vừa hồi lại (chuyển pha) -> lớp tổ ong mọc lan ra
         self.attack_cooldown = 60
@@ -578,7 +640,7 @@ class Boss(EnemyBase):
 
     @property
     def arrived(self) -> bool:
-        return self.y >= self.spec.hover_y
+        return self.free_flight or self.y >= self.spec.hover_y
 
     def update(self, player=None) -> None:
         self.age += 1
@@ -604,3 +666,19 @@ class Boss(EnemyBase):
             self._draw_sprite(surface, assets, add=flash)
         if self.shield_hp > 0:                       # khiên trùm lên thân boss như một vòm năng lượng
             shields.draw_boss_shield(surface, self)
+        if self.kind == "listener":
+            self.draw_telegraph(surface)
+
+    @property
+    def charging(self) -> bool:
+        """Kẻ Nghe: đang "nghe" (tai sáng) - 0,6 giây trước mỗi loạt đạn ngắm."""
+        return self.kind == "listener" and self.arrived and 0 < self.fire_at - self.age <= LISTENER_TELL_TICKS
+
+    def draw_telegraph(self, surface: pygame.Surface) -> None:
+        if self.kind != "listener":
+            return
+        left = self.fire_at - self.age
+        k = 1 - left / LISTENER_TELL_TICKS if 0 < left <= LISTENER_TELL_TICKS else 0.0
+        draw_listener_ears(surface, self, k)
+        glow.add(surface, glow.orb(glow.scale(LISTENER_CORE, 0.55 + 0.45 * k), 8, core=0.5, halo=1.2),
+                 (self.x, self.y + 6))                  # lõi đỏ: chỉ hình THẬT mới có

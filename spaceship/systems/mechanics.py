@@ -422,12 +422,138 @@ class GravityWell(Mechanic):
                                (x + math.cos(a) * (r0 - 26), y + math.sin(a) * (r0 - 26) * 0.7), 2)
 
 
+# --- Ải 14 · Màn tối ----------------------------------------------------------------------------
+DARK_ALPHA = 238                    # độ tối phủ chiến trường
+DARK_PLAYER_LIGHT = 150             # vòng sáng quanh tàu
+DARK_BULLET_LIGHT = 38              # mỗi viên đạn của bạn soi một vòng nhỏ
+DARK_SKILL_TICKS = 180              # kỹ năng Nộ: soi sáng toàn màn 3 giây
+DARK_FADE = 24
+
+
+def light_texture(radius: int) -> pygame.Surface:
+    """Lỗ sáng: kênh alpha 0 ở tâm, tăng dần tới 255 ở mép (dán bằng BLEND_RGBA_MIN lên lớp tối)."""
+    key = ("light", radius)
+    if key not in _light_cache:
+        s = pygame.Surface((radius * 2, radius * 2), pygame.SRCALPHA)
+        s.fill((0, 0, 0, 255))
+        for r in range(radius, 0, -2):
+            t = r / radius
+            pygame.draw.circle(s, (0, 0, 0, int(255 * min(1.0, t ** 1.8))), (radius, radius), r)
+        _light_cache[key] = s
+    return _light_cache[key]
+
+
+_light_cache: dict = {}
+
+
+class Darkness(Mechanic):
+    """Ải 14 "Tín Hiệu Câm": cả chiến trường tối; chỉ sáng quanh tàu bạn và quanh đạn bạn bắn (bắn là soi đường).
+
+    Công bằng: đạn địch, vạch cảnh báo của Pháo tháp, vòng đỏ của lính cảm tử, quầng tím của Bóng KX và tai phát
+    sáng của Kẻ Nghe luôn hiện (vẽ đè lên lớp tối). Kỹ năng Nộ soi sáng toàn màn 3 giây. ARIA im lặng: ô LIÊN LẠC
+    chỉ còn nhiễu sóng."""
+
+    radio_static = True
+
+    def radio(self, world: World, key) -> Optional[list]:
+        if key == ("boss", 0):
+            world.play("radar")
+            return []
+        return None
+
+    def __init__(self) -> None:
+        self.t = 0
+        self.lit = 0                     # > 0: kỹ năng Nộ đang soi sáng toàn màn
+        self._skills_seen = 0
+        self._layer = None
+
+    def update(self, world: World) -> None:
+        self.t += 1
+        if world.skills_used != self._skills_seen:                  # vừa tung kỹ năng Nộ: soi sáng 3 giây
+            self._skills_seen = world.skills_used
+            self.lit = DARK_SKILL_TICKS
+        elif self.lit > 0:
+            self.lit -= 1
+        boss = next((e for e in world.enemies if e.is_boss and e.kind == "listener"), None)
+        if boss is not None and boss.arrived:                       # Kẻ Nghe lượn trong tối
+            boss.free_flight = True
+            boss.dx = 0
+            boss.x = WIDTH / 2 + math.sin(self.t / 150) * 250
+            boss.y = 170 + math.sin(self.t / 97) * 55
+        if boss is not None and boss.hp_ratio < 0.5:
+            self._decoys(world, boss)
+        elif boss is None:
+            for e in [e for e in world.enemies if getattr(e, "decoy", False)]:
+                world.enemies.remove(e)
+
+    def _decoys(self, world: World, boss) -> None:
+        from spaceship.entities.enemies import ListenerDecoy
+
+        decoys = [e for e in world.enemies if isinstance(e, ListenerDecoy)]
+        if not decoys and (boss.decoy_cooldown <= 0):
+            for side in (-1, 1):
+                world.enemies.append(ListenerDecoy(boss, side))
+            world.play("glitch")
+            boss.decoy_cooldown = 300                               # bị phá hết thì 5 giây sau tách lại
+        elif not decoys:
+            boss.decoy_cooldown -= 1
+
+    @property
+    def darkness(self) -> float:
+        """1 = tối hẳn, 0 = sáng hẳn (đang soi bằng kỹ năng Nộ: sáng dần lên rồi tối dần lại)."""
+        if self.lit <= 0:
+            return 1.0
+        elapsed = DARK_SKILL_TICKS - self.lit
+        if elapsed < DARK_FADE:
+            return 1 - elapsed / DARK_FADE
+        if self.lit < DARK_FADE:
+            return 1 - self.lit / DARK_FADE
+        return 0.0
+
+    def lights(self, world: World) -> List[tuple]:
+        p = world.player
+        out = [(p.x, p.y, DARK_PLAYER_LIGHT)]
+        for b in world.bullets:
+            out.append((b.x, b.y, DARK_BULLET_LIGHT + (14 if b.kind == "plasma" else 0)))
+        from spaceship.entities.effects import Flash
+        from spaceship.systems.weapons import LightningArc
+        for fx in world.particles:
+            if isinstance(fx, Flash) and fx.radius >= 14:
+                out.append((fx.x, fx.y, int(fx.radius * 2.5)))
+            elif isinstance(fx, LightningArc):                       # tia sét soi rộng nhất
+                for x, y in fx.points[::2]:
+                    out.append((x, y, 70))
+        for e in world.enemies:
+            if getattr(e, "charging", False):                        # Kẻ Nghe đang phát sáng tai: lộ diện
+                out.append((e.x, e.y, 120))
+        return out
+
+    def draw_front(self, surface: pygame.Surface, world: World, assets, fx: float = 1.0) -> None:
+        dark = self.darkness
+        if dark > 0:
+            size = surface.get_size()
+            if self._layer is None or self._layer.get_size() != size:
+                self._layer = pygame.Surface(size, pygame.SRCALPHA)
+            layer = self._layer
+            layer.fill((0, 0, 0, int(DARK_ALPHA * dark)))
+            for x, y, r in self.lights(world):
+                r = max(8, int(r) // 4 * 4)
+                tex = light_texture(r)
+                layer.blit(tex, (int(x) - r, int(y) - r), special_flags=pygame.BLEND_RGBA_MIN)
+            surface.blit(layer, (0, 0))
+        for e in world.enemies:                                      # dấu hiệu nguy hiểm luôn hiện
+            if hasattr(e, "draw_telegraph"):
+                e.draw_telegraph(surface)
+            elif hasattr(e, "draw_halo"):
+                e.draw_halo(surface)
+
+
 def _ring(x, y, color, radius):
     from spaceship.entities.effects import Shockwave
     return Shockwave(x, y, color, max_radius=radius, life=16)
 
 
-MECHANICS = {"escort": Escort, "gravity": GravityWell}
+MECHANICS = {"escort": Escort, "gravity": GravityWell, "dark": Darkness}
 
 
 def create_mechanic(level) -> Optional[Mechanic]:

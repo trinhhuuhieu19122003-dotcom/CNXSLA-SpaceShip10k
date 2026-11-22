@@ -229,18 +229,30 @@ def _draw_gesture(surface, assets, controls, rage_full: bool, col: _Column) -> N
 
 
 def _draw_radio(surface, assets, world, col: _Column, bottom: int) -> None:
-    from spaceship.campaign.story import PORTRAITS, SPEAKER_COLORS
+    from spaceship.campaign.story import SPEAKER_COLORS, portrait_for
+    from spaceship.ui.hud import draw_static
 
     col.label("LIÊN LẠC")
     if not world.radio:
+        if getattr(world.mechanic, "radio_static", False):      # vùng câm (ải 14): chỉ còn nhiễu sóng
+            box = pygame.Rect(col.x, col.y, col.width, 46)
+            pygame.draw.rect(surface, (18, 14, 24), box)
+            draw_static(surface, box, int(world.survival_time * 60))
+            draw_static(surface, box, int(world.survival_time * 60) + 1, (120, 120, 150))
+            col.y += 50
+            col.value("~ nhiễu sóng ~", 14, MUTED, role="body")
+            return
         col.value("Không có tín hiệu", 14, MUTED, role="body")
         return
     line = world.radio[0]
     color = SPEAKER_COLORS.get(line.speaker, TEXT)
-    portrait = assets.image(PORTRAITS.get(line.speaker, ""), 64) if line.speaker in PORTRAITS else None
+    name = portrait_for(line.speaker, getattr(line, "effect", None))
+    portrait = assets.image(name, 64) if name else None
     if portrait is not None:
         surface.blit(portrait, (col.x, col.y))
         pygame.draw.rect(surface, color, (col.x, col.y, 64, 64), 1)
+        if getattr(line, "effect", None) == "glitch":
+            draw_static(surface, pygame.Rect(col.x, col.y, 64, 64), line.ticks)
     speaker = fit_text(assets, line.speaker.upper(), 16, color, col.width - 74, role="ui")
     surface.blit(speaker, (col.x + 74, col.y + 22))
     col.y += 74

@@ -139,7 +139,7 @@ class LevelDirector(Director):
     def _say(self, world: World, key) -> None:
         lines = self.mechanic.radio(world, key) if self.mechanic is not None else None
         for line in (lines if lines is not None else self.radio.get(key, [])):
-            world.say(line[0], line[1])
+            world.say(line[0], line[1], effect=line[2] if len(line) > 2 else None)
 
     def update(self, world: World) -> None:
         if self.mechanic is not None:

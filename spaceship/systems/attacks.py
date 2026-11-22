@@ -279,6 +279,29 @@ def _storm_eye(world: World, boss: Boss, ratio: float) -> int:
     return 18
 
 
+def _listener(world: World, boss: Boss, ratio: float) -> int:
+    """KẺ NGHE (ải 14): lượn trong tối; tai sáng 0,6 giây rồi bắn loạt ngắm 5 viên (pha 2: thêm vòng 10 viên).
+    Hình giả (pha 2) cũng sáng tai và bắn loạt ngắm 3 viên."""
+    from spaceship.entities.enemies import LISTENER_TELL_TICKS, ListenerDecoy
+
+    if boss.fire_at <= boss.age - 1 or boss.fire_at == 0:             # chưa hẹn loạt nào: hẹn loạt kế tiếp
+        boss.fire_at = boss.age + LISTENER_TELL_TICKS + (40 if ratio > 0.5 else 20)
+        return 4
+    if boss.age < boss.fire_at:
+        return 1
+    a = aim(boss, world.player)
+    world.enemy_bullets += [EnemyBullet(boss.x, boss.y + 30, a + off, "blue_bullet") for off in (-16, -8, 0, 8, 16)]
+    if ratio < 0.5:
+        boss.spiral_angle += 18
+        world.enemy_bullets += [EnemyBullet(boss.x, boss.y, boss.spiral_angle + i * 36, "normal") for i in range(10)]
+    for decoy in [e for e in world.enemies if isinstance(e, ListenerDecoy)]:
+        da = aim(decoy, world.player)
+        world.enemy_bullets += [EnemyBullet(decoy.x, decoy.y + 30, da + off, "blue_bullet") for off in (-10, 0, 10)]
+    boss.fire_at = boss.age + LISTENER_TELL_TICKS + (40 if ratio > 0.5 else 24)
+    world.play("radar")
+    return 1
+
+
 def _inferno(world: World, boss: Boss, ratio: float) -> int:
     boss.spiral_angle += 20
     world.enemy_bullets.extend(EnemyBullet(boss.x, boss.y, boss.spiral_angle + i * 45, "normal") for i in range(8))
@@ -290,7 +313,7 @@ def _inferno(world: World, boss: Boss, ratio: float) -> int:
 BOSS_PATTERNS = {"crab": _crab, "octopus": _octopus, "spider": _spider, "nest": _nest,
                  "cruiser": _cruiser, "mothership": _mothership,
                  # Hồi IV - tạm mượn kiểu đánh có sẵn cho tới đợt làm cơ chế riêng
-                 "storm_eye": _storm_eye, "listener": _nest, "swarm_heart": _mothership}
+                 "storm_eye": _storm_eye, "listener": _listener, "swarm_heart": _mothership}
 SHIELD_REGEN_KINDS = {"octopus", "spider", "cruiser", "mothership", "swarm_heart"}
 
 
@@ -321,7 +344,18 @@ def boss_attack(world: World, boss: Boss) -> None:
     boss.attack_cooldown = _cooldown(world, cooldown * (0.5 if boss.raging else 1.0))
 
 
+def _decoy_tell(world: World) -> None:
+    """Hình giả của Kẻ Nghe sáng tai cùng lúc với hình thật."""
+    from spaceship.entities.enemies import ListenerDecoy
+
+    boss = next((e for e in world.enemies if e.is_boss and e.kind == "listener"), None)
+    for e in world.enemies:
+        if isinstance(e, ListenerDecoy):
+            e.charging = boss is not None and boss.charging
+
+
 def run_enemy_ai(world: World) -> None:
+    _decoy_tell(world)
     for enemy in list(world.enemies):
         if enemy.hit_flash > 0:
             enemy.hit_flash -= 1

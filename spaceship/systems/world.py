@@ -20,6 +20,7 @@ class RadioLine:
     speaker: str
     text: str
     ticks: int
+    effect: Optional[str] = None     # "glitch": nhiễu sóng (chân dung ARIA nhiễu, vạch nhiễu)
 
 
 @dataclass
@@ -165,8 +166,8 @@ class World:
         """Chữ lớn giữa màn hình (vd. "NHẬN ĐƯỢC DRONE")."""
         self.banner, self.banner_ticks = text, int(seconds * config.TICK_RATE)
 
-    def say(self, speaker: str, text: str, seconds: float = 4.0) -> None:
-        self.radio.append(RadioLine(speaker, text, int(seconds * config.TICK_RATE)))
+    def say(self, speaker: str, text: str, seconds: float = 4.0, effect: Optional[str] = None) -> None:
+        self.radio.append(RadioLine(speaker, text, int(seconds * config.TICK_RATE), effect))
 
     def tick_messages(self) -> None:
         if self.banner_ticks > 0:

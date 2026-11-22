@@ -333,3 +333,108 @@ class GravityWellTest(unittest.TestCase):
             self.m.update(self.w)
             self.w.player.x, self.w.player.y = 60, 640
             self.m.draw_back(surface, self.w, Assets())
+
+
+class DarknessTest(unittest.TestCase):
+    def setUp(self):
+        from spaceship.systems.mechanics import Darkness
+        self.w = world(14)
+        self.m = Darkness()
+        self.w.mechanic = self.m
+
+    def test_level_14_uses_darkness_not_fog(self):
+        from spaceship.systems.spawning import LevelDirector
+        from spaceship.systems.mechanics import Darkness
+        self.assertIsInstance(LevelDirector(get_level(14)).mechanic, Darkness)
+        self.assertFalse(get_level(14).fog)
+
+    def test_dark_everywhere_except_around_ship_and_bullets(self):
+        from spaceship.entities.projectiles import Bullet
+        surface = pygame.Surface((800, 700))
+        surface.fill((200, 200, 200))
+        p = self.w.player
+        self.w.bullets.append(Bullet(600, 200, "laser"))
+        self.m.draw_front(surface, self.w, None)
+        self.assertGreater(surface.get_at((int(p.x), int(p.y)))[0], 150)      # quanh tàu sáng
+        self.assertGreater(surface.get_at((600, 200))[0], 150)                 # đạn soi đường
+        self.assertLess(surface.get_at((100, 100))[0], 30)                     # chỗ khác tối
+
+    def test_rage_skill_lights_everything_for_3_seconds(self):
+        from spaceship.systems import weapons
+        p = self.w.player
+        p.rage = p.max_rage
+        weapons.trigger_skill(self.w)
+        for _ in range(40):
+            self.m.update(self.w)
+        self.assertEqual(self.m.darkness, 0.0)
+        for _ in range(180):
+            self.m.update(self.w)
+        self.assertEqual(self.m.darkness, 1.0)
+
+    def test_danger_signs_drawn_over_darkness(self):
+        from spaceship.entities.enemies import Turret
+        surface = pygame.Surface((800, 700))
+        t = Turret(1.0, 100, 100)
+        t.y, t.aim, t.warning = 100, 0.0, 10                       # vạch cảnh báo nằm ngang sang phải
+        self.w.enemies.append(t)
+        self.m.draw_front(surface, self.w, None)
+        self.assertGreater(surface.get_at((400, 100))[0], 100)     # vạch đỏ vẫn thấy trong tối
+
+    def test_aria_silent_radio_is_static(self):
+        self.assertTrue(self.m.radio_static)
+        self.assertEqual(self.m.radio(self.w, ("boss", 0)), [])
+        self.assertIn("radar", self.w.sounds)
+
+
+class ListenerTest(unittest.TestCase):
+    def setUp(self):
+        from spaceship.entities.enemies import Boss
+        from spaceship.systems.mechanics import Darkness
+        self.w = world(14)
+        self.m = Darkness()
+        self.w.mechanic = self.m
+        self.boss = Boss(1.0, kind="listener")
+        self.boss.y = 200
+        self.w.enemies.append(self.boss)
+
+    def tick(self, n):
+        for _ in range(n):
+            self.m.update(self.w)
+            attacks.run_enemy_ai(self.w)
+
+    def test_ears_glow_before_each_aimed_burst(self):
+        from spaceship.entities.enemies import LISTENER_TELL_TICKS
+        fired_after_tell = []
+        charging_run = 0
+        for _ in range(400):
+            before = len(self.w.enemy_bullets)
+            self.tick(1)
+            charging_run = charging_run + 1 if self.boss.charging else 0
+            if len(self.w.enemy_bullets) > before:
+                fired_after_tell.append(charging_run)
+            if self.boss.charging:
+                last_run = charging_run
+        self.assertGreaterEqual(len(fired_after_tell), 3)
+        self.assertGreaterEqual(last_run, LISTENER_TELL_TICKS - 2)
+
+    def test_phase_2_splits_into_decoys_that_die_in_one_hit(self):
+        from spaceship.entities.enemies import ListenerDecoy
+        self.boss.hp = self.boss.max_hp * 0.45
+        self.tick(2)
+        decoys = [e for e in self.w.enemies if isinstance(e, ListenerDecoy)]
+        self.assertEqual(len(decoys), 2)
+        combat.damage_enemy(self.w, decoys[0], 3)
+        combat.reap_dead(self.w)
+        self.assertNotIn(decoys[0], self.w.enemies)
+        self.assertEqual(self.w.score, 0)
+        self.boss.hp = 0                                             # hạ hình thật: hình giả biến mất
+        combat.reap_dead(self.w)
+        self.m.update(self.w)
+        self.assertFalse(any(isinstance(e, ListenerDecoy) for e in self.w.enemies))
+
+    def test_radio_glitch_uses_glitch_portrait(self):
+        from spaceship.campaign.story import ARIA, portrait_for
+        self.assertEqual(portrait_for(ARIA, "glitch"), "portrait_aria_glitch")
+        self.assertEqual(portrait_for(ARIA), "portrait_aria")
+        self.w.say(ARIA, "---", effect="glitch")
+        self.assertEqual(self.w.radio[-1].effect, "glitch")
